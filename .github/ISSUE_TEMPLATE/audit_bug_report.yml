@@ -1,0 +1,58 @@
+name: Cross-team audit bug report
+description: Report a reproducible bug found during the Week 12 peer review
+title: "[AUDIT] "
+labels:
+  - "audit:report"
+  - "status:needs-triage"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Read the `PEER_REVIEW.md` first and search existing issues before filing. Audit the latest commit on the target team's `main` branch, built from the repository's `Dockerfile`. Never post credentials or personal data. After submitting, add exactly one `type:*` label matching your selection below.
+  - type: input
+    id: reporting-team
+    attributes:
+      label: Reporting team
+      placeholder: Team number and name
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit SHA
+      description: Full 40-character SHA of the commit where you observed the bug.
+    validations:
+      required: true
+  - type: dropdown
+    id: bug-type
+    attributes:
+      label: Type
+      options:
+        - security
+        - functional
+        - performance
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal test case
+      description: Numbered, exact commands or UI actions that reproduce the bug.
+      placeholder: |
+        1. Run ...
+        2. Sign in as ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
