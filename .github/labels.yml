@@ -1,0 +1,38 @@
+# Cross-team audit labels for the CSC4801 final project.
+#
+# Import into a team repository with, e.g., github-label-sync:
+#   npx github-label-sync --labels labels.yml <owner>/<repo>
+# or any label importer that accepts a name/color/description list.
+
+- name: "audit:report"
+  color: "d73a4a"
+  description: "Cross-team audit bug report"
+- name: "audit:repair"
+  color: "0e8a16"
+  description: "Repair of a confirmed audit finding"
+
+- name: "type:security"
+  color: "b60205"
+  description: "Auth, authorization, privacy, injection, XSS, or secret handling fails"
+- name: "type:functional"
+  color: "1d76db"
+  description: "Required behavior is missing or incorrect"
+- name: "type:performance"
+  color: "5319e7"
+  description: "Reproducible performance problem on a small, safe fixture"
+
+- name: "status:needs-triage"
+  color: "fbca04"
+  description: "New report awaiting triage by the target team or instructor"
+- name: "status:confirmed"
+  color: "0e8a16"
+  description: "Reproducible, in scope, safe, and not a duplicate"
+- name: "status:rejected"
+  color: "e11d21"
+  description: "Fails a valid-finding condition"
+- name: "status:duplicate"
+  color: "cccccc"
+  description: "Same root cause as an earlier linked issue"
+- name: "status:fixed"
+  color: "c2e0c6"
+  description: "Fix and regression evidence pass at the linked fix commit"
