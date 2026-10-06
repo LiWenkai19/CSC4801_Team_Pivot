@@ -1,3 +1,4 @@
-# All direct and transitive runtime/test versions are locked here.
-# Example-only, use and lock your own dependencies
+# Runtime, test, and development dependencies for the current backend.
+# Exact versions and extras are recorded in requirements.lock.
+# Backend dependency declarations are maintained in backend/pyproject.toml.
 -r requirements.lock

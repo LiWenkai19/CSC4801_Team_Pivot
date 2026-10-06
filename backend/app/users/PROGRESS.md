@@ -90,3 +90,20 @@
 - 实际数据库验证：邮箱唯一索引、角色 CHECK、资料 / 技能外键、技能组合主键和规范化 CHECK、带时区时间列、迁移版本均通过；`python -m alembic check` 未发现模型与数据库的待迁移差异。检查时四张业务表均为零行。
 - 运行中的实际服务验证：GET /docs 返回 200，未认证 GET /users/me 返回 401，不存在账户的 POST /users/login 返回 401，原建表前的 500 已消失。迁移文件与 env.py 的 Ruff 检查通过；同步 docs/数据模型设计.md。
 - 状态：当前已确认接口及建表完成；完整注册 / 资料写入流程此前在隔离 SQLite 验证，本次未向业务 PostgreSQL 写入测试账户，也未验证 PostgreSQL 并发写入行为。
+
+## 2026-10-07：对齐根目录依赖锁文件
+
+- 按用户要求检查项目指定的 SYManage 环境（Python 3.12.13）与根目录 requirements.lock：18 项中原有 3 项一致、6 项版本不同、9 项未安装。
+- 使用该环境执行 `python -m pip install -r requirements.lock`，所有 18 项均已对齐；backend/pyproject.toml 的 pytest 声明同步固定为 8.4.2。
+- 锁文件来自远程 Flask 脚手架，未包含当前 FastAPI / SQLModel 后端的完整依赖；保留这些现有依赖，未将锁文件扩展为完整后端锁文件。
+- 验证：逐项检查锁定版本无差异，`python -m pip check` 通过；在 backend 目录执行 `python -m pytest tests/users/test_account_responses.py -q`，40 passed，有一项 Starlette TestClient 的弃用警告。
+- 未连接业务数据库；未运行仍有既有类型导入问题的完整测试套件。
+
+## 2026-10-07：补全后端依赖锁定
+
+- 核对本地 REQUIREMENTS 中文翻译.md 全文，未发现 Flask 框架限制；FP-ARCH-1 要求浏览器 UI、后端服务器 / API 与持久化关系型数据库。
+- 将 backend/pyproject.toml 的运行 / 开发依赖及其间接依赖按 SYManage 已安装版本补入根目录 requirements.lock；保留原有 18 项脚手架锁定版本。
+- 锁文件现有 72 项，包含 FastAPI standard、psycopg binary、pwdlib argon2 的 extras；uvloop 固定为索引可用的 0.23.0，仅适用于非 Windows / Cygwin 的 CPython，当前 Windows 环境不安装该项。
+- requirements.txt 继续统一引用锁文件；INSTALL.md 补充当前技术栈、验证过的 Python 版本、锁文件安装与 editable 安装命令。没有将环境中的旧项目 editable 引用、PDF / Excel 等无关工具加入项目依赖。
+- 验证：当前环境的适用锁定项全部匹配，后端 9 项直接依赖的版本范围 / extras 均被覆盖；pip check 通过，常规安装预检查及忽略已安装包的全量依赖解析预检查均通过。
+- 本次未改变已安装后端版本，沿用前一步账户接口回归 40 passed 的结果；未验证 Linux / Docker 实际安装或运行，Dockerfile 启动命令仍是脚手架占位符。
