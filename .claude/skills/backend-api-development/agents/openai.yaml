@@ -1,0 +1,4 @@
+interface:
+  display_name: "后端接口开发"
+  short_description: "先细化具体接口，再逐个实现，严格分层并同步中文注释、进度和测试验证"
+  default_prompt: "使用 $backend-api-development 先明确本次具体接口，再按项目分层实现、更新进度并运行测试。"

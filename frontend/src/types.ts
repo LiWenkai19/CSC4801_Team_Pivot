@@ -22,6 +22,7 @@ export interface UserPublic {
   id: string
   email: string
   role: Role
+  profile_completed: boolean
 }
 
 /** 认证成功后签发的访问令牌。 */
@@ -48,4 +49,19 @@ export interface EmployerProfileCreate {
   /** 服务端去除首尾空白后，名称必须非空。 */
   company_name: string
   company_description?: string
+}
+
+/** 候选人本人资料响应，包含后端规范化后的技能。 */
+export interface CandidateProfilePublic {
+  user_id: string
+  display_name: string
+  resume_text: string
+  skills: string[]
+}
+
+/** 雇主公司资料响应。 */
+export interface EmployerProfilePublic {
+  user_id: string
+  company_name: string
+  company_description: string
 }

@@ -9,6 +9,7 @@ from app.users.schema import (
     EmployerProfileCreate,
     EmployerProfilePublic,
     UserCreate,
+    UserPublic,
 )
 from app.users.security import hash_password, verify_password, decode_access_token
 from fastapi.security import OAuth2PasswordBearer
@@ -45,6 +46,20 @@ def authenticate_user(session: Session, email: str, password: str) -> User | Non
     return user
 
     
+def get_current_user_public(session: Session, curr_user: User) -> UserPublic:
+    """只检查当前用户对应角色的资料是否存在，不返回资料内容。"""
+    profile_model = (
+        CandidateProfile if curr_user.role == Role.Candidate else EmployerProfile
+    )
+    profile_completed = session.get(profile_model, curr_user.id) is not None
+    return UserPublic(
+        id=curr_user.id,
+        email=curr_user.email,
+        role=curr_user.role,
+        profile_completed=profile_completed,
+    )
+
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/token")
 def get_current_user(session: Session = Depends(get_db), token: str = Depends(oauth2_scheme)) -> User:
     try:

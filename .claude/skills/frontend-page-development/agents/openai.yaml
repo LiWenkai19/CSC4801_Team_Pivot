@@ -1,0 +1,4 @@
+interface:
+  display_name: "前端页面开发"
+  short_description: "先澄清逻辑再以最简界面跑通，默认单页或至多十五个明确函数，美化另行开展"
+  default_prompt: "使用 $frontend-page-development，先根据现有架构和我的回答细化本次页面或函数逻辑，明确后以最简界面实现并验证；页面美化在逻辑跑通后单独开展。"

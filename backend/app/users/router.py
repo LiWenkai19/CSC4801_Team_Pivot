@@ -22,6 +22,7 @@ from app.users.service import (
     ProfileAlreadyExistsError,
     create_employer_profile,
     create_candidate_profile,
+    get_current_user_public,
     require_candidate,
     require_employer,
 )
@@ -33,7 +34,7 @@ user_router = APIRouter(prefix="/users", tags=["users"])
 
 @user_router.post("/register", response_model=AuthResponse)
 def register_user(user: UserCreate, session: Session = Depends(get_db)) -> AuthResponse:
-    """注册账户并签发访问令牌，供用户继续填写资料。"""
+    """注册账户并返回令牌及资料完成状态，供用户继续填写资料。"""
     try:
         new_user = create_user(session, user)
     except ValueError as e:
@@ -43,12 +44,12 @@ def register_user(user: UserCreate, session: Session = Depends(get_db)) -> AuthR
     return AuthResponse(
         access_token=token,
         token_type="bearer",
-        user=UserPublic(id=new_user.id, email=new_user.email, role=new_user.role),
+        user=get_current_user_public(session, new_user),
     )
         
 @user_router.post("/login", response_model=AuthResponse)
 def login(self_user: UserLogin, session: Session = Depends(get_db)) -> AuthResponse:
-    """验证登录凭据并返回访问令牌与账户信息。"""
+    """验证登录凭据并返回令牌、账户信息及实时资料完成状态。"""
     try:
         user = authenticate_user(session, self_user.email, self_user.password)
     except ValueError as e:
@@ -61,7 +62,7 @@ def login(self_user: UserLogin, session: Session = Depends(get_db)) -> AuthRespo
     return AuthResponse(
         access_token=token,
         token_type="bearer",
-        user=UserPublic(id=user.id, email=user.email, role=user.role),
+        user=get_current_user_public(session, user),
     )
 
 # 测试环境的登陆接口
@@ -84,13 +85,12 @@ def login_for_access_token(
     
     
 @user_router.get("/me", response_model=UserPublic)
-def read_me(curr_user: User = Depends(get_current_user)) -> UserPublic:
-    """返回已认证用户的账户标识与角色。"""
-    return UserPublic(
-        id=curr_user.id,
-        email=curr_user.email,
-        role=curr_user.role,
-    )    
+def read_me(
+    curr_user: User = Depends(get_current_user),
+    session: Session = Depends(get_db),
+) -> UserPublic:
+    """返回本人账户及当前角色资料的完成状态。"""
+    return get_current_user_public(session, curr_user)
 
 
 @user_router.post(

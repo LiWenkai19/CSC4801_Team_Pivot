@@ -26,11 +26,12 @@ class UserLogin(SQLModel):
 
 
 class UserPublic(SQLModel):
-    """返回账户标识与角色，不包含认证机密。"""
+    """统一返回账户标识、角色和实时资料完成状态，不包含认证机密。"""
 
     id: uuid.UUID
     email: EmailStr
     role: Role
+    profile_completed: bool
 
 
 class Token(SQLModel):

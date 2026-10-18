@@ -21,7 +21,11 @@ def client(monkeypatch):
     from app.users.router import user_router
     from app.users.model import User
     from app.users.schema import UserPublic
-    from app.users.service import require_candidate, require_employer
+    from app.users.service import (
+        get_current_user_public,
+        require_candidate,
+        require_employer,
+    )
 
     engine = create_engine(
         "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
@@ -38,14 +42,18 @@ def client(monkeypatch):
     app.include_router(user_router)
 
     @app.get("/test/candidate", response_model=UserPublic)
-    def candidate_only(curr_user: User = Depends(require_candidate)):
+    def candidate_only(
+        curr_user: User = Depends(require_candidate), session: Session = Depends(get_db)
+    ):
         """通过测试路由执行候选人依赖，验证实际依赖调用链。"""
-        return UserPublic.model_validate(curr_user)
+        return get_current_user_public(session, curr_user)
 
     @app.get("/test/employer", response_model=UserPublic)
-    def employer_only(curr_user: User = Depends(require_employer)):
+    def employer_only(
+        curr_user: User = Depends(require_employer), session: Session = Depends(get_db)
+    ):
         """通过测试路由执行雇主依赖，验证实际依赖调用链。"""
-        return UserPublic.model_validate(curr_user)
+        return get_current_user_public(session, curr_user)
 
     app.dependency_overrides[get_db] = test_db
     try:
@@ -58,16 +66,17 @@ def client(monkeypatch):
 
 @pytest.mark.parametrize("role", ["candidate", "employer"])
 def test_register_login_and_me_return_current_schema(client, role):
-    """两种角色注册与登录返回认证结构，签发的令牌可读取本人账户。"""
+    """两种角色的注册、登录和本人账户响应统一包含未完成状态。"""
     credentials = {"email": f"{role}@example.com", "password": "demo-password"}
     registered = client.post("/users/register", json=credentials | {"role": role})
     assert registered.status_code == 200
     assert set(registered.json()) == {"access_token", "token_type", "user"}
     assert registered.json()["token_type"] == "bearer"
     account = registered.json()["user"]
-    assert set(account) == {"id", "email", "role"}
+    assert set(account) == {"id", "email", "role", "profile_completed"}
     assert account["email"] == credentials["email"]
     assert account["role"] == role
+    assert account["profile_completed"] is False
     signup_headers = {"Authorization": f"Bearer {registered.json()['access_token']}"}
     signup_me = client.get("/users/me", headers=signup_headers)
     assert signup_me.status_code == 200
@@ -280,6 +289,144 @@ def register_profile_user(client, role="candidate", email="candidate@example.com
     )
     assert response.status_code == 200
     return response.json()
+
+
+@pytest.mark.parametrize(
+    "role, payload",
+    [
+        ("candidate", {"display_name": "Alice"}),
+        ("employer", {"company_name": "Demo Company"}),
+    ],
+)
+def test_me_refreshes_profile_status_after_creating_minimal_profile(client, role, payload):
+    """仅填写名称即完成资料，原 Token 查询和再次登录均返回最新状态。"""
+    auth = register_profile_user(client, role=role)
+    headers = {"Authorization": f"Bearer {auth['access_token']}"}
+    before = client.get("/users/me", headers=headers)
+    assert before.status_code == 200
+    assert before.json() == auth["user"] | {"profile_completed": False}
+
+    created = client.post(f"/users/{role}/profile", json=payload, headers=headers)
+    assert created.status_code == 201
+    if role == "candidate":
+        assert created.json()["resume_text"] == ""
+        assert created.json()["skills"] == []
+    else:
+        assert created.json()["company_description"] == ""
+
+    after = client.get("/users/me", headers=headers)
+    assert after.status_code == 200
+    assert after.json() == auth["user"] | {"profile_completed": True}
+
+    logged_in = client.post(
+        "/users/login", json={"email": auth["user"]["email"], "password": "demo"}
+    )
+    assert logged_in.status_code == 200
+    assert set(logged_in.json()) == {"access_token", "token_type", "user"}
+    assert logged_in.json()["user"] == after.json()
+    login_headers = {"Authorization": f"Bearer {logged_in.json()['access_token']}"}
+    assert client.get("/users/me", headers=login_headers).json() == after.json()
+
+
+@pytest.mark.parametrize("role", ["candidate", "employer"])
+def test_me_ignores_other_users_profiles_and_client_supplied_owner(client, role):
+    """他人资料和请求中伪造的用户 ID 都不影响本人完成状态。"""
+    auth = register_profile_user(client, role=role)
+    other = register_profile_user(client, role=role, email="other@example.com")
+    other_headers = {"Authorization": f"Bearer {other['access_token']}"}
+    payload = (
+        {"display_name": "Other", "resume_text": "Private resume"}
+        if role == "candidate"
+        else {"company_name": "Other Company"}
+    )
+    assert client.post(
+        f"/users/{role}/profile", json=payload, headers=other_headers
+    ).status_code == 201
+
+    response = client.get(
+        "/users/me",
+        params={"user_id": other["user"]["id"]},
+        headers={"Authorization": f"Bearer {auth['access_token']}"},
+    )
+    assert response.status_code == 200
+    assert response.json() == auth["user"] | {"profile_completed": False}
+    assert client.get("/users/me", headers=other_headers).json() == other["user"] | {
+        "profile_completed": True
+    }
+
+
+@pytest.mark.parametrize("role", ["candidate", "employer"])
+def test_me_only_counts_profile_matching_current_role(client, role):
+    """隔离库中的错配角色资料不会被计为当前角色资料已完成。"""
+    import uuid
+
+    from app.users.model import CandidateProfile, EmployerProfile
+
+    auth = register_profile_user(client, role=role)
+    user_id = uuid.UUID(auth["user"]["id"])
+    wrong_profile = (
+        EmployerProfile(user_id=user_id, company_name="Wrong role")
+        if role == "candidate"
+        else CandidateProfile(user_id=user_id, display_name="Wrong role")
+    )
+    with Session(client.app.state.test_engine) as session:
+        session.add(wrong_profile)
+        session.commit()
+
+    response = client.get(
+        "/users/me", headers={"Authorization": f"Bearer {auth['access_token']}"}
+    )
+    assert response.status_code == 200
+    assert response.json() == auth["user"] | {"profile_completed": False}
+
+
+@pytest.mark.parametrize("identity", ["expired", "missing_account"])
+def test_me_rejects_expired_token_or_missing_account(client, identity):
+    """过期令牌及不存在的账户均返回 401，不泄露资料完成状态。"""
+    import jwt
+
+    from app.core.config import settings
+    from app.users.model import utc_now
+    from app.users.security import create_access_token
+
+    if identity == "expired":
+        auth = register_profile_user(client)
+        token = jwt.encode(
+            {"sub": auth["user"]["email"], "exp": int(utc_now().timestamp()) - 60},
+            settings.SECRET_KEY,
+            algorithm=settings.ALGORITHM,
+        )
+    else:
+        token = create_access_token("missing@example.com")
+
+    response = client.get("/users/me", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 401
+    assert "profile_completed" not in response.json()
+
+
+@pytest.mark.parametrize("role", ["candidate", "employer"])
+def test_me_does_not_treat_database_failure_as_incomplete_profile(client, monkeypatch, role):
+    """资料查询失败应返回服务端错误，不能伪装为资料未填写。"""
+    from sqlalchemy.exc import SQLAlchemyError
+
+    from app.users.model import CandidateProfile, EmployerProfile
+
+    auth = register_profile_user(client, role=role)
+    original_get = Session.get
+
+    def failed_profile_get(session, entity, ident, **kwargs):
+        """仅模拟资料查询故障，保留真实 Token 认证及账户查询。"""
+        if entity in (CandidateProfile, EmployerProfile):
+            raise SQLAlchemyError("Simulated profile query failure")
+        return original_get(session, entity, ident, **kwargs)
+
+    monkeypatch.setattr(Session, "get", failed_profile_get)
+    with TestClient(client.app, raise_server_exceptions=False) as failing_client:
+        response = failing_client.get(
+            "/users/me", headers={"Authorization": f"Bearer {auth['access_token']}"}
+        )
+    assert response.status_code == 500
+    assert "profile_completed" not in response.text
 
 
 @pytest.mark.parametrize("with_content", [False, True])

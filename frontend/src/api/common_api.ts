@@ -1,7 +1,29 @@
-import type { UserPublic, Token} from '../types'
+import type {
+    AuthResponse,
+    CandidateProfileCreate,
+    CandidateProfilePublic,
+    EmployerProfileCreate,
+    EmployerProfilePublic,
+    Role,
+    Token,
+    UserPublic,
+} from '../types'
 
 const API_BASE_URL = 'http://127.0.0.1:8000/'
 
+/** 保留 HTTP 状态码，供页面区分资料重复创建等业务错误。 */
+export class ApiError extends Error {
+    readonly status: number
+
+    /** 保存服务端消息和状态码，兼容现有 Error 错误处理。 */
+    constructor(message: string, status: number) {
+        super(message)
+        this.name = 'ApiError'
+        this.status = status
+    }
+}
+
+/** 解析服务端错误消息，并保留状态码供页面决定恢复方式。 */
 async function showError(response: Response){
     if (!response.ok) {
         const error = await response.json().catch(() => null)
@@ -19,7 +41,7 @@ async function showError(response: Response){
             message = `Request failed with status ${response.status}`
         }
 
-        throw new Error(message)
+        throw new ApiError(message, response.status)
     }
 }
 
@@ -103,11 +125,16 @@ export async function fileRequest<T>(
     return response.json() as Promise<T>
 }
 
-export async function login(email: string, password: string): Promise<Token> {
-    const response = await request<Token>('users/login', 'POST', {}, {
+/** JSON 登录，保存 Token，并返回后端提供的账户信息。 */
+export async function login(
+    email: string,
+    password: string,
+    remember_me = false,
+): Promise<AuthResponse> {
+    const response = await request<AuthResponse>('users/login', 'POST', {}, {
             "email": email,
             "password": password,
-            "remember_me": false
+            "remember_me": remember_me
         }
     )
     localStorage.setItem('token', response.access_token)
@@ -118,21 +145,59 @@ export async function logout(): Promise<void> {
     localStorage.removeItem('token')
 }
 
+/** 读取账户公开信息；供认证上下文恢复登录状态。 */
+export async function getUserPublic(): Promise<UserPublic> {
+    return requestWithToken<UserPublic>('users/me', 'GET')
+}
+
+// 保留模板原来的名称，两个函数均对应 GET /users/me。
 export async function getCurrentUser(): Promise<UserPublic> {
-    const token = localStorage.getItem('token')
-    if (!token) {
-        throw new Error('No token found')
-    }
-    const response = await request<UserPublic>('users/me', 'GET', 
-        { 'Authorization': `Bearer ${token}` }
-    )
+    return getUserPublic()
+}
+
+/** 注册时只提交账户信息；成功后保存 Token，供后续填写资料使用。 */
+export async function createUser(
+    email: string,
+    password: string,
+    role: Role,
+): Promise<AuthResponse> {
+    const response = await request<AuthResponse>('users/register', 'POST', {}, {
+        "email": email,
+        "password": password,
+        "role": role
+    })
+    localStorage.setItem('token', response.access_token)
     return response
 }
 
-export async function createUser(email: string, password: string): Promise<void> {
-    const response = await request<void>('users/register', 'POST', {}, {
-        "email": email,
-        "password": password
+/** OAuth2 表单认证；与 Swagger 一致，username 字段实际传邮箱。 */
+export async function loginForAccessToken(email: string, password: string): Promise<Token> {
+    const body = new URLSearchParams({ username: email, password })
+    const response = await fetch(`${API_BASE_URL}users/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
     })
-    return response
+    await showError(response)
+    const token: Token = await response.json()
+    localStorage.setItem('token', token.access_token)
+    return token
+}
+
+/** 首次保存当前候选人的资料；简历、技能可以省略。 */
+export async function createCandidateProfile(
+    profile: CandidateProfileCreate,
+): Promise<CandidateProfilePublic> {
+    return requestWithToken<CandidateProfilePublic>(
+        'users/candidate/profile', 'POST', {}, profile,
+    )
+}
+
+/** 首次保存当前雇主的公司资料；公司描述可以省略。 */
+export async function createEmployerProfile(
+    profile: EmployerProfileCreate,
+): Promise<EmployerProfilePublic> {
+    return requestWithToken<EmployerProfilePublic>(
+        'users/employer/profile', 'POST', {}, profile,
+    )
 }

@@ -1,5 +1,26 @@
 # 用户模块进度
 
+## 2026-10-15：统一 UserPublic，移除额外继承
+
+- 用户明确要求直接修改 UserPublic，删除上一步引入的 CurrentUserPublic；本轮统一修正注册、登录及 /me 的共享响应与必要调用方，状态：隔离接口验证通过。以下“第一步”为历史记录，当前以本节为准。
+- UserPublic 增加必填 profile_completed: bool，三个接口复用 get_current_user_public 实时查询对应角色资料，不添加默认 false 来掩盖漏算，也不新增数据库字段。
+- 已同步真实路由测试中的角色依赖测试入口、统一响应断言，并补充最少字段创建资料后再次登录与 /me 状态一致的验证；同步设计文档。前端保持原样。
+- 实际验证：SYManage 解释器在 backend 目录执行 `python -m pytest tests/users/test_account_responses.py -q`，50 passed；项目根目录对 schema.py、service.py、router.py、test_account_responses.py 执行 Ruff 检查，以及 `git diff --check -- backend docs` 均通过，已复核最终代码及 diff。
+- 覆盖两种角色注册返回 false、未完成资料时登录返回 false、仅填名称后重新登录及原 Token 读取 /me 均返回 true，以及既有认证 / 角色 / 所有权 / 资料接口回归。只使用隔离 SQLite，未连接业务 PostgreSQL；仍有一项现有 TestClient 弃用警告。旧 test_schema.py 的更新类型导入问题未处理，未运行完整套件。
+- 后端本次完成状态响应已统一；后续处理前端共享类型、AuthContext、注册 / 登录导航及资料填写页面。
+
+## 2026-10-15：本人账户资料完成状态（第一步）
+
+- 用户确认注册后填写角色资料、登录时检查资料完成状态的方案，要求分步完成，本轮仅处理后端。
+- 当前接口：GET /users/me；状态：隔离接口验证通过。新增 CurrentUserPublic，继承现有 UserPublic 并增加必填 profile_completed: bool，注册 / 登录响应暂时保持现状，后续步骤再统一。
+- 已确认规则：按认证用户的 role 和 id 查询对应角色资料，记录存在即为完成；现有创建接口已保证显示名称 / 公司名称非空，简历、技能及公司描述可空。不新增数据库列，不在 JWT 中保存完成状态。
+- 已修改 schema.py、service.py、router.py、tests/users/test_account_responses.py 及 docs/数据模型设计.md：service 中 get_current_user_public 查询并组装响应，router 仅接收依赖及调用服务。未修改前端、数据库模型及 JWT。
+- 已核对项目解释器：C:/Users/10677/miniconda3/envs/SYManage/python.exe，Python 3.12.13、SQLModel 0.0.38、Pydantic 2.13.4、FastAPI 0.138.0、pytest 8.4.2、Ruff 0.15.18。
+- 实际验证：在 backend 目录用上述解释器执行 `python -m pytest tests/users/test_account_responses.py -q`，50 passed（本次新增 10 项，既有回归 40 项）。覆盖两种角色最少字段创建前后状态、相同 Token 读取最新状态、其他用户资料 / 伪造 user_id 隔离、错配角色资料排除、缺失 / 无效 / 过期 Token、不存在账户，以及资料查询故障返回 500 而非 false。
+- 静态验证：项目根目录执行 `python -m ruff check backend/app/users/schema.py backend/app/users/service.py backend/app/users/router.py backend/tests/users/test_account_responses.py` 及 `git diff --check` 均通过，已复核本次 diff。测试有一项现有 Starlette TestClient 关于 httpx 的弃用警告，不影响本次通过结果。
+- 测试范围：仅连接隔离 SQLite，未连接业务 PostgreSQL，未验证生产数据库运行；没有替换认证依赖。/me 不接收业务输入，非法业务字段验证不适用；两种角色均允许访问，越权通过只返回认证用户信息及排除他人 / 错配资料验证。不存在账户返回 401，缺少资料属于正常情况并返回 false。
+- 遗留及下一步：逐步将登录、注册响应接入相同完成状态，然后再处理前端登录态及路由。旧 test_schema.py 仍导入当前已注释的更新 schema，本步未运行该文件或完整套件，未恢复这些范围外功能。
+
 ## 2026-10-06：用户数据库模型
 
 - 范围：按用户明确授权，仅实现 model.py 的用户模型，其他业务模型写入 docs/数据模型设计.md。
