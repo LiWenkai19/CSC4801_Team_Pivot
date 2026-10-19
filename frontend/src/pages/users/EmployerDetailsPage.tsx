@@ -5,9 +5,9 @@ import { useAuth } from '../../contexts/AuthContext'
 import type { EmployerProfileCreate } from '../../types'
 import EmployerForm from './EmployerForm'
 
-/** 为已登录雇主首次保存公司资料，并刷新全局账户状态。 */
+/** 为雇主首次保存公司资料，支持未完成资料时直接退出登录。 */
 function EmployerDetailsPage() {
-    const { currentUser, loading, refreshCurrentUser } = useAuth()
+    const { currentUser, loading, refreshCurrentUser, logout } = useAuth()
     const [submitting, setSubmitting] = useState(false)
     const [submitError, setSubmitError] = useState('')
     const [profileSaved, setProfileSaved] = useState(false)
@@ -69,6 +69,9 @@ function EmployerDetailsPage() {
             ) : (
                 <EmployerForm submitting={submitting} submitError={submitError} onSubmit={handleSubmit} />
             )}
+            <button type="button" onClick={logout} disabled={submitting} style={{ marginTop: 16 }}>
+                退出登录
+            </button>
         </main>
     )
 }

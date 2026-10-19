@@ -5,9 +5,9 @@ import { useAuth } from '../../contexts/AuthContext'
 import type { CandidateProfileCreate } from '../../types'
 import CandidateForm from './CandidateForm'
 
-/** 为已登录候选人首次保存资料，并刷新全局账户状态。 */
+/** 为候选人首次保存资料，支持未完成资料时直接退出登录。 */
 function CandidateDetailsPage() {
-    const { currentUser, loading, refreshCurrentUser } = useAuth()
+    const { currentUser, loading, refreshCurrentUser, logout } = useAuth()
     const [submitting, setSubmitting] = useState(false)
     const [submitError, setSubmitError] = useState('')
     const [profileSaved, setProfileSaved] = useState(false)
@@ -69,6 +69,9 @@ function CandidateDetailsPage() {
             ) : (
                 <CandidateForm submitting={submitting} submitError={submitError} onSubmit={handleSubmit} />
             )}
+            <button type="button" onClick={logout} disabled={submitting} style={{ marginTop: 16 }}>
+                退出登录
+            </button>
         </main>
     )
 }
