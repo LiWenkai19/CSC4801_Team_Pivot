@@ -1,0 +1,60 @@
+{
+  "date": "2026-10-26",
+  "scope": [
+    "user",
+    "candidate_profile",
+    "candidate_skill",
+    "company",
+    "application",
+    "interview_slot"
+  ],
+  "excluded_tables": [
+    "employer_profile",
+    "job",
+    "job_skill",
+    "booking"
+  ],
+  "created_files": [
+    "backend/app/candidate/database/__init__.py",
+    "backend/app/candidate/database/__main__.py",
+    "backend/app/candidate/database/migration.py",
+    "backend/app/candidate/database/migrations/env.py",
+    "backend/app/candidate/database/migrations/versions/owned_core_001.py",
+    "backend/app/candidate/database/migrations/versions/owned_flow_002.py",
+    "backend/app/candidate/database/model.py",
+    "backend/candidate_tests/test_owned_database.py",
+    "docs/CANDIDATE_DATABASE.md",
+    "docs/CANDIDATE_DATABASE_POSTGRESQL.sql",
+    "docs/CANDIDATE_DATABASE_VALIDATION.json"
+  ],
+  "updated_assistant_owned_files": [
+    "docs/CANDIDATE_FILES.json",
+    "docs/CANDIDATE_PROGRESS.md"
+  ],
+  "local_database": "backend/data/owned_schema.sqlite3",
+  "revision": "owned_flow_002",
+  "database_tests": {
+    "passed": 21
+  },
+  "candidate_suite": {
+    "passed": 124,
+    "skipped": 1,
+    "seconds": 10.93,
+    "warning": "Existing Starlette/httpx deprecation"
+  },
+  "candidate_suite_command": ".venv/Scripts/python.exe -m pytest -c pytest.candidate.ini -q --tb=short --basetemp backend/data/pytest-regression-20261026-853e79a7",
+  "migration_check": "No new upgrade operations detected",
+  "sqlite_integrity": "ok",
+  "sqlite_foreign_keys": true,
+  "local_business_rows": 0,
+  "upstream_files_unchanged": 88,
+  "ruff": "passed",
+  "postgresql_ddl": "offline generation and scope assertions passed",
+  "postgresql_execution": "not verified; Docker engine unavailable and no target URL configured",
+  "application_database_switched": false,
+  "remaining_integration": [
+    "External employer_profile and job tables",
+    "Teammate company_id foreign keys",
+    "Shared API/config/migration integration"
+  ]
+}

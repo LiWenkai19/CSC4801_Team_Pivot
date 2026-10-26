@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>技能标签组件预览</title>
+  </head>
+  <body>
+    <main id="preview" style="max-width:560px;margin:32px auto;padding:20px;box-sizing:border-box"></main>
+    <script type="module">
+      import React, { useState } from 'react';
+      import { createRoot } from 'react-dom/client';
+      import '../src/index.css';
+      import CandidateForm from '../src/pages/users/CandidateForm.tsx';
+      import { SkillTagPicker } from '../src/components/skills/SkillTagPicker.tsx';
+
+      function Preview() {
+        const [skills, setSkills] = useState(['python']);
+        const [message, setMessage] = useState('');
+        return React.createElement(React.Fragment, null,
+          React.createElement('h1', { style: { fontSize: '28px', margin: '0 0 12px' } }, '技能标签组件预览'),
+          React.createElement('p', { style: { marginBottom: '24px' } }, '本页仅预览组件，不连接或保存到数据库。'),
+          React.createElement('h2', null, '候选人资料'),
+          React.createElement(CandidateForm, { submitting: false, submitError: '',
+            initialProfile: { display_name: '预览候选人', resume_text: '', skills: ['python'], user_id: 'preview' },
+            onSubmit: async data => setMessage(`预览提交技能：${data.skills.join('、') || '无'}`) }),
+          React.createElement('p', { role: 'status', style: { margin: '16px 0 32px' } }, message),
+          React.createElement('h2', null, '雇主职位技能组件'),
+          React.createElement(SkillTagPicker, { value: skills, onChange: setSkills, label: '职位所需技能' }));
+      }
+      createRoot(document.getElementById('preview')).render(React.createElement(Preview));
+    </script>
+  </body>
+</html>

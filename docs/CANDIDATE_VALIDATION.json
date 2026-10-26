@@ -1,0 +1,62 @@
+{
+  "upstream_commit": "8486388c4bb839149654d820b99b644fdb983e6f",
+  "protected_upstream_files": 88,
+  "candidate_backend": {
+    "passed": 103,
+    "skipped": 1
+  },
+  "team_account_backend": {
+    "passed": 50
+  },
+  "frontend_build": "passed",
+  "frontend_lint": "passed",
+  "react_xss": {
+    "passed": 1
+  },
+  "chromium": {
+    "passed": 6
+  },
+  "ruff": "passed",
+  "pip_check": "passed",
+  "preview_smoke": "passed",
+  "not_verified": [
+    "PostgreSQL concurrency",
+    "Docker",
+    "remote CI"
+  ],
+  "committed_or_pushed": false,
+  "reverification": {
+    "upstream_git_object_comparison": {
+      "passed": true,
+      "file_count": 88,
+      "manifest_coverage_complete": true
+    },
+    "candidate_backend": {
+      "passed": 103,
+      "skipped": 1
+    },
+    "team_account_backend": {
+      "passed": 50
+    },
+    "frontend_build": "passed",
+    "frontend_lint": "passed",
+    "react_xss_passed": 1,
+    "chromium_passed": 6,
+    "ruff": "passed",
+    "pip_check": "passed",
+    "preview_smoke": "passed",
+    "sqlite_migration_model_check": "passed",
+    "sqlite_tables": 10,
+    "sqlite_revision": "candidate_flow_001",
+    "sqlite_seeded_users_after_engine_reconnect": 5,
+    "full_repository_collection": {
+      "exit_code": 1,
+      "tests_collected": 171,
+      "errors": 1,
+      "cause": "Unchanged upstream backend/tests/users/test_schema.py imports CandidateProfileUpdate and EmployerProfileUpdate, commented out in app/users/schema.py"
+    },
+    "docker_engine": "unavailable: dockerDesktopLinuxEngine pipe missing",
+    "business_code_modified": false,
+    "teammate_files_modified": false
+  }
+}

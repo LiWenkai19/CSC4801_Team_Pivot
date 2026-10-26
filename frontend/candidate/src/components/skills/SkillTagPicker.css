@@ -1,0 +1,18 @@
+.skill-picker { min-width: 0; text-align: left; color: var(--text-h); margin-bottom: 20px; }
+.skill-picker-help, .skill-picker-notice { font-size: 14px; line-height: 1.5; color: var(--text); margin: 6px 0 10px; }
+.skill-picker-tags { list-style: none; padding: 0; margin: 12px 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.skill-picker-tags li { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; padding: 4px 4px 4px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
+.skill-picker-tags li span { overflow-wrap: anywhere; min-width: 0; }
+.skill-picker-tags button { padding: 2px 8px; min-width: 32px; min-height: 32px; border: 0; background: transparent; color: var(--text-h); font-size: 20px; cursor: pointer; }
+.skill-picker-search { position: relative; }
+.skill-picker-search input { display: block; width: 100%; min-height: 44px; padding: 10px 12px; box-sizing: border-box; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text-h); font: inherit; }
+.skill-picker input:focus-visible, .skill-picker button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.skill-picker-dropdown { position: absolute; z-index: 10; top: calc(100% + 6px); left: 0; right: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.skill-picker-dropdown ul { list-style: none; margin: 0; padding: 4px; max-height: 240px; overflow-y: auto; }
+.skill-picker-dropdown li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px; border-radius: 4px; cursor: pointer; overflow-wrap: anywhere; }
+.skill-picker-dropdown li span { min-width: 0; }
+.skill-picker-dropdown li[aria-selected="true"], .skill-picker-dropdown li:hover { background: var(--accent-bg); }
+.skill-picker-dropdown small { color: var(--text); font-size: 12px; flex-shrink: 0; }
+.skill-picker-dropdown p { padding: 12px; font-size: 14px; }
+.skill-picker-notice { margin-bottom: 0; min-height: 21px; }
+.skill-picker button:disabled, .skill-picker input:disabled { opacity: .6; cursor: not-allowed; }
