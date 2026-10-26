@@ -8,7 +8,7 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Connection
 
 CORE_REVISION = "owned_core_001"
-HEAD_REVISION = "owned_flow_002"
+HEAD_REVISION = "owned_booking_003"
 
 
 def config_for(connection: Connection | None = None, url: str | None = None) -> Config:

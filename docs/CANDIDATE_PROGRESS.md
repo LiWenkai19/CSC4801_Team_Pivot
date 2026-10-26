@@ -1,5 +1,13 @@
 # 候选人独立扩展进度
 
+## 2026-10-26：追加 Booking 数据库表
+
+- 用户明确要求将 Booking 也纳入数据库搭建范围；用户表扩为七张，队友范围保留 EmployerProfile、Job、JobSkill。没有修改共享模型或其他成员文件。
+- 独立模型增加 Booking：id、application_id、slot_id、created_at；后两项关联键分别具有唯一约束，并引用 Application、InterviewSlot。created_at 默认数据库当前时间，模型读取为 UTC。
+- 新增 owned_booking_003，接在 owned_flow_002 后，只创建 booking。已实际升级本地 owned_schema.sqlite3，原六张表和数据保留；模型差异检查没有待迁移项。
+- 本轮仅进行迁移、结构/完整性与静态检查，按项目台账安排不新增或运行正式测试样例。既有数据库测试夹具已同步七表范围；之前的完整测试通过数字不能作为本轮验收证据。
+- 预约业务仍需雇主/职位依赖接入、身份与状态校验及事务冲突处理；本轮没有接入运行服务或验证真实 PostgreSQL。说明与离线 SQL 已同步 CANDIDATE_DATABASE.md、CANDIDATE_DATABASE_POSTGRESQL.sql。
+
 ## 2026-10-26：职位推荐与占位评分（CAN-006）
 
 - 用户要求保存简历后获得按匹配分数降序的职位列表，算法暂占位、后续开发。原列表和排序已存在，本轮新增 `recommendation_scoring.py` 并将运行服务切换至统一 0 分；旧技能交集算法保留但不再由业务服务调用。

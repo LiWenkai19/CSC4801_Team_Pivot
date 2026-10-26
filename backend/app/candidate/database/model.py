@@ -20,10 +20,10 @@ from app.users.model import Role
 
 OWNED_TABLES = frozenset({
     "user", "candidate_profile", "candidate_skill", "company", "application",
-    "interview_slot",
+    "interview_slot", "booking",
 })
 CORE_TABLES = ("user", "candidate_profile", "candidate_skill", "company")
-EXTERNAL_TABLES = frozenset({"employer_profile", "job", "job_skill", "booking"})
+EXTERNAL_TABLES = frozenset({"employer_profile", "job", "job_skill"})
 
 
 def utc_now() -> datetime:
@@ -149,6 +149,19 @@ class InterviewSlot(OwnedModel, table=True):
     job_id: uuid.UUID | None = Field(default=None, foreign_key="job.id")
     starts_at: datetime = Field(sa_column=Column(UTCDateTime(), nullable=False))
     ends_at: datetime = Field(sa_column=Column(UTCDateTime(), nullable=False))
+    created_at: datetime = Field(default_factory=utc_now, sa_column=timestamp_column())
+
+
+class Booking(OwnedModel, table=True):
+    __tablename__ = "booking"
+    __table_args__ = (
+        UniqueConstraint("application_id", name="uq_booking_application"),
+        UniqueConstraint("slot_id", name="uq_booking_slot"),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    application_id: uuid.UUID = Field(foreign_key="application.id", nullable=False)
+    slot_id: uuid.UUID = Field(foreign_key="interview_slot.id", nullable=False)
     created_at: datetime = Field(default_factory=utc_now, sa_column=timestamp_column())
 
 

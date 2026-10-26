@@ -1,4 +1,4 @@
-"""验证六表迁移、数据完整性和队友表边界；所有写入均在临时数据库。"""
+"""验证七表迁移、数据完整性和队友表边界；所有写入均在临时数据库。"""
 
 import io
 import uuid
@@ -29,15 +29,15 @@ def database(tmp_path):
 
 
 def external_fixture(connection):
-    """仅测试中模拟队友交付的四张表，生产迁移从不创建它们。"""
-    for model in (team_users.EmployerProfile, team_flow.Job, team_flow.JobSkill, team_flow.Booking):
+    """仅测试中模拟队友交付的三张表，生产迁移从不创建它们。"""
+    for model in (team_users.EmployerProfile, team_flow.Job, team_flow.JobSkill):
         model.__table__.create(connection)
 
 
 def schema_snapshot(connection):
     return connection.execute(text(
         "SELECT name, sql FROM sqlite_master WHERE tbl_name IN "
-        "('employer_profile', 'job', 'job_skill', 'booking') ORDER BY name"
+        "('employer_profile', 'job', 'job_skill') ORDER BY name"
     )).all()
 
 
@@ -69,7 +69,7 @@ def integrated(database):
     return database, candidate_id, employer_id, job_id
 
 
-def test_empty_database_creates_exactly_six_owned_tables(database):
+def test_empty_database_creates_exactly_seven_owned_tables(database):
     with database.begin() as connection:
         original_metadata = set(SQLModel.metadata.tables)
         upgrade(connection)
@@ -237,7 +237,7 @@ def test_postgresql_offline_sql_creates_only_owned_tables():
     sql = output.getvalue()
     for name in OWNED_TABLES:
         assert f'CREATE TABLE {name} (' in sql or f'CREATE TABLE "{name}" (' in sql
-    for name in ("employer_profile", "job", "job_skill", "booking"):
+    for name in ("employer_profile", "job", "job_skill"):
         assert f"CREATE TABLE {name} " not in sql
         assert f"ALTER TABLE {name} " not in sql
     assert "INTERVAL '30 minutes'" in sql

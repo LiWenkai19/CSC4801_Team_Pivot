@@ -104,4 +104,20 @@ CREATE TRIGGER owned_application_updated_at
 
 UPDATE alembic_owned_version SET version_num='owned_flow_002' WHERE alembic_owned_version.version_num = 'owned_core_001';
 
+-- Running upgrade owned_flow_002 -> owned_booking_003
+
+CREATE TABLE booking (
+    id UUID NOT NULL,
+    application_id UUID NOT NULL,
+    slot_id UUID NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT uq_booking_application UNIQUE (application_id),
+    CONSTRAINT uq_booking_slot UNIQUE (slot_id),
+    FOREIGN KEY(application_id) REFERENCES application (id),
+    FOREIGN KEY(slot_id) REFERENCES interview_slot (id)
+);
+
+UPDATE alembic_owned_version SET version_num='owned_booking_003' WHERE alembic_owned_version.version_num = 'owned_flow_002';
+
 COMMIT;

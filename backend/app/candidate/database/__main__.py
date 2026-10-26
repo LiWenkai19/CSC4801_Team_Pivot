@@ -12,7 +12,7 @@ from app.candidate.database.model import EXTERNAL_TABLES, OWNED_TABLES
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description="建立用户负责的六张表，不创建队友表")
+    parser = argparse.ArgumentParser(description="建立用户负责的七张表，不创建队友表")
     parser.add_argument("action", choices=["init", "check", "status"])
     parser.add_argument("--phase", choices=["core", "full"], default="full")
     args = parser.parse_args(argv)
@@ -38,7 +38,7 @@ def main(argv=None) -> int:
             missing = {"employer_profile", "job"} - names
             if missing:
                 print("External dependencies pending: " + ", ".join(sorted(missing)))
-                print("SQLite schema exists; applications/slots require teammate tables before use.")
+                print("SQLite schema exists; applications/slots/bookings require teammate tables before use.")
             print("Existing external tables left unchanged: " + ", ".join(sorted(names & EXTERNAL_TABLES)))
     finally:
         engine.dispose()

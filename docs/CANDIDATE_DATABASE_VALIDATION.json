@@ -6,19 +6,20 @@
     "candidate_skill",
     "company",
     "application",
-    "interview_slot"
+    "interview_slot",
+    "booking"
   ],
   "excluded_tables": [
     "employer_profile",
     "job",
-    "job_skill",
-    "booking"
+    "job_skill"
   ],
   "created_files": [
     "backend/app/candidate/database/__init__.py",
     "backend/app/candidate/database/__main__.py",
     "backend/app/candidate/database/migration.py",
     "backend/app/candidate/database/migrations/env.py",
+    "backend/app/candidate/database/migrations/versions/owned_booking_003.py",
     "backend/app/candidate/database/migrations/versions/owned_core_001.py",
     "backend/app/candidate/database/migrations/versions/owned_flow_002.py",
     "backend/app/candidate/database/model.py",
@@ -32,29 +33,63 @@
     "docs/CANDIDATE_PROGRESS.md"
   ],
   "local_database": "backend/data/owned_schema.sqlite3",
-  "revision": "owned_flow_002",
-  "database_tests": {
-    "passed": 21
-  },
-  "candidate_suite": {
-    "passed": 124,
-    "skipped": 1,
-    "seconds": 10.93,
-    "warning": "Existing Starlette/httpx deprecation"
-  },
-  "candidate_suite_command": ".venv/Scripts/python.exe -m pytest -c pytest.candidate.ini -q --tb=short --basetemp backend/data/pytest-regression-20261026-853e79a7",
+  "revision": "owned_booking_003",
   "migration_check": "No new upgrade operations detected",
   "sqlite_integrity": "ok",
   "sqlite_foreign_keys": true,
   "local_business_rows": 0,
   "upstream_files_unchanged": 88,
   "ruff": "passed",
-  "postgresql_ddl": "offline generation and scope assertions passed",
+  "postgresql_ddl": "Offline generation includes booking and excludes teammate table creation; not executed against PostgreSQL",
   "postgresql_execution": "not verified; Docker engine unavailable and no target URL configured",
   "application_database_switched": false,
   "remaining_integration": [
     "External employer_profile and job tables",
     "Teammate company_id foreign keys",
     "Shared API/config/migration integration"
-  ]
+  ],
+  "historical_validation_owned_flow_002": {
+    "database_tests": {
+      "passed": 21
+    },
+    "candidate_suite": {
+      "passed": 124,
+      "skipped": 1,
+      "seconds": 10.93,
+      "warning": "Existing Starlette/httpx deprecation"
+    },
+    "candidate_suite_command": ".venv/Scripts/python.exe -m pytest -c pytest.candidate.ini -q --tb=short --basetemp backend/data/pytest-regression-20261026-853e79a7"
+  },
+  "booking_update": {
+    "authorization": "User explicitly added Booking to the database scope on 2026-10-26",
+    "migration": "Existing local database upgraded from owned_flow_002 to owned_booking_003",
+    "columns": [
+      "id",
+      "application_id",
+      "slot_id",
+      "created_at"
+    ],
+    "unique_constraints": [
+      [
+        "application_id"
+      ],
+      [
+        "slot_id"
+      ]
+    ],
+    "foreign_keys": {
+      "application_id": "application.id",
+      "slot_id": "interview_slot.id"
+    },
+    "created_at_default": "CURRENT_TIMESTAMP",
+    "model_difference_check": "No new upgrade operations detected",
+    "sqlite_integrity": "ok",
+    "foreign_key_issues": [],
+    "business_rows": 0,
+    "ruff": "passed",
+    "upstream_files_unchanged": 88,
+    "formal_tests": "Not added or executed; deferred per current project ledger",
+    "existing_test_maintenance": "Updated external-table fixtures and table counts only",
+    "postgresql": "Offline DDL regenerated; actual PostgreSQL execution not verified"
+  }
 }
