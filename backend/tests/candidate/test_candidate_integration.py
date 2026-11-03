@@ -105,10 +105,15 @@ def test_application_rejects_client_owned_identity_or_status(flow, payload):
 @pytest.mark.parametrize("minutes", [15, 60])
 def test_malformed_slot_is_hidden_and_cannot_be_booked(flow, minutes):
     with Session(flow["engine"]) as session:
-        slot = session.get(InterviewSlot, flow["slots"][0])
-        slot.ends_at = slot.starts_at + timedelta(minutes=minutes)
-        session.add(slot)
-        session.commit()
+        # 模拟旧数据库中已有的不合规时段，仅在隔离 SQLite 夹具中临时关闭 CHECK。
+        session.connection().exec_driver_sql("PRAGMA ignore_check_constraints=ON")
+        try:
+            slot = session.get(InterviewSlot, flow["slots"][0])
+            slot.ends_at = slot.starts_at + timedelta(minutes=minutes)
+            session.add(slot)
+            session.commit()
+        finally:
+            session.connection().exec_driver_sql("PRAGMA ignore_check_constraints=OFF")
     base = f"/candidate/applications/{flow['applications'][0]}"
     headers = flow["headers"][0]
     assert flow["client"].get(base + "/slots", headers=headers).json() == []
@@ -156,3 +161,62 @@ def test_existing_application_remains_visible_if_job_hidden_and_all_statuses(flo
             session.commit()
         rows = client.get("/candidate/applications", headers=headers).json()
         assert rows[0]["status"] == status.value and rows[0]["title"] == "alpha"
+
+
+# 共享入口及迁移整合回归。
+def test_shared_entrypoint_routes_and_permissions(flow):
+    from fastapi.testclient import TestClient
+    from app.db.session import get_safe_db
+    from app.db.session import get_db
+    from app.main import app
+
+    previous_override = app.dependency_overrides.get(get_db)
+    def isolated_db():
+        with Session(flow['engine']) as session:
+            yield session
+
+    app.dependency_overrides[get_db] = isolated_db
+    try:
+        with TestClient(app) as client:
+            assert client.get('/candidate/jobs').status_code == 401
+            response = client.get('/candidate/jobs', headers=flow['headers'][0])
+            assert response.status_code == 200
+            assert client.get('/users/me', headers=flow['headers'][0]).json()['profile_completed']
+            assert client.get(f"/users/candidates/{flow['ids'][1]}/profile",
+                              headers=flow['headers'][0]).status_code == 403
+        paths = [(route.path, method) for route in app.routes if hasattr(route, 'methods')
+                 for method in route.methods]
+        assert len(paths) == len(set(paths))
+    finally:
+        app.dependency_overrides[get_db] = previous_override or get_safe_db
+
+
+def test_shared_models_create_tables_without_migrations(flow):
+    from sqlalchemy import inspect
+    engine = flow["engine"]
+    tables = set(inspect(engine).get_table_names())
+    assert {"user", "candidate_profile", "employer_profile", "company", "job",
+            "job_skill", "application", "interview_slot", "booking"} <= tables
+    for table, names in {"candidate_profile": {"updated_at"},
+                         "application": {"created_at", "updated_at"},
+                         "interview_slot": {"created_at"}, "booking": {"created_at"}}.items():
+        assert names <= {column["name"] for column in inspect(engine).get_columns(table)}
+
+
+def test_shared_schema_initialization_is_repeatable(tmp_path):
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+    from sqlalchemy import create_engine, inspect
+
+    root = Path(__file__).resolve().parents[3]
+    env = os.environ.copy()
+    env["DATABASE_URL"] = "sqlite:///" + (tmp_path / "shared.sqlite").as_posix()
+    code = "from app.db.session import init_shared_schema; init_shared_schema(); init_shared_schema()"
+    subprocess.run([sys.executable, "-c", code], cwd=root, env=env, check=True)
+    engine = create_engine(env["DATABASE_URL"])
+    try:
+        assert {"candidate_profile", "company", "application", "interview_slot", "booking"} <= set(inspect(engine).get_table_names())
+    finally:
+        engine.dispose()

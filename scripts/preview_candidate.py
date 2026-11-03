@@ -66,7 +66,7 @@ def main():
         with log.open('w', encoding='utf-8') as output:
             try:
                 hidden = subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
-                api = subprocess.Popen([sys.executable, 'backend/candidate_tests/browser_server.py', '--port', '18019'],
+                api = subprocess.Popen([sys.executable, 'backend/tests/candidate/browser_server.py', '--port', '18019'],
                                        cwd=ROOT, stdout=output, stderr=subprocess.STDOUT, creationflags=hidden)
                 processes.append(api)
                 wait_ready('http://127.0.0.1:18019/openapi.json', api, log)

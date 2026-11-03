@@ -56,10 +56,10 @@
 
 ## 复现证据与命令
 
-[后端审计诊断](../backend/candidate_tests/audit_reproduction.py)仅显式执行：
+[后端审计诊断](../backend/tests/candidate/audit_reproduction.py)仅显式执行：
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest -c pytest.candidate.ini backend/candidate_tests/audit_reproduction.py -q -s
+.\.venv\Scripts\python.exe -m pytest -c pytest.candidate.ini backend/tests/candidate/audit_reproduction.py -q -s
 ```
 
 观察结果为4项诊断成功：SQL日志暴露虚构简历、4/24职位对应16/76条SQL、模拟注册唯一性冲突返回500、接受140000字符和1000项技能。此文件名没有test_前缀，不自动加入正常回归；修复后需要将相应安全预期编写为新的回归测试，而非继续期待错误存在。

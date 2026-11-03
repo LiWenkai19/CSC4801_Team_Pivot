@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const generation = useRef(0);
 
   function clearSession(removeToken = true) {
+    // generation 使之前发出的请求结果失效；参数为 false 时只清当前页状态。
     generation.current++;
     if (removeToken) localStorage.removeItem("token");
     setCurrentUser(null);
@@ -44,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
+    // 页面初始化时验证保存的令牌；仅在组件仍存在且会话版本未变化时使用结果。
     let active = true;
     const version = generation.current;
     const token = localStorage.getItem("token");
@@ -61,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     // API 的 401 与其他标签页换账户，都必须清除当前页旧的私有资料。
     function storageChanged(event: StorageEvent) {
+      // localStorage 在标签页之间共享：别的页面换账户时不能顺手删掉它的新令牌。
       if (event.key === "token" || event.key === null) clearSession(false);
     }
     const expired = () => clearSession();
@@ -77,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function authenticate(
     operation: () => Promise<AuthResponse>,
   ): Promise<AuthDestination> {
+    // 开始新认证时记录版本；如果登录期间发生注销或切换账户，丢弃迟到的结果。
     const version = ++generation.current;
     setLoading(true);
     setCurrentUser(null);
@@ -84,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await operation();
       if (version !== generation.current)
         throw new Error("登录状态已变化，请重新登录。");
+      // 认证仍有效时才写共享令牌和当前页用户，然后根据资料完成状态决定去向。
       localStorage.setItem("token", response.access_token);
       setCurrentUser(response.user);
       return getAuthDestination(response.user);
@@ -108,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /** 刷新完成状态不触发全局 loading，避免销毁仍需保留输入的表单。 */
   async function refreshCurrentUser() {
+    // 记录请求开始时的版本和令牌；异步返回时任一发生变化就不能覆盖新身份。
     const version = generation.current;
     const token = localStorage.getItem("token");
     const user = await getCurrentUser();

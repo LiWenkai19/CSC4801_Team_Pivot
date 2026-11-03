@@ -231,3 +231,9 @@ export async function createEmployerProfile(
     profile,
   );
 }
+
+
+/** 候选人请求复用统一认证请求，默认使用 GET。 */
+export function candidateRequest<T>(path: string, method: "GET" | "POST" | "PATCH" = "GET", body?: unknown): Promise<T> {
+  return requestWithToken<T>(path, method, {}, body);
+}

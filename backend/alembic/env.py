@@ -6,6 +6,7 @@ from sqlalchemy import pool
 
 from app.core.config import settings
 from app.users import model  # noqa: F401 -- 注册用户模型到 SQLModel.metadata。
+from app.candidate import model as candidate_model  # noqa: F401 -- 注册候选人业务模型。
 from alembic import context
 from sqlmodel import SQLModel
 # this is the Alembic Config object, which provides
@@ -14,7 +15,7 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-if config.config_file_name is not None:
+if config.config_file_name is not None and config.file_config.has_section("loggers"):
     fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
