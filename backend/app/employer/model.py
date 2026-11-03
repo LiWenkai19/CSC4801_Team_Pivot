@@ -3,11 +3,11 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, CheckConstraint, Column, Text, false, func
+from sqlalchemy import Boolean, CheckConstraint, Column, DateTime, Text, false, func
 from sqlalchemy.orm import registry
 from sqlmodel import Field, Relationship, SQLModel
 
-from app.candidate.database.model import UTCDateTime, utc_now
+from app.users.model import utc_now
 
 
 class EmployerModel(SQLModel, registry=registry()):
@@ -17,7 +17,9 @@ class EmployerModel(SQLModel, registry=registry()):
 def timestamp_column():
     """带时区、数据库默认当前时间的非空时间列。"""
     return Column(
-        UTCDateTime(), nullable=False, server_default=func.current_timestamp()
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp(),
     )
 
 

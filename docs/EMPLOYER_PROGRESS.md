@@ -148,3 +148,17 @@ Git 未配置 `user.name` / `user.email`；实现完成后由用户在本机配�
 - 本轮不实现前端、面试时段管理与匹配分数。
 - 组员种子数据需要补 `company_id`，详见 `docs/EMPLOYER_INTEGRATION.md`。
 - 组员 `frontend/candidate` 的 `common_api.ts` 尚不支持 PATCH 与 204 空响应。
+
+## 2026-11-03：合并到 main 入口（分支 employer-main-merge）
+
+基线：candidate 的 68a1dfe。改动：main.py 挂载雇主路由；adapters.py 改从 app.candidate.model 取共享模型；model.py 去掉对已删除模块的依赖；删除 employer_main.py 与 app/employer/database；新增迁移 employer_002；测试夹具改用团队 alembic 链；新增 test_main_app.py；归属脚本基线改为 68a1dfe。
+
+实际结果：
+- `python -m pytest -c pytest.employer.ini -q`：32 passed。
+- Ruff（employer、employer_tests、归属脚本、employer_002）：All checks passed。
+- `python scripts/check_employer_ownership.py`：通过。
+- PostgreSQL 离线 DDL（alembic upgrade head --sql）：已审查，表、约束、30 分钟 CHECK 符合预期；没有真实 PostgreSQL 执行证据。
+- 组员回归（在 backend 目录运行 tests/candidate 与 tests/users/test_account_responses.py）：260 passed、1 skipped、1 failed。失败项 test_shared_schema_initialization_is_repeatable 用子进程导入 app，需要 PYTHONPATH 指向 backend；设置绝对路径后单独运行通过，属运行路径问题（68a1dfe 删除了 pytest.candidate.ini），与本次改动无关。
+- tests/users/test_schema.py 因导入已注释的 CandidateProfileUpdate 无法收集，为既有问题，未处理。
+
+状态：改动尚未提交，也未 push。

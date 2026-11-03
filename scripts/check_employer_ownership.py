@@ -14,12 +14,13 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-BASE_COMMIT = "c2667bd7805a6f779c6cf90e32aa3b40bc95bdfc"
+BASE_COMMIT = "68a1dfe0de6c6f7bc9b970e6884d6f9aa4315e77"
 
 EMPLOYER_PREFIXES = (
     "backend/app/employer/",
     "backend/employer_tests/",
 )
+MODIFIABLE = frozenset({"backend/app/main.py"})
 EMPLOYER_FILES = frozenset({
     "backend/app/employer_main.py",
     "pytest.employer.ini",
@@ -36,6 +37,7 @@ def allowed(path: str) -> bool:
     return (
         path.startswith(EMPLOYER_PREFIXES)
         or path in EMPLOYER_FILES
+        or path.startswith("backend/alembic/versions/employer_")
         or (path.startswith("docs/EMPLOYER_") and path.endswith(".md"))
     )
 
@@ -68,6 +70,8 @@ def main() -> int:
             for path in paths:
                 if not allowed(path):
                     errors.append(f"Addition outside the employer scope: {path}")
+            continue
+        if code == "M" and all(path in MODIFIABLE for path in paths):
             continue
         errors.append(
             f"Tracked file changed ({status}) outside the employer scope: "

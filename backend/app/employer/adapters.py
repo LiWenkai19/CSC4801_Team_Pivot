@@ -5,9 +5,15 @@ import uuid
 from sqlalchemy import select
 from sqlmodel import Session
 
-from app.candidate.database.model import Application, Booking, Company, InterviewSlot
+from app.candidate.model import (
+    Application,
+    ApplicationStatus,
+    Booking,
+    Company,
+    InterviewSlot,
+)
 
-__all__ = ["Application", "Booking", "Company", "InterviewSlot"]
+__all__ = ["Application", "ApplicationStatus", "Booking", "Company", "InterviewSlot"]
 
 
 def get_company(session: Session, company_id: uuid.UUID) -> Company | None:

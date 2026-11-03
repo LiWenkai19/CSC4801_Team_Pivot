@@ -32,9 +32,15 @@ def isolated_settings():
 @pytest.fixture
 def engine(tmp_path):
     """每个测试使用独立的临时 SQLite 文件，迁移需要多次连接。"""
-    from app.candidate.database.migration import make_engine
+    from sqlalchemy import create_engine, event
 
-    database = make_engine("sqlite:///" + (tmp_path / "employer.sqlite3").as_posix())
+    url = "sqlite:///" + (tmp_path / "employer.sqlite3").as_posix()
+    database = create_engine(url)
+
+    @event.listens_for(database, "connect")
+    def enable_foreign_keys(connection, _):
+        connection.execute("PRAGMA foreign_keys=ON")
+
     try:
         yield database
     finally:
@@ -42,15 +48,18 @@ def engine(tmp_path):
 
 
 @pytest.fixture
-def migrated_engine(engine):
-    """按组员 core → 雇主 → 组员 full 的顺序建库。"""
-    from app.candidate.database import migration as candidate_migration
-    from app.employer.database import migration as employer_migration
+def migrated_engine(engine, monkeypatch):
+    """用团队 alembic 链（upgrade head）在临时库上建出全部表。"""
+    from pathlib import Path
 
-    with engine.begin() as connection:
-        candidate_migration.upgrade(connection, "core")
-        employer_migration.upgrade(connection)
-        candidate_migration.upgrade(connection)
+    from alembic import command
+    from alembic.config import Config
+
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "DATABASE_URL", engine.url.render_as_string(hide_password=False))
+    ini = Path(__file__).resolve().parents[1] / "alembic.ini"
+    command.upgrade(Config(str(ini)), "head")
     return engine
 
 
@@ -67,7 +76,7 @@ def client(migrated_engine):
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
 
-    from app.candidate.accounts import user_router
+    from app.users.router import candidate_user_router as user_router
     from app.candidate.router import router as candidate_router
     from app.db.session import get_db
     from app.employer.router import employer_router
