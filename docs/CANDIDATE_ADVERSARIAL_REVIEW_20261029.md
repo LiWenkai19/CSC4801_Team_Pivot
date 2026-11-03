@@ -82,8 +82,8 @@
 
 ```powershell
 .venv/Scripts/python.exe -m pytest -c pytest.candidate.ini -q
-.venv/Scripts/python.exe -m pytest -c pytest.candidate.ini backend/candidate_tests/adversarial_20261029.py -q -s
-.venv/Scripts/python.exe -m ruff check backend/candidate_tests/adversarial_20261029.py
+.venv/Scripts/python.exe -m pytest -c pytest.candidate.ini backend/tests/candidate/adversarial_20261029.py -q -s
+.venv/Scripts/python.exe -m ruff check backend/tests/candidate/adversarial_20261029.py
 .venv/Scripts/python.exe scripts/check_candidate_ownership.py
 ```
 
@@ -99,7 +99,7 @@ node node_modules/@playwright/test/cli.js test --config audit/adversarial_202610
 
 ## 本轮新增文件
 
-1. `backend/candidate_tests/adversarial_20261029.py`
+1. `backend/tests/candidate/adversarial_20261029.py`
 2. `frontend/candidate/audit/adversarial_20261029.diagnostic.ts`
 3. `frontend/candidate/audit/adversarial_20261029.config.ts`
 4. 本报告 `docs/CANDIDATE_ADVERSARIAL_REVIEW_20261029.md`

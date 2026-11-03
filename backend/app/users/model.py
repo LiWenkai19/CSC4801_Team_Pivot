@@ -58,9 +58,10 @@ class CandidateProfile(SQLModel, table=True):
     user_id: uuid.UUID = Field(foreign_key="user.id", primary_key=True)
     display_name: str = Field(nullable=False)
     resume_text: str = Field(default="", nullable=False)
-    updated_at: datetime.datetime | None = Field(
+    updated_at: datetime.datetime = Field(
         default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=True, onupdate=func.current_timestamp()),
+        sa_column=Column(DateTime(timezone=True), nullable=False, server_default=func.current_timestamp(),
+                         onupdate=func.current_timestamp()),
     )
 
     user: User = Relationship(back_populates="candidate_profile")

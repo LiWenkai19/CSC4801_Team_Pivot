@@ -2,6 +2,7 @@
 from pydantic import ConfigDict, field_validator
 
 from app.users.schema import (  # Re-export existing contracts for extension callers.
+    AuthResponse,
     CandidateProfileCreate as TeamCandidateProfileCreate,
     CandidateProfilePublic,
     EmployerProfileCreate as TeamEmployerProfileCreate,
@@ -10,7 +11,7 @@ from app.users.schema import (  # Re-export existing contracts for extension cal
     Token,
     UserCreate as TeamUserCreate,
     UserLogin as TeamUserLogin,
-    UserPublic as TeamUserPublic,
+    UserPublic,
 )
 
 
@@ -29,16 +30,6 @@ class CandidateProfileCreate(TeamCandidateProfileCreate):
 
 class EmployerProfileCreate(TeamEmployerProfileCreate):
     model_config = ConfigDict(extra='forbid')
-
-
-class UserPublic(TeamUserPublic):
-    # 前端据此区分直接进入工作区还是先补填资料。
-    profile_completed: bool
-
-
-class AuthResponse(Token):
-    # 登录响应既包含继承来的 Token 字段，也包含公开用户信息。
-    user: UserPublic
 
 
 class CandidateProfileUpdate(TeamCandidateProfileCreate):

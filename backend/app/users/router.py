@@ -1,5 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.exc import IntegrityError
+from sqlmodel import select
+from app.candidate.profile_schema import (
+    CandidateProfileCreate as StrictCandidateProfileCreate,
+    EmployerProfileCreate as StrictEmployerProfileCreate,
+    UserCreate as StrictUserCreate,
+    UserLogin as StrictUserLogin,
+)
 from sqlmodel import Session
 from app.db.session import get_db
 from app.users.schema import (
@@ -137,6 +145,43 @@ def submit_candidate_profile(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail=str(error)
         ) from error
+
+
+# 统一入口复用上面的账号处理函数，并对候选人工作流增加严格请求校验。
+candidate_user_router = APIRouter(prefix="/users", tags=["users"])
+
+
+@candidate_user_router.post("/register", response_model=AuthResponse)
+def candidate_register(user: StrictUserCreate, session: Session = Depends(get_db)):
+    try:
+        return register_user(user, session)
+    except IntegrityError:
+        session.rollback()
+        existing = session.exec(select(User.id).where(User.email == str(user.email))).first()
+        if existing is not None:
+            raise HTTPException(status_code=400, detail="User already exists") from None
+        raise
+
+
+@candidate_user_router.post("/login", response_model=AuthResponse)
+def candidate_login(user: StrictUserLogin, session: Session = Depends(get_db)):
+    return login(user, session)
+
+
+candidate_user_router.add_api_route("/token", login_for_access_token, methods=["POST"], response_model=Token)
+candidate_user_router.add_api_route("/me", read_me, methods=["GET"], response_model=UserPublic)
+
+
+@candidate_user_router.post("/candidate/profile", response_model=CandidateProfilePublic, status_code=201)
+def candidate_submit_profile(profile: StrictCandidateProfileCreate, session: Session = Depends(get_db),
+                             curr_user: User = Depends(require_candidate)):
+    return submit_candidate_profile(profile, session, curr_user)
+
+
+@candidate_user_router.post("/employer/profile", response_model=EmployerProfilePublic, status_code=201)
+def candidate_submit_employer_profile(profile: StrictEmployerProfileCreate, session: Session = Depends(get_db),
+                                      curr_user: User = Depends(require_employer)):
+    return submit_employer_profile(profile, session, curr_user)
     
 
 

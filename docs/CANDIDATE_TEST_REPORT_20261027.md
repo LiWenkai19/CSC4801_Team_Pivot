@@ -32,10 +32,10 @@
 
 新增及适配的样例：
 
-- [test_feature_acceptance.py](../backend/candidate_tests/test_feature_acceptance.py)：65项功能和权限场景。
-- [test_owned_database.py](../backend/candidate_tests/test_owned_database.py)：追加7项Booking关系、持久化与完整性场景。
-- [test_resume_access.py](../backend/candidate_tests/test_resume_access.py)：已有简历关系授权回归。
-- [test_candidate_flow.py](../backend/candidate_tests/test_candidate_flow.py)、[test_candidate_integration.py](../backend/candidate_tests/test_candidate_integration.py)：按当前占位需求适配。
+- [test_feature_acceptance.py](../backend/tests/candidate/test_feature_acceptance.py)：65项功能和权限场景。
+- [test_owned_database.py](../backend/tests/candidate/test_owned_database.py)：追加7项Booking关系、持久化与完整性场景。
+- [test_resume_access.py](../backend/tests/candidate/test_resume_access.py)：已有简历关系授权回归。
+- [test_candidate_flow.py](../backend/tests/candidate/test_candidate_flow.py)、[test_candidate_integration.py](../backend/tests/candidate/test_candidate_integration.py)：按当前占位需求适配。
 - [features.spec.ts](../frontend/candidate/e2e/features.spec.ts)：新增4项真实浏览器验收。
 - [candidate.spec.ts](../frontend/candidate/e2e/candidate.spec.ts)：适配原6项完整流程。
 - [skillCatalog.test.ts](../frontend/candidate/src/components/skills/skillCatalog.test.ts)：新增3项单测，另有既有纯文本安全渲染1项。

@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 # from app.db.session import engine
-from app.candidate.accounts import user_router
+from app.users.router import candidate_user_router as user_router
 from app.candidate.router import router as candidate_router
 from app.db.session import get_safe_db
 from app.db.session import get_db

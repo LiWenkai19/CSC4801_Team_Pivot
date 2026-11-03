@@ -82,7 +82,7 @@ PDF/Word 文件上传、解析、下载，以及简历历史版本未在本项�
 - [本人归属检查与保存逻辑](../backend/app/candidate/service.py)
 - [请求字段校验](../backend/app/candidate/profile_schema.py)
 - [候选人资料页面](../frontend/candidate/src/pages/candidate/ProfilePage.tsx)
-- [已有简历权限回归测试](../backend/candidate_tests/test_resume_access.py)
+- [已有简历权限回归测试](../backend/tests/candidate/test_resume_access.py)
 - [详细接口说明](CANDIDATE_RESUME_ACCESS.md)
 
 ### 队友接入事项
@@ -139,7 +139,7 @@ PDF/Word 文件上传、解析、下载，以及简历历史版本未在本项�
 ### 接入位置与验收安排
 
 - [后端申请及查重](../backend/app/candidate/service.py)：`apply`；[申请路由](../backend/app/candidate/router.py)：`apply`。
-- [联合唯一约束](../backend/app/candidate/model.py)：Application；[独立迁移](../backend/alembic/versions/candidate_flow_001.py)。
+- [联合唯一约束](../backend/app/candidate/model.py)：Application；新数据库从共享模型建立表。
 - [共用申请按钮](../frontend/candidate/src/components/candidate/ApplyButton.tsx)、[中文反馈组件](../frontend/candidate/src/components/candidate/ApplicationFeedback.tsx)，同时用于职位列表和详情。
 - 已有 `test_application_pending_duplicate_and_private` 记录首次创建、重复 409 和访问隔离；本轮仅检查现有实现，未新增或运行测试样例。编译及静态检查结果另记进度文件，不等于最终验收。
 - 开发完成后再制作样例，重点覆盖重复反馈、页面刷新、不同候选人/职位隔离、各申请状态、原数据不变、多标签页及真实数据库并发。
@@ -252,7 +252,7 @@ PDF/Word 文件上传、解析、下载，以及简历历史版本未在本项�
 ### 审阅证据与后续验收
 
 - [身份及角色校验](../backend/app/users/service.py)：`get_current_user`、`require_candidate`、`require_employer`，团队文件只读。
-- [候选人业务路由](../backend/app/candidate/router.py)、[账号路由包装](../backend/app/candidate/accounts.py)、[简历关系授权和申请及职位归属校验](../backend/app/candidate/service.py)。
+- [候选人业务路由](../backend/app/candidate/router.py)、[统一账号路由](../backend/app/users/router.py)、[简历关系授权和申请及职位归属校验](../backend/app/candidate/service.py)。
 - 本轮通过代码阅读及 AST 路由清点检查身份依赖，并逐项查看服务层的数据范围限制；在上述 8 个现有入口未发现缺少身份或对象范围校验的路径。无需重复添加同类校验，没有修改业务代码。
 - 这是静态审阅结论，不是运行权限测试通过的声明。本轮未新增或运行测试样例；开发完成后统一制作匿名访问、失效令牌、跨角色、跨账号、跨雇主、伪造 ID/角色、空列表、返回字段及直接 HTTP 调用等针对性样例。
 

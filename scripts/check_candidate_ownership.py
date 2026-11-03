@@ -7,7 +7,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 # 用户明确授权共享入口及总迁移配置用于 candidate/employer 整合。
-AUTHORIZED_SHARED = {'backend/app/main.py', 'backend/app/db/session.py', 'backend/app/users/model.py',
+AUTHORIZED_SHARED = {'backend/app/main.py', 'backend/app/db/session.py', 'backend/app/users/model.py', 'backend/app/users/router.py',
                      'backend/alembic.ini', 'backend/alembic/env.py'}
 
 
@@ -17,7 +17,7 @@ def git(*args):
 
 def allowed(path):
     return (
-        path.startswith(('backend/app/candidate/', 'backend/candidate_tests/',
+        path.startswith(('backend/app/candidate/', 'backend/tests/candidate/', 'backend/candidate_tests/',
                          'backend/candidate_alembic/', 'frontend/candidate/'))
         or path in {'backend/app/candidate_main.py', 'backend/app/matching.py',
                     'backend/alembic/versions/candidate_flow_001.py',

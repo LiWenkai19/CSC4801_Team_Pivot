@@ -17,7 +17,7 @@ npm --prefix frontend/candidate ci
 .\.venv\Scripts\python.exe scripts/check_candidate.py
 ```
 
-最后一条命令检查文件归属、依赖一致性、扩展代码 Ruff、候选人隔离测试、前端构建、lint 和 React XSS 测试；遇到失败立即返回非零状态。只收集 `backend/candidate_tests`，不向团队 `backend/tests` 注入夹具。
+最后一条命令检查文件归属、依赖一致性、扩展代码 Ruff、候选人隔离测试、前端构建、lint 和 React XSS 测试；遇到失败立即返回非零状态。只收集 `backend/tests/candidate`，不向团队 `backend/tests` 注入夹具。
 
 ## 本地预览
 
@@ -48,7 +48,7 @@ npm run test:e2e
 临时预览用于验证，不替代课程要求的持久化数据库。需要持久化时，在 `backend/` 为专用开发库提供 `APP_NAME`、`SECRET_KEY`、`ALGORITHM`、`ACCESS_TOKEN_EXPIRE_MINUTES` 和 `DATABASE_URL` 环境变量，再运行：
 
 ```powershell
-..\.venv\Scripts\python.exe -m alembic -c alembic.ini upgrade head
+..\.venv\Scripts\python.exe -c "from app.db.session import init_shared_schema; init_shared_schema()"
 ..\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
@@ -56,10 +56,10 @@ npm run test:e2e
 
 ## 工程边界
 
-后端统一入口是 `backend/app/main.py`。账户包装和候选人业务在 `backend/app/candidate/`，共享入口挂载其路由并使用安全数据库会话。
+后端统一入口是 `backend/app/main.py`。账号扩展位于 `backend/app/users/router.py` 并复用已有账号处理函数；候选人业务在 `backend/app/candidate/`，共享入口使用安全数据库会话。
 
-总迁移配置 `backend/alembic.ini` 使用共享 `backend/alembic/env.py`，所有运行应用的迁移版本位于 `backend/alembic/versions/`，形成同一迁移链。前端使用独立入口和依赖清单，派生页面保留原作者归属。
+按用户要求，候选人表由共享 SQLModel 元数据直接创建；`init_shared_schema` 仅创建缺失表，不修改已有表，也不删除数据。团队原有 Alembic 文件仍保留；如果数据库已有旧表，上述命令不会补充缺失列或约束。前端使用独立入口和依赖清单，派生页面保留原作者归属。
 
-现有 `start.bat`、原应用入口、原 Dockerfile 和文档保持团队版本；它们不会自动启动候选人扩展。队友将来接入主应用时，使用 `CANDIDATE_INTEGRATION.md` 的说明自行处理归属范围内的入口。
+现有 `start.bat` 和 Dockerfile 保持团队版本；运行前应确认数据库表结构与当前模型一致。
 
 本轮执行结果见 `CANDIDATE_PROGRESS.md`。不代表雇主职位 CRUD、状态修改、时段管理或整个项目已完成；真实 PostgreSQL 并发、Docker 和远程 CI 另行验收。

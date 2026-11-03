@@ -18,10 +18,10 @@ def client(monkeypatch):
         monkeypatch.setenv(key, value)
 
     from app.db.session import get_db
-    from app.candidate.accounts import user_router
+    from app.users.router import candidate_user_router as user_router
     from app.users.model import User
     from app.candidate.profile_schema import UserPublic
-    from app.candidate.accounts import public_user as get_current_user_public
+    from app.users.service import get_current_user_public
     from app.users.service import (
         require_candidate,
         require_employer,

@@ -76,11 +76,13 @@ class Application(SQLModel, table=True):
         UniqueConstraint("candidate_id", "job_id", name="uq_application_candidate_job"),
     )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    created_at: datetime | None = Field(default_factory=lambda: datetime.now(timezone.utc),
-                                        sa_column=Column(DateTime(timezone=True), nullable=True))
-    updated_at: datetime | None = Field(default_factory=lambda: datetime.now(timezone.utc),
-                                        sa_column=Column(DateTime(timezone=True), nullable=True,
-                                                         onupdate=func.current_timestamp()))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc),
+                                 sa_column=Column(DateTime(timezone=True), nullable=False,
+                                                  server_default=func.current_timestamp()))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc),
+                                 sa_column=Column(DateTime(timezone=True), nullable=False,
+                                                  server_default=func.current_timestamp(),
+                                                  onupdate=func.current_timestamp()))
     # 候选人的账户 ID：类型为 uuid.UUID；声明字段的默认值、主键、外键或数据库列设置
     candidate_id: uuid.UUID = Field(foreign_key="candidate_profile.user_id", index=True)
     # 职位 ID：类型为 uuid.UUID；声明字段的默认值、主键、外键或数据库列设置
@@ -112,10 +114,15 @@ class InterviewSlot(SQLModel, table=True):
     __tablename__ = "interview_slot"
     __table_args__ = (
         CheckConstraint("ends_at > starts_at", name="ck_slot_time_order"),
+        CheckConstraint("(ends_at - starts_at) = INTERVAL '30 minutes'",
+                        name="ck_slot_duration").ddl_if(dialect="postgresql"),
+        CheckConstraint("abs((julianday(ends_at) - julianday(starts_at)) * 86400 - 1800) < 0.0001",
+                        name="ck_slot_duration").ddl_if(dialect="sqlite"),
     )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    created_at: datetime | None = Field(default_factory=lambda: datetime.now(timezone.utc),
-                                        sa_column=Column(DateTime(timezone=True), nullable=True))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc),
+                                 sa_column=Column(DateTime(timezone=True), nullable=False,
+                                                  server_default=func.current_timestamp()))
     # 雇主账户 ID：类型为 uuid.UUID；声明字段的默认值、主键、外键或数据库列设置
     employer_id: uuid.UUID = Field(foreign_key="employer_profile.user_id", index=True)
     # 职位 ID：类型为 uuid.UUID | None；声明字段的默认值、主键、外键或数据库列设置
@@ -137,8 +144,9 @@ class Booking(SQLModel, table=True):
         UniqueConstraint("slot_id", name="uq_booking_slot"),
     )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    created_at: datetime | None = Field(default_factory=lambda: datetime.now(timezone.utc),
-                                        sa_column=Column(DateTime(timezone=True), nullable=True))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc),
+                                 sa_column=Column(DateTime(timezone=True), nullable=False,
+                                                  server_default=func.current_timestamp()))
     # 申请 ID：类型为 uuid.UUID；声明字段的默认值、主键、外键或数据库列设置
     application_id: uuid.UUID = Field(foreign_key="application.id")
     # 面试时段 ID：类型为 uuid.UUID；声明字段的默认值、主键、外键或数据库列设置

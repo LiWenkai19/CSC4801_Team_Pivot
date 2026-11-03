@@ -7,7 +7,7 @@ import secrets
 import sys
 
 # Resolve the review copy before any editable installation from another checkout.
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import tempfile
 
 
@@ -27,17 +27,14 @@ def main():
             DATABASE_URL=f"sqlite:///{database.as_posix()}",
         )
         # 环境配置必须在 app 导入前设置，防止 Settings 提前读到个人数据库地址。
-        from alembic import command
-        from alembic.config import Config
-        from sqlmodel import Session
+        from sqlmodel import Session, SQLModel
         import uvicorn
         from app.main import app
-        from app.db.session import engine
+        from app.db.session import safe_engine as engine
         from app.candidate.seed import seed
 
         try:
-            config = Config(str(Path(__file__).resolve().parents[1] / "alembic.ini"))
-            command.upgrade(config, "head")
+            SQLModel.metadata.create_all(engine)
             with Session(engine) as session:
                 seed(session)
             uvicorn.run(app, host="127.0.0.1", port=args.port)

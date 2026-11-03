@@ -37,7 +37,7 @@ async function ready(url, child) {
 try {
   await ensureFree(19019);
   await ensureFree(5173);
-  const backend = start(['../../.venv/Scripts/python.exe', '../../backend/candidate_tests/browser_server.py', '--port', '19019'], process.env);
+  const backend = start(['../../.venv/Scripts/python.exe', '../../backend/tests/candidate/browser_server.py', '--port', '19019'], process.env);
   await ready(`${api}/openapi.json`, backend);
   const frontend = start([process.execPath, 'node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5173', '--strictPort'],
     { ...process.env, VITE_API_BASE_URL: api });

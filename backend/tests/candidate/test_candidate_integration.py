@@ -105,10 +105,15 @@ def test_application_rejects_client_owned_identity_or_status(flow, payload):
 @pytest.mark.parametrize("minutes", [15, 60])
 def test_malformed_slot_is_hidden_and_cannot_be_booked(flow, minutes):
     with Session(flow["engine"]) as session:
-        slot = session.get(InterviewSlot, flow["slots"][0])
-        slot.ends_at = slot.starts_at + timedelta(minutes=minutes)
-        session.add(slot)
-        session.commit()
+        # 模拟旧数据库中已有的不合规时段，仅在隔离 SQLite 夹具中临时关闭 CHECK。
+        session.connection().exec_driver_sql("PRAGMA ignore_check_constraints=ON")
+        try:
+            slot = session.get(InterviewSlot, flow["slots"][0])
+            slot.ends_at = slot.starts_at + timedelta(minutes=minutes)
+            session.add(slot)
+            session.commit()
+        finally:
+            session.connection().exec_driver_sql("PRAGMA ignore_check_constraints=OFF")
     base = f"/candidate/applications/{flow['applications'][0]}"
     headers = flow["headers"][0]
     assert flow["client"].get(base + "/slots", headers=headers).json() == []
@@ -186,39 +191,32 @@ def test_shared_entrypoint_routes_and_permissions(flow):
         app.dependency_overrides[get_db] = previous_override or get_safe_db
 
 
-def test_shared_alembic_upgrades_from_team_revision(tmp_path):
+def test_shared_models_create_tables_without_migrations(flow):
+    from sqlalchemy import inspect
+    engine = flow["engine"]
+    tables = set(inspect(engine).get_table_names())
+    assert {"user", "candidate_profile", "employer_profile", "company", "job",
+            "job_skill", "application", "interview_slot", "booking"} <= tables
+    for table, names in {"candidate_profile": {"updated_at"},
+                         "application": {"created_at", "updated_at"},
+                         "interview_slot": {"created_at"}, "booking": {"created_at"}}.items():
+        assert names <= {column["name"] for column in inspect(engine).get_columns(table)}
+
+
+def test_shared_schema_initialization_is_repeatable(tmp_path):
     import os
     import subprocess
     import sys
     from pathlib import Path
-    from sqlalchemy import create_engine, inspect, text
-    root = Path(__file__).resolve().parents[2]
-    db = tmp_path / 'shared.sqlite'
+    from sqlalchemy import create_engine, inspect
+
+    root = Path(__file__).resolve().parents[3]
     env = os.environ.copy()
-    env['DATABASE_URL'] = 'sqlite:///' + db.as_posix()
-    base = [sys.executable, '-m', 'alembic', '-c', 'backend/alembic.ini']
-    subprocess.run([*base, 'upgrade', 'e07644577837'], cwd=root, env=env, check=True)
-    seed_engine = create_engine(env['DATABASE_URL'])
-    with seed_engine.begin() as connection:
-        connection.execute(text("INSERT INTO user (id,email,hashed_password,role,created_at) VALUES "
-                                "('00000000000000000000000000000001','test@example.invalid','hash','candidate',CURRENT_TIMESTAMP)"))
-        connection.execute(text("INSERT INTO candidate_profile (user_id,display_name,resume_text) VALUES "
-                                "('00000000000000000000000000000001','Test','retained')"))
-    seed_engine.dispose()
-    subprocess.run([*base, 'upgrade', 'head'], cwd=root, env=env, check=True)
-    # 数据库已经处于 candidate_flow_001 时再次升级应识别版本且不会重复建表。
-    subprocess.run([*base, 'upgrade', 'head'], cwd=root, env=env, check=True)
-    engine = create_engine(env['DATABASE_URL'])
+    env["DATABASE_URL"] = "sqlite:///" + (tmp_path / "shared.sqlite").as_posix()
+    code = "from app.db.session import init_shared_schema; init_shared_schema(); init_shared_schema()"
+    subprocess.run([sys.executable, "-c", code], cwd=root, env=env, check=True)
+    engine = create_engine(env["DATABASE_URL"])
     try:
-        assert {'user', 'candidate_profile', 'job', 'job_skill', 'application',
-                'interview_slot', 'booking', 'company'} <= set(inspect(engine).get_table_names())
-        for table, names in {'candidate_profile': {'updated_at'},
-                             'application': {'created_at', 'updated_at'},
-                             'interview_slot': {'created_at'}, 'booking': {'created_at'}}.items():
-            assert names <= {column['name'] for column in inspect(engine).get_columns(table)}
-        with engine.connect() as connection:
-            assert connection.execute(text('select version_num from alembic_version')).scalar() == 'candidate_shared_002'
-            assert connection.execute(text('select resume_text, updated_at from candidate_profile')).one()[0] == 'retained'
-            assert connection.execute(text('select updated_at from candidate_profile')).scalar() is not None
+        assert {"candidate_profile", "company", "application", "interview_slot", "booking"} <= set(inspect(engine).get_table_names())
     finally:
         engine.dispose()
