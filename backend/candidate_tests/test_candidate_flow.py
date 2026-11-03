@@ -274,7 +274,7 @@ def test_matching_both_tie_breakers():
 
 
 # 函数 test_jobs_all_active_order_and_live_scores(flow)：定义独立测试；pytest 会运行它，assert 必须验证实际结果而不是只打印。
-def test_jobs_all_active_order_and_live_scores(flow):
+def test_jobs_all_active_order_and_placeholder_scores(flow):
     # 将结果保存在 (c, h)：组装元组；用于多个排序依据时，从左向右依次比较
     c, h = flow["client"], flow["headers"][0]
     # 将结果保存在 准备返回的记录列表：把 HTTP 响应正文解析为可供断言的字典/列表
@@ -288,15 +288,16 @@ def test_jobs_all_active_order_and_live_scores(flow):
     # 用测试客户端发送真实接口请求，经过路由、权限和业务服务
     c.patch(path, headers=h, json={"skills": ["Python"]})
     # assert 检查测试预期：比较 c.get('/candidate/jobs', headers=h).json()[0]['title'] == 'Empty'；结果为 True/False，决定分支或测试是否通过；不成立则测试失败
-    assert c.get("/candidate/jobs", headers=h).json()[0]["title"] == "Empty"
+    assert c.get("/candidate/jobs", headers=h).json()[0]["title"] == "alpha"
     # 将结果保存在 detail：根据 f'/candidate/jobs/{flow['jobs'][0]}' 取得本步所需的值
     detail = f"/candidate/jobs/{flow['jobs'][0]}"
     # assert 检查测试预期：比较 c.get(detail, headers=h).json()['score'] == 50；结果为 True/False，决定分支或测试是否通过；不成立则测试失败
-    assert c.get(detail, headers=h).json()["score"] == 50
+    assert c.get(detail, headers=h).json()["score"] == 0
+    assert c.get(detail, headers=h).json()["score_kind"] == "placeholder"
     # 用测试客户端发送真实接口请求，经过路由、权限和业务服务
     c.patch(path, headers=h, json={"resume_text": "SQL Rust"})
     # assert 检查测试预期：比较 c.get(detail, headers=h).json()['score'] == 50；结果为 True/False，决定分支或测试是否通过；不成立则测试失败
-    assert c.get(detail, headers=h).json()["score"] == 50
+    assert c.get(detail, headers=h).json()["score"] == 0
     # assert 检查测试预期：比较 c.get(f'/candidate/jobs/{flow['jobs'][-1]}', headers=h).status_code == 404；结果为 True/False，决定分支或测试是否通过；不成立则测试失败
     assert c.get(f"/candidate/jobs/{flow['jobs'][-1]}", headers=h).status_code == 404
 
@@ -577,7 +578,8 @@ def test_employer_uses_shared_score_and_sees_booking_without_resume(flow):
     # 将结果保存在 准备返回的记录列表：把 HTTP 响应正文解析为可供断言的字典/列表
     rows = c.get(path, headers=headers[2]).json()
     # assert 检查测试预期：比较 [r['score'] for r in rows] == [100, 0]；结果为 True/False，决定分支或测试是否通过；不成立则测试失败
-    assert [r["score"] for r in rows] == [100, 0]
+    assert [r["score"] for r in rows] == [0, 0]
+    assert all(r["score_kind"] == "placeholder" for r in rows)
     # assert 检查测试预期：比较 rows[0]['booking']['slot_id'] == str(flow['slots'][0])；结果为 True/False，决定分支或测试是否通过；不成立则测试失败
     assert rows[0]["booking"]["slot_id"] == str(flow["slots"][0])
     # assert 检查测试预期：组合多个判断；and 要全部成立，or 只需其中一个成立；不成立则测试失败

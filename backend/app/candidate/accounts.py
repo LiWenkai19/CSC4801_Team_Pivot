@@ -1,7 +1,8 @@
 """Compose stricter candidate-workspace routes around the team's existing handlers."""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlmodel import Session
+from sqlalchemy.exc import IntegrityError
+from sqlmodel import Session, select
 
 from app.candidate.profile_schema import (
     AuthResponse, CandidateProfileCreate, CandidateProfilePublic,
@@ -30,7 +31,14 @@ def auth_response(session: Session, result) -> AuthResponse:
 
 @user_router.post('/register', response_model=AuthResponse)
 def register_user(user: UserCreate, session: Session = Depends(get_db)):
-    return auth_response(session, team.register_user(user, session))
+    try:
+        return auth_response(session, team.register_user(user, session))
+    except IntegrityError:
+        session.rollback()
+        existing = session.exec(select(User.id).where(User.email == str(user.email))).first()
+        if existing is not None:
+            raise HTTPException(status_code=400, detail="User already exists") from None
+        raise
 
 
 @user_router.post('/login', response_model=AuthResponse)

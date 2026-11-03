@@ -17,16 +17,18 @@ async function login(page: import("@playwright/test").Page, email: string) {
   ).toBeVisible();
 }
 
-test("资料编辑、实时匹配、申请、真实预约冲突恢复和换账户隔离", async ({
+test("资料编辑、标签持久化、占位推荐、申请、真实预约冲突和换账户隔离", async ({
   page,
   request,
 }) => {
   await login(page, "alice@example.com");
   await page.getByRole("link", { name: "我的资料", exact: true }).click();
   await page.getByLabel("显示名称（必填）").fill(" Alice updated ");
-  await page.getByLabel("技能 1", { exact: true }).fill(" PYTHON ");
-  await page.getByLabel("技能 2", { exact: true }).fill("python");
-  await page.getByRole("button", { name: "添加技能", exact: true }).click();
+  await page.getByRole("button", { name: "移除技能 SQL", exact: true }).click();
+  const skills = page.getByRole("combobox", { name: "技能（选填）" });
+  await skills.fill(" PYTHON ");
+  await skills.press("Enter");
+  await expect(page.getByLabel("已选技能").getByRole("listitem")).toHaveCount(1);
   const resume = "<script>alert(1)</script>\nPrivate candidate text";
   let dialogs = 0;
   page.on("dialog", async (dialog) => {
@@ -42,10 +44,8 @@ test("资料编辑、实时匹配、申请、真实预约冲突恢复和换账�
   await expect(page.getByLabel("显示名称（必填）")).toHaveValue(
     "Alice updated",
   );
-  await expect(page.getByLabel("技能 1", { exact: true })).toHaveValue(
-    "python",
-  );
-  await expect(page.getByLabel("技能 2", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("已选技能").getByRole("listitem")).toHaveCount(1);
+  await expect(page.getByLabel("已选技能")).toContainText("Python");
   await expect(page.getByLabel("简历（选填）")).toHaveValue(resume);
   await expect(page.locator(".plain-text")).toContainText(
     "<script>alert(1)</script>",
@@ -56,11 +56,11 @@ test("资料编辑、实时匹配、申请、真实预约冲突恢复和换账�
   await page.getByRole("link", { name: "职位推荐", exact: true }).click();
   await expect(page.locator("article")).toHaveCount(5);
   await expect(page.locator("article").first().getByRole("heading")).toHaveText(
-    "Open Role",
+    "Backend Engineer",
   );
   await expect(
     page.locator("article", { hasText: "Backend Engineer" }),
-  ).toContainText("50%");
+  ).toContainText("0 分（占位）");
   await page
     .getByRole("link", { name: "Platform Engineer", exact: true })
     .click();
@@ -124,7 +124,7 @@ test("资料编辑、实时匹配、申请、真实预约冲突恢复和换账�
   });
 });
 
-test("新版注册补填、动态技能和保存失败保留输入，然后恢复保存", async ({
+test("新版注册补填进入推荐、保存失败保留输入，然后恢复保存", async ({
   page,
 }) => {
   await page.goto("/register");
@@ -147,7 +147,7 @@ test("新版注册补填、动态技能和保存失败保留输入，然后恢�
   await page.getByLabel("显示名称（必填）").fill("New Candidate");
   await page.getByRole("button", { name: "保存并继续", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: `欢迎，${email}！` }),
+    page.getByRole("heading", { name: "职位推荐", exact: true }),
   ).toBeVisible();
   await page.getByRole("link", { name: "我的资料", exact: true }).click();
   await page.getByLabel("显示名称（必填）").fill("Revised Candidate");
