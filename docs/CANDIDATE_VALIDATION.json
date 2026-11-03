@@ -58,5 +58,47 @@
     "docker_engine": "unavailable: dockerDesktopLinuxEngine pipe missing",
     "business_code_modified": false,
     "teammate_files_modified": false
+  },
+  "latest_run": {
+    "date": "2026-10-27",
+    "report": "CANDIDATE_TEST_REPORT_20261027.md",
+    "business_source_commit": "c2667bd7805a6f779c6cf90e32aa3b40bc95bdfc",
+    "test_and_document_changes_uncommitted": true,
+    "candidate_check_script": "passed",
+    "candidate_backend_in_final_joint_run": {
+      "passed": 227,
+      "skipped": 1
+    },
+    "original_account_and_reference_unit": {
+      "passed": 67
+    },
+    "repository_except_known_collection_error": {
+      "passed": 294,
+      "skipped": 1,
+      "excluded": "backend/tests/users/test_schema.py",
+      "note": "includes candidate and original-account/reference tests; do not sum twice"
+    },
+    "frontend_unit": {
+      "passed": 4,
+      "files": 2
+    },
+    "chromium_e2e": {
+      "passed": 10
+    },
+    "frontend_build": "passed",
+    "frontend_lint": "passed",
+    "ruff": "passed",
+    "pip_check": "passed",
+    "preview_smoke": "passed",
+    "protected_upstream_files": 88,
+    "business_code_modified": false,
+    "teammate_files_modified": false,
+    "unfiltered_full_repository": "blocked by unchanged upstream CandidateProfileUpdate import error",
+    "not_verified": [
+      "real PostgreSQL concurrency: no dedicated test URL",
+      "Docker: engine pipe absent",
+      "remote CI",
+      "owner-managed employer UI integration"
+    ]
   }
 }

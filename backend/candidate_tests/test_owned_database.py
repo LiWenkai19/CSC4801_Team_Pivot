@@ -13,7 +13,7 @@ from sqlmodel import Session, SQLModel, select
 from app.candidate import model as team_flow
 from app.candidate.database.migration import check, config_for, make_engine, upgrade
 from app.candidate.database.model import (
-    Application, CandidateProfile, CandidateSkill, Company, InterviewSlot,
+    Application, Booking, CandidateProfile, CandidateSkill, Company, InterviewSlot,
     OWNED_TABLES, OwnedModel, User,
 )
 from app.users import model as team_users
@@ -252,3 +252,62 @@ def test_new_models_do_not_change_team_metadata():
     assert "updated_at" not in team_users.CandidateProfile.__table__.columns
     assert "created_at" not in team_flow.Application.__table__.columns
     assert "company_id" not in team_users.EmployerProfile.__table__.columns
+
+
+@pytest.fixture
+def owned_booking_records(integrated):
+    engine, candidate_id, employer_id, job_id = integrated
+    start = datetime(2035, 1, 1, tzinfo=timezone.utc)
+    with Session(engine) as session:
+        other_job = team_flow.Job(employer_id=employer_id, title="Other", description="Other job")
+        session.add(other_job)
+        session.flush()
+        applications = [Application(candidate_id=candidate_id, job_id=target)
+                        for target in [job_id, other_job.id]]
+        slots = [InterviewSlot(employer_id=employer_id, starts_at=start + timedelta(hours=i),
+                               ends_at=start + timedelta(hours=i, minutes=30)) for i in range(2)]
+        session.add_all([*applications, *slots])
+        session.flush()
+        booking = Booking(application_id=applications[0].id, slot_id=slots[0].id)
+        session.add(booking)
+        session.commit()
+        return engine, booking.id, [item.id for item in applications], [item.id for item in slots]
+
+
+def test_owned_booking_persists_and_has_utc_creation_time(owned_booking_records):
+    engine, booking_id, applications, slots = owned_booking_records
+    engine.dispose()
+    with Session(engine) as session:
+        row = session.get(Booking, booking_id)
+        assert row.application_id == applications[0] and row.slot_id == slots[0]
+        assert row.created_at.utcoffset() == timedelta(0)
+
+
+@pytest.mark.parametrize("duplicate", ["application", "slot"])
+def test_owned_booking_enforces_each_unique_relationship(owned_booking_records, duplicate):
+    engine, _, applications, slots = owned_booking_records
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(Booking.__table__.insert(), dict(
+            application_id=applications[0] if duplicate == "application" else applications[1],
+            slot_id=slots[0] if duplicate == "slot" else slots[1],
+        ))
+    with Session(engine) as session:
+        assert len(session.exec(select(Booking)).all()) == 1
+
+
+@pytest.mark.parametrize("missing", ["application", "slot"])
+def test_owned_booking_rejects_missing_foreign_keys(owned_booking_records, missing):
+    engine, _, applications, slots = owned_booking_records
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(Booking.__table__.insert(), dict(
+            application_id=uuid.uuid4() if missing == "application" else applications[1],
+            slot_id=uuid.uuid4() if missing == "slot" else slots[1],
+        ))
+
+
+@pytest.mark.parametrize("target", ["application", "slot"])
+def test_owned_booking_prevents_deleting_referenced_rows(owned_booking_records, target):
+    engine, _, applications, slots = owned_booking_records
+    model, identifier = (Application, applications[0]) if target == "application" else (InterviewSlot, slots[0])
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(model.__table__.delete().where(model.id == identifier))

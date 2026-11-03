@@ -52,8 +52,8 @@ def test_registration_profile_edit_recommendation_and_application_contract(flow)
     )
     assert client.get(path, headers=headers).json()["resume_text"] == "Private\ntext"
     rows = client.get("/candidate/jobs", headers=headers).json()
-    assert [r["title"] for r in rows] == ["Empty", "alpha", "Alpha", "Beta"]
-    assert next(r["score"] for r in rows if r["title"] == "alpha") == 50
+    assert [r["title"] for r in rows] == ["alpha", "Alpha", "Beta", "Empty"]
+    assert all(r["score"] == 0 and r["score_kind"] == "placeholder" for r in rows)
     response = client.post(
         f"/candidate/jobs/{flow['jobs'][0]}/applications", headers=headers
     )

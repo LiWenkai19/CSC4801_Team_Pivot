@@ -33,8 +33,9 @@ from app.candidate.model import (
 )
 
 # 排序及规范化复用共享模块，评分使用独立占位入口
-from app.matching import applicant_sort_key, job_sort_key, normalize_skills
+from app.matching import applicant_sort_key, normalize_skills
 from app.candidate.recommendation_scoring import SCORE_KIND, match_score
+from app.candidate.recommendation_queries import list_recommendations
 
 # 导入 app.users.model 中的 CandidateProfile、CandidateSkill、EmployerProfile、User、utc_now，供后续代码调用；导入不是发起 HTTP 请求
 from app.users.model import (
@@ -236,15 +237,7 @@ def list_jobs(session: Session, user: User):
     # 将结果保存在 候选人资料：先确认目标 ID 就是登录用户，再读取资料；不能让他人拿到私有简历
     profile = owned_profile(session, user, user.id)
     # 将结果保存在 准备返回的记录列表：用推导式依次处理元素；for 决定遍历对象，if（若有）决定保留条件
-    rows = [
-        # 继续完成上面的多行语句：将结果保存在 准备返回的记录列表：用推导式依次处理元素；for 决定遍历对象，if（若有）决定保留条件
-        job_public(session, j, profile)
-        # 推导式的遍历部分：每次取出一条记录，交给上面的表达式生成结果
-        for j in session.exec(select(Job).where(Job.is_deleted.is_(False)))
-        # 结束上面跨多行的参数/容器；这些行共同组成同一条语句，尚未开始新的操作
-    ]
-    # return 结束本函数并把结果交给调用者：返回排序后的新列表；若提供 key，则按 key 生成的值比较
-    return sorted(rows, key=job_sort_key)
+    return list_recommendations(session, profile, match_score, SCORE_KIND)
 
 
 # 函数 apply(session, user, job_id)：创建状态固定为 Pending 的本人申请，数据库唯一约束防止重复提交。

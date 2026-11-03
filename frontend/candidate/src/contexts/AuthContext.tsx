@@ -36,9 +36,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(() => !!localStorage.getItem("token"));
   const generation = useRef(0);
 
-  function clearSession() {
+  function clearSession(removeToken = true) {
     generation.current++;
-    localStorage.removeItem("token");
+    if (removeToken) localStorage.removeItem("token");
     setCurrentUser(null);
     setLoading(false);
   }
@@ -61,13 +61,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     // API 的 401 与其他标签页换账户，都必须清除当前页旧的私有资料。
     function storageChanged(event: StorageEvent) {
-      if (event.key === "token" || event.key === null) clearSession();
+      if (event.key === "token" || event.key === null) clearSession(false);
     }
-    window.addEventListener("auth-expired", clearSession);
+    const expired = () => clearSession();
+    window.addEventListener("auth-expired", expired);
     window.addEventListener("storage", storageChanged);
     return () => {
       active = false;
-      window.removeEventListener("auth-expired", clearSession);
+      window.removeEventListener("auth-expired", expired);
       window.removeEventListener("storage", storageChanged);
     };
   }, []);

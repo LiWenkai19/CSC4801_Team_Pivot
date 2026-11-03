@@ -1,0 +1,20 @@
+import { expect, test } from '@playwright/test'
+
+test('登录和注销不会让其他标签页误删共享令牌', async ({ context }) => {
+  const first = await context.newPage()
+  const second = await context.newPage()
+  await Promise.all([first.goto('/login'), second.goto('/login')])
+  await first.getByLabel('邮箱', { exact: true }).fill('alice@example.com')
+  await first.getByLabel('密码', { exact: true }).fill('Demo-only-123!')
+  await first.getByRole('button', { name: '登录', exact: true }).click()
+  await expect(first.getByRole('heading', { name: '欢迎，alice@example.com！' })).toBeVisible()
+  await expect.poll(() => second.evaluate(() => localStorage.getItem('token'))).not.toBeNull()
+  await second.getByLabel('邮箱', { exact: true }).fill('bob@example.com')
+  await second.getByLabel('密码', { exact: true }).fill('Demo-only-123!')
+  await second.getByRole('button', { name: '登录', exact: true }).click()
+  await expect(second.getByRole('heading', { name: '欢迎，bob@example.com！' })).toBeVisible()
+  await expect(first.getByRole('heading', { name: '登录 SkillMatch 职聘匹配平台' })).toBeVisible()
+  await expect.poll(() => second.evaluate(() => localStorage.getItem('token'))).not.toBeNull()
+  await second.getByRole('button', { name: '注销', exact: true }).click()
+  await expect.poll(() => first.evaluate(() => localStorage.getItem('token'))).toBeNull()
+})
