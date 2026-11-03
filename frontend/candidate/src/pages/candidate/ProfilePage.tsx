@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useRemote } from "../../hooks/useRemote";
-import { candidateRequest } from "../../api/candidate_api";
+import { candidateRequest } from "../../api/common_api";
 import type {
   CandidateProfileCreate,
   CandidateProfilePublic,
@@ -13,6 +13,7 @@ import { PlainText } from "../../components/PlainText";
 
 /** 资料补填沿用队友的 /candidate/details；此页负责已有资料的查看与编辑。 */
 export default function ProfilePage() {
+  // 从会话取得当前用户；revision 改变会让 useRemote 重新读取资料。
   const { currentUser, refreshCurrentUser } = useAuth();
   const navigate = useNavigate();
   const [revision, refresh] = useState(0);
@@ -20,11 +21,13 @@ export default function ProfilePage() {
     `users/candidates/${currentUser!.id}/profile`,
     revision,
   );
+  // 分别保存提交状态、错误提示和成功提示，供界面按当前状态显示。
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
   async function save(profile: CandidateProfileCreate) {
+    // PATCH 只修改当前账号的资料；服务端仍会独立校验身份和归属。
     setSubmitting(true);
     setError("");
     setMessage("");
@@ -35,8 +38,10 @@ export default function ProfilePage() {
         profile,
       );
       setMessage("资料已保存");
+      // 数字递增触发重新加载，确保展示的简历与服务器保存结果一致。
       refresh((value) => value + 1);
     } catch (failure) {
+      // 保存失败时留在页面并显示错误；finally 无论成功失败都解除提交状态。
       setError(
         failure instanceof Error ? failure.message : "保存失败，请重试。",
       );
@@ -45,6 +50,7 @@ export default function ProfilePage() {
     }
   }
 
+  // 加载中、加载失败、加载成功分别返回不同界面，避免读取尚不存在的数据。
   if (state.loading) return <p role="status">正在加载资料...</p>;
   if (!state.data)
     return (
@@ -53,6 +59,7 @@ export default function ProfilePage() {
         <button
           onClick={async () => {
             try {
+              // 重新询问服务器是否已补全资料，再决定跳转补填页还是重试读取。
               const user = await refreshCurrentUser();
               if (!user.profile_completed)
                 navigate("/candidate/details", { replace: true });
@@ -67,6 +74,7 @@ export default function ProfilePage() {
         <ErrorMessage error={error} />
       </section>
     );
+  // key 包含用户和版本：切换账号或重新读取时重新初始化表单输入。
   return (
     <main>
       <h2>我的资料</h2>

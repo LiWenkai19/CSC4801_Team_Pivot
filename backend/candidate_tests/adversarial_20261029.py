@@ -14,7 +14,7 @@ from sqlmodel import Session
     {"skills": ["\ud800"]},
 ])
 def test_invalid_text_returns_500(flow, payload):
-    from app.candidate_main import app
+    from app.main import app
 
     path = f'/users/candidates/{flow["ids"][0]}/profile'
     original = flow["client"].get(path, headers=flow["headers"][0]).json()
@@ -28,7 +28,7 @@ def test_invalid_text_returns_500(flow, payload):
 
 
 def test_nul_skill_initial_profile_returns_500(flow):
-    from app.candidate_main import app
+    from app.main import app
 
     response = flow["client"].post('/users/register', json={
         'email': 'nul-audit@example.com', 'password': 'audit-password', 'role': 'candidate'})

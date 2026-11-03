@@ -75,7 +75,6 @@ def test_empty_database_creates_exactly_seven_owned_tables(database):
         upgrade(connection)
         assert set(inspect(connection).get_table_names()) == OWNED_TABLES | {"alembic_owned_version"}
         assert set(SQLModel.metadata.tables) == original_metadata
-        assert "company" not in SQLModel.metadata.tables
         assert "score" not in {column["name"] for column in inspect(connection).get_columns("application")}
         assert connection.exec_driver_sql("PRAGMA foreign_keys").scalar() == 1
         check(connection)
@@ -247,10 +246,10 @@ def test_postgresql_offline_sql_creates_only_owned_tables():
     assert "REFERENCES employer_profile (user_id)" in sql
 
 
-def test_new_models_do_not_change_team_metadata():
+def test_independent_registry_and_shared_fields():
     assert OwnedModel.metadata is not SQLModel.metadata
-    assert "updated_at" not in team_users.CandidateProfile.__table__.columns
-    assert "created_at" not in team_flow.Application.__table__.columns
+    assert "updated_at" in team_users.CandidateProfile.__table__.columns
+    assert "created_at" in team_flow.Application.__table__.columns
     assert "company_id" not in team_users.EmployerProfile.__table__.columns
 
 

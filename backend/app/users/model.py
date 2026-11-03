@@ -3,7 +3,7 @@ import uuid
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import CheckConstraint, Column, DateTime
+from sqlalchemy import CheckConstraint, Column, DateTime, func
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -58,6 +58,10 @@ class CandidateProfile(SQLModel, table=True):
     user_id: uuid.UUID = Field(foreign_key="user.id", primary_key=True)
     display_name: str = Field(nullable=False)
     resume_text: str = Field(default="", nullable=False)
+    updated_at: datetime.datetime | None = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), nullable=True, onupdate=func.current_timestamp()),
+    )
 
     user: User = Relationship(back_populates="candidate_profile")
     skills: list["CandidateSkill"] = Relationship(back_populates="candidate")

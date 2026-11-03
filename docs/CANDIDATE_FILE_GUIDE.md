@@ -1,6 +1,8 @@
 # Candidate Flow 逐文件阅读导航
 
-更新：2026-11-03。原有107个文件及对抗性审阅新增4个，共111个文件；不计node_modules、.venv、构建缓存、截图或本地SQLite等产物。
+更新：2026-11-03。清单共104个文件；不计node_modules、.venv、构建缓存、截图或本地SQLite等产物。
+
+共享入口和总迁移配置已接入候选人功能；以下表格中的提交状态及独立接入说明为历史快照，最新状态参见进度文档。
 
 当前分支为candidate，HEAD为c2667bd。表内“已提交”表示文件已纳入本地分支，不表示本次测试后的最新修改已推送；“本地修改”“新增未提交”可据此区分。
 
@@ -11,10 +13,10 @@
 1. [功能与权限台账](CANDIDATE_FEATURE_PERMISSION_LEDGER.md)：先了解CAN-001～006做了什么。
 2. [整体入口说明](CANDIDATE_README.md)和[接入边界](CANDIDATE_INTEGRATION.md)：了解如何运行及哪些需要队友接入。
 3. [前端路由](../frontend/candidate/src/App.tsx) → [资料页](../frontend/candidate/src/pages/candidate/ProfilePage.tsx) → [表单](../frontend/candidate/src/pages/users/CandidateForm.tsx) → [标签组件](../frontend/candidate/src/components/skills/SkillTagPicker.tsx)。
-4. [请求包装](../frontend/candidate/src/api/candidate_api.ts) → [后端路由](../backend/app/candidate/router.py) → [业务服务](../backend/app/candidate/service.py)。
-5. [简历读取授权](../backend/app/candidate/resume_access.py)、[请求字段校验](../backend/app/candidate/profile_schema.py)、[当前响应结构](../backend/app/candidate/schema.py)。
+4. [请求包装](../frontend/candidate/src/api/common_api.ts) → [后端路由](../backend/app/candidate/router.py) → [业务服务](../backend/app/candidate/service.py)。
+5. [简历读取授权](../backend/app/candidate/service.py)、[请求字段校验](../backend/app/candidate/profile_schema.py)、[当前响应结构](../backend/app/candidate/schema.py)。
 6. [运行应用模型](../backend/app/candidate/model.py)与[独立七表模型](../backend/app/candidate/database/model.py)对照看，再读各自迁移链。二者不要混作同一个已接入的业务数据库。
-7. [推荐列表](../frontend/candidate/src/pages/candidate/JobsPage.tsx) → [评分占位入口](../backend/app/candidate/recommendation_scoring.py) → [申请按钮](../frontend/candidate/src/components/candidate/ApplyButton.tsx) → [申请/预约页](../frontend/candidate/src/pages/candidate/ApplicationsPage.tsx)。
+7. [推荐列表](../frontend/candidate/src/pages/candidate/JobsPage.tsx) → [评分占位入口](../backend/app/matching.py) → [申请按钮](../frontend/candidate/src/components/candidate/ApplyButton.tsx) → [申请/预约页](../frontend/candidate/src/pages/candidate/ApplicationsPage.tsx)。
 8. [最新测试报告](CANDIDATE_TEST_REPORT_20261027.md)，再逐个看本导航测试分组中的样例。
 
 下面按上述层次列出全部文件，每项均可打开。编号仅表示阅读次序。
@@ -47,13 +49,10 @@
 | 17 | [backend/app/candidate/accounts.py](../backend/app/candidate/accounts.py) | 包装团队账号接口，增加严格字段校验及资料完成状态。 | 已提交 |
 | 18 | [backend/app/candidate/model.py](../backend/app/candidate/model.py) | 当前运行应用的职位、技能、申请、时段和预约模型，复用团队账号模型。 | 已提交 |
 | 19 | [backend/app/candidate/profile_schema.py](../backend/app/candidate/profile_schema.py) | 注册、登录、资料创建/更新的扩展校验，拒绝额外字段、非法null和伪造归属。 | 已提交 |
-| 20 | [backend/app/candidate/recommendation_scoring.py](../backend/app/candidate/recommendation_scoring.py) | 当前生效的评分占位入口，统一返回0，后续替换真实算法。 | 已提交 |
-| 21 | [backend/app/candidate/resume_access.py](../backend/app/candidate/resume_access.py) | 简历读取授权：候选人仅读本人，雇主仅读自己职位的申请人。 | 已提交 |
 | 22 | [backend/app/candidate/router.py](../backend/app/candidate/router.py) | 候选人HTTP路由，连接身份依赖、业务服务与错误状态码。 | 已提交 |
 | 23 | [backend/app/candidate/schema.py](../backend/app/candidate/schema.py) | 职位、申请、时段、预约等API请求和响应结构。 | 已提交 |
 | 24 | [backend/app/candidate/seed.py](../backend/app/candidate/seed.py) | 独立演示环境的虚构账号、职位、技能、申请与时段。 | 已提交 |
 | 25 | [backend/app/candidate/service.py](../backend/app/candidate/service.py) | 资料保存、职位列表、重复申请、申请读取、预约与雇主申请列表的主要业务逻辑。 | 已提交 |
-| 26 | [backend/app/candidate_main.py](../backend/app/candidate_main.py) | 独立FastAPI入口，挂载候选人和账号扩展路由，不修改团队main。 | 已提交 |
 | 27 | [backend/app/matching.py](../backend/app/matching.py) | 保留技能规范化、列表排序及历史技能交集评分；当前业务评分已转到recommendation_scoring。 | 已提交 |
 
 ## 3. 独立七表数据库与迁移（8个）
@@ -73,9 +72,7 @@
 
 | 序号 | 文件 | 用途 | 当前状态 |
 | --- | --- | --- | --- |
-| 36 | [backend/alembic.candidate.ini](../backend/alembic.candidate.ini) | 当前运行应用的独立Alembic配置，引用团队原迁移但不修改它们。 | 已提交 |
-| 37 | [backend/candidate_alembic/env.py](../backend/candidate_alembic/env.py) | 当前运行应用的迁移环境，注册团队账号与候选人业务元数据。 | 已提交 |
-| 38 | [backend/candidate_alembic/versions/candidate_flow_001.py](../backend/candidate_alembic/versions/candidate_flow_001.py) | 当前运行应用的职位、技能、申请、时段、预约迁移；与独立七表迁移链区分阅读。 | 已提交 |
+| 38 | [backend/alembic/versions/candidate_flow_001.py](../backend/alembic/versions/candidate_flow_001.py) | 当前运行应用的职位、技能、申请、时段、预约迁移；与独立七表迁移链区分阅读。 | 已提交 |
 
 ## 5. 前端页面与表单（12个）
 
@@ -115,7 +112,7 @@
 | --- | --- | --- | --- |
 | 61 | [frontend/candidate/src/App.css](../frontend/candidate/src/App.css) | 通过导入复用团队App样式的独立桥接文件。 | 已提交 |
 | 62 | [frontend/candidate/src/App.tsx](../frontend/candidate/src/App.tsx) | 独立前端页面路由，组合登录守卫、资料补填和候选人页面。 | 已提交 |
-| 63 | [frontend/candidate/src/api/candidate_api.ts](../frontend/candidate/src/api/candidate_api.ts) | 候选人接口请求包装，统一调用已登录请求函数。 | 已提交 |
+| 63 | [frontend/candidate/src/api/candidate_api.ts](../frontend/candidate/src/api/common_api.ts) | 候选人接口请求包装，统一调用已登录请求函数。 | 已提交 |
 | 64 | [frontend/candidate/src/api/common_api.ts](../frontend/candidate/src/api/common_api.ts) | 独立请求及账号API封装，解析错误、保存状态码并处理失效认证。 | 已提交 |
 | 65 | [frontend/candidate/src/contexts/AuthContext.tsx](../frontend/candidate/src/contexts/AuthContext.tsx) | 认证会话状态、登录/注册、账号刷新、退出和迟到响应隔离。 | 已提交 |
 | 66 | [frontend/candidate/src/hooks/useRemote.ts](../frontend/candidate/src/hooks/useRemote.ts) | 业务数据读取Hook，管理加载、错误、刷新及过期请求结果。 | 已提交 |
@@ -172,7 +169,7 @@
 
 - `.venv/`、`node_modules/`：运行依赖。
 - `dist/`、测试结果、Playwright报告、缓存和截图：可再生成的验证产物。
-- `backend/data/owned_schema.sqlite3`：本地独立数据库，未纳入Git源码清单；查看结构优先读数据库模型和说明，避免直接改库。
+- `backend/data/owned_schema.sqlite3`：原独立数据库文件，确认业务表为空后已删除。
 - 团队原有 `backend/app/users/`、`backend/app/core/`、`backend/app/db/`、原 `main.py` 及外层 `frontend/src/`：被导入或复用，但没有因为本轮candidate flow而成为新增文件，也未被修改。
 
 ## 2026-10-28 安全审计新增文件（3个）
@@ -189,8 +186,6 @@
 
 | 序号 | 文件 | 用途 | 当前状态 |
 | --- | --- | --- | --- |
-| 103 | [backend/app/candidate/secure_session.py](../backend/app/candidate/secure_session.py) | 独立安全数据库会话。 | 新增未提交 |
-| 104 | [backend/app/candidate/recommendation_queries.py](../backend/app/candidate/recommendation_queries.py) | 批量读取职位推荐资料。 | 新增未提交 |
 | 105 | [backend/candidate_tests/test_bugfix_regression.py](../backend/candidate_tests/test_bugfix_regression.py) | 后端缺陷回归。 | 新增未提交 |
 | 106 | [frontend/candidate/e2e/session_security.spec.ts](../frontend/candidate/e2e/session_security.spec.ts) | 多标签页会话浏览器回归。 | 新增未提交 |
 | 107 | [docs/CANDIDATE_BUGFIX_20261028.md](CANDIDATE_BUGFIX_20261028.md) | 修复范围及剩余边界。 | 新增未提交 |

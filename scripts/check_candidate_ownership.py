@@ -6,6 +6,9 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+# 用户明确授权共享入口及总迁移配置用于 candidate/employer 整合。
+AUTHORIZED_SHARED = {'backend/app/main.py', 'backend/app/db/session.py', 'backend/app/users/model.py',
+                     'backend/alembic.ini', 'backend/alembic/env.py'}
 
 
 def git(*args):
@@ -17,6 +20,8 @@ def allowed(path):
         path.startswith(('backend/app/candidate/', 'backend/candidate_tests/',
                          'backend/candidate_alembic/', 'frontend/candidate/'))
         or path in {'backend/app/candidate_main.py', 'backend/app/matching.py',
+                    'backend/alembic/versions/candidate_flow_001.py',
+                    'backend/alembic/versions/candidate_shared_002.py',
                     'backend/alembic.candidate.ini', 'pytest.candidate.ini',
                     'scripts/check_candidate.py', 'scripts/check_candidate_ownership.py',
                     'scripts/preview_candidate.py'}
@@ -31,6 +36,8 @@ def main():
     if ancestry.returncode:
         errors.append('HEAD no longer descends from the audited upstream commit; re-audit the baseline.')
     for name, expected in baseline['tracked_sha256'].items():
+        if name in AUTHORIZED_SHARED:
+            continue
         path = ROOT / name
         if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
             errors.append(f'Upstream file changed: {name}')
@@ -43,7 +50,7 @@ def main():
     if errors:
         print('\n'.join(errors), file=sys.stderr)
         return 1
-    print(f'Ownership check passed: {len(baseline["tracked_sha256"])} upstream files unchanged; additions stay in candidate scope.')
+    print(f'Ownership check passed: {len(baseline["tracked_sha256"]) - len(AUTHORIZED_SHARED)} protected upstream files unchanged; shared integration files authorized.')
     return 0
 
 

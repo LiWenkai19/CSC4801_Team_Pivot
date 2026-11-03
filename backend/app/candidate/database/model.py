@@ -18,6 +18,7 @@ from app.candidate.model import Job as TeamJob
 from app.users.model import EmployerProfile as TeamEmployerProfile
 from app.users.model import Role
 
+# 这三组名称划分用户负责的七张表、第一阶段核心表，以及仅作为外键依赖的团队表。
 OWNED_TABLES = frozenset({
     "user", "candidate_profile", "candidate_skill", "company", "application",
     "interview_slot", "booking",
@@ -27,6 +28,7 @@ EXTERNAL_TABLES = frozenset({"employer_profile", "job", "job_skill"})
 
 
 def utc_now() -> datetime:
+    # 始终返回带 UTC 时区信息的当前时间。
     return datetime.now(timezone.utc)
 
 
@@ -37,6 +39,7 @@ class UTCDateTime(TypeDecorator):
     cache_ok = True
 
     def process_bind_param(self, value, dialect):
+        # 写数据库前拒绝没有时区的时间，并把其他时区换算为 UTC。
         if value is None:
             return None
         if value.tzinfo is None or value.utcoffset() is None:
@@ -44,6 +47,7 @@ class UTCDateTime(TypeDecorator):
         return value.astimezone(timezone.utc)
 
     def process_result_value(self, value, dialect):
+        # 读取时 SQLite 可能不保留时区标记，补回 UTC；其他带时区的值也转为 UTC。
         if value is None:
             return None
         if value.tzinfo is None:
@@ -52,6 +56,7 @@ class UTCDateTime(TypeDecorator):
 
 
 def timestamp_column():
+    # 应用未提供时间时由数据库生成当前时间，且此字段不允许为空。
     return Column(UTCDateTime(), nullable=False, server_default=func.current_timestamp())
 
 
@@ -59,6 +64,7 @@ class OwnedModel(SQLModel, registry=registry()):
     """与旧 ORM 并存的独立元数据；不改变团队类或字段。"""
 
 
+# table=True 表示该类对应数据库表；UUID 主键用于唯一标识记录。
 class User(OwnedModel, table=True):
     __tablename__ = "user"
 
@@ -74,6 +80,7 @@ class User(OwnedModel, table=True):
 
 
 class CandidateProfile(OwnedModel, table=True):
+    # user_id 同时是主键和指向 user 的外键；一个账号最多对应一份候选人资料。
     __tablename__ = "candidate_profile"
     __table_args__ = (
         CheckConstraint("length(trim(display_name)) > 0", name="ck_candidate_display_name"),
@@ -88,6 +95,7 @@ class CandidateProfile(OwnedModel, table=True):
 
 
 class CandidateSkill(OwnedModel, table=True):
+    # candidate_id 与 name 共同构成主键，同一个候选人不能重复保存相同规范技能。
     __tablename__ = "candidate_skill"
     __table_args__ = (
         CheckConstraint("length(name) > 0 AND name = lower(trim(name))",
@@ -99,6 +107,7 @@ class CandidateSkill(OwnedModel, table=True):
 
 
 class Company(OwnedModel, table=True):
+    # 公司名称必须包含非空白字符，描述默认为空字符串。
     __tablename__ = "company"
     __table_args__ = (
         CheckConstraint("length(trim(name)) > 0", name="ck_company_name"),
@@ -114,6 +123,7 @@ class Company(OwnedModel, table=True):
 
 
 class Application(OwnedModel, table=True):
+    # 候选人 ID 和职位 ID 的组合必须唯一，数据库层阻止重复申请。
     __tablename__ = "application"
     __table_args__ = (
         UniqueConstraint("candidate_id", "job_id", name="uq_application_candidate_job"),
@@ -133,6 +143,7 @@ class Application(OwnedModel, table=True):
 
 
 class InterviewSlot(OwnedModel, table=True):
+    # 面试结束必须晚于开始；针对 PostgreSQL/SQLite 分别规定恰好 30 分钟。
     __tablename__ = "interview_slot"
     __table_args__ = (
         CheckConstraint("ends_at > starts_at", name="ck_slot_time_order"),
@@ -153,6 +164,7 @@ class InterviewSlot(OwnedModel, table=True):
 
 
 class Booking(OwnedModel, table=True):
+    # 每条申请和每个时段均只能对应一个预约，由数据库唯一约束保护。
     __tablename__ = "booking"
     __table_args__ = (
         UniqueConstraint("application_id", name="uq_booking_application"),

@@ -12,7 +12,7 @@ from app.candidate.model import Job
 
 
 def test_secure_sql_logging_hides_synthetic_resume(flow, caplog, monkeypatch):
-    from app.candidate.secure_session import engine as runtime_engine
+    from app.db.session import safe_engine as runtime_engine
 
     assert runtime_engine.echo is False
     assert runtime_engine.hide_parameters is True
@@ -57,7 +57,7 @@ def test_recommendation_query_count_is_batched(flow):
 
 
 def test_register_unique_race_maps_to_duplicate_error(flow, monkeypatch):
-    from app.candidate_main import app
+    from app.main import app
     from app.users import service as accounts
 
     monkeypatch.setattr(accounts, "get_user_by_email", lambda *args: None)

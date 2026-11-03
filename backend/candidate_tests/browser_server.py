@@ -31,12 +31,12 @@ def main():
         from alembic.config import Config
         from sqlmodel import Session
         import uvicorn
-        from app.candidate_main import app
+        from app.main import app
         from app.db.session import engine
         from app.candidate.seed import seed
 
         try:
-            config = Config(str(Path(__file__).resolve().parents[1] / "alembic.candidate.ini"))
+            config = Config(str(Path(__file__).resolve().parents[1] / "alembic.ini"))
             command.upgrade(config, "head")
             with Session(engine) as session:
                 seed(session)

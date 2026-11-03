@@ -14,6 +14,8 @@ import RequireAuth from './components/RequireAuth';  // Import the RequiredAuth 
 
 /** 注册页面入口，两种角色的资料页沿用现有登录守卫。 */
 function App() {
+    // 路由由外向内检查：先要求登录和资料完整，再要求候选人角色。
+    // :jobId 是动态路径参数，例如 /candidate/jobs/某个职位ID。
     return(
         <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />

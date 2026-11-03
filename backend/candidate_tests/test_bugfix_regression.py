@@ -7,8 +7,8 @@ from audit_reproduction import (
 
 
 def test_candidate_entrypoint_uses_safe_database():
-    from app.candidate_main import app
-    from app.candidate.secure_session import get_safe_db
+    from app.main import app
+    from app.db.session import get_safe_db
     from app.db.session import get_db
 
     # Other test fixtures may temporarily replace this dependency; verify the
@@ -17,8 +17,8 @@ def test_candidate_entrypoint_uses_safe_database():
     import sys
 
     code = (
-        "from app.candidate_main import app; "
-        "from app.candidate.secure_session import get_safe_db; "
+        "from app.main import app; "
+        "from app.db.session import get_safe_db; "
         "from app.db.session import get_db; "
         "assert app.dependency_overrides[get_db] is get_safe_db"
     )

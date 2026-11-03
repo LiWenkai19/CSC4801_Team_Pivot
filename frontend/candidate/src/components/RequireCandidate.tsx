@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 /** 外层 RequireAuth 负责登录与补填；这里阻止雇主进入候选人业务界面。 */
 export default function RequireCandidate() {
   const { currentUser, logout } = useAuth();
+  // 这里控制前端页面入口；后端接口仍要独立校验角色及数据归属。
   if (currentUser?.role !== "candidate")
     return (
       <main>
@@ -12,6 +13,7 @@ export default function RequireCandidate() {
         <Link to="/navpage">返回主页</Link>
       </main>
     );
+  // 对候选人显示导航与子页面；key 随用户 ID 改变，避免换账号复用旧页面状态。
   return (
     <>
       <nav aria-label="候选人导航">

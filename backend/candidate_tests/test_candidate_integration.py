@@ -156,3 +156,69 @@ def test_existing_application_remains_visible_if_job_hidden_and_all_statuses(flo
             session.commit()
         rows = client.get("/candidate/applications", headers=headers).json()
         assert rows[0]["status"] == status.value and rows[0]["title"] == "alpha"
+
+
+# 共享入口及迁移整合回归。
+def test_shared_entrypoint_routes_and_permissions(flow):
+    from fastapi.testclient import TestClient
+    from app.db.session import get_safe_db
+    from app.db.session import get_db
+    from app.main import app
+
+    previous_override = app.dependency_overrides.get(get_db)
+    def isolated_db():
+        with Session(flow['engine']) as session:
+            yield session
+
+    app.dependency_overrides[get_db] = isolated_db
+    try:
+        with TestClient(app) as client:
+            assert client.get('/candidate/jobs').status_code == 401
+            response = client.get('/candidate/jobs', headers=flow['headers'][0])
+            assert response.status_code == 200
+            assert client.get('/users/me', headers=flow['headers'][0]).json()['profile_completed']
+            assert client.get(f"/users/candidates/{flow['ids'][1]}/profile",
+                              headers=flow['headers'][0]).status_code == 403
+        paths = [(route.path, method) for route in app.routes if hasattr(route, 'methods')
+                 for method in route.methods]
+        assert len(paths) == len(set(paths))
+    finally:
+        app.dependency_overrides[get_db] = previous_override or get_safe_db
+
+
+def test_shared_alembic_upgrades_from_team_revision(tmp_path):
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+    from sqlalchemy import create_engine, inspect, text
+    root = Path(__file__).resolve().parents[2]
+    db = tmp_path / 'shared.sqlite'
+    env = os.environ.copy()
+    env['DATABASE_URL'] = 'sqlite:///' + db.as_posix()
+    base = [sys.executable, '-m', 'alembic', '-c', 'backend/alembic.ini']
+    subprocess.run([*base, 'upgrade', 'e07644577837'], cwd=root, env=env, check=True)
+    seed_engine = create_engine(env['DATABASE_URL'])
+    with seed_engine.begin() as connection:
+        connection.execute(text("INSERT INTO user (id,email,hashed_password,role,created_at) VALUES "
+                                "('00000000000000000000000000000001','test@example.invalid','hash','candidate',CURRENT_TIMESTAMP)"))
+        connection.execute(text("INSERT INTO candidate_profile (user_id,display_name,resume_text) VALUES "
+                                "('00000000000000000000000000000001','Test','retained')"))
+    seed_engine.dispose()
+    subprocess.run([*base, 'upgrade', 'head'], cwd=root, env=env, check=True)
+    # 数据库已经处于 candidate_flow_001 时再次升级应识别版本且不会重复建表。
+    subprocess.run([*base, 'upgrade', 'head'], cwd=root, env=env, check=True)
+    engine = create_engine(env['DATABASE_URL'])
+    try:
+        assert {'user', 'candidate_profile', 'job', 'job_skill', 'application',
+                'interview_slot', 'booking', 'company'} <= set(inspect(engine).get_table_names())
+        for table, names in {'candidate_profile': {'updated_at'},
+                             'application': {'created_at', 'updated_at'},
+                             'interview_slot': {'created_at'}, 'booking': {'created_at'}}.items():
+            assert names <= {column['name'] for column in inspect(engine).get_columns(table)}
+        with engine.connect() as connection:
+            assert connection.execute(text('select version_num from alembic_version')).scalar() == 'candidate_shared_002'
+            assert connection.execute(text('select resume_text, updated_at from candidate_profile')).one()[0] == 'retained'
+            assert connection.execute(text('select updated_at from candidate_profile')).scalar() is not None
+    finally:
+        engine.dispose()

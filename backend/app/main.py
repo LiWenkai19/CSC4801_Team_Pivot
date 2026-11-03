@@ -5,7 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 # from app.db.session import engine
-from app.users.router import user_router
+from app.candidate.accounts import user_router
+from app.candidate.router import router as candidate_router
+from app.db.session import get_safe_db
+from app.db.session import get_db
 # from app.users.service import init_superadmin
 
 
@@ -22,6 +25,7 @@ from app.users.router import user_router
 
 
 app = FastAPI(title=settings.APP_NAME)
+app.dependency_overrides[get_db] = get_safe_db
 
 # cross origin resourse sharing middleware
 app.add_middleware(
@@ -36,4 +40,5 @@ app.add_middleware(
 
 
 app.include_router(user_router)
+app.include_router(candidate_router)
 

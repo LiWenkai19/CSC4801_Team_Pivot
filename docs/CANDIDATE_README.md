@@ -48,17 +48,17 @@ npm run test:e2e
 临时预览用于验证，不替代课程要求的持久化数据库。需要持久化时，在 `backend/` 为专用开发库提供 `APP_NAME`、`SECRET_KEY`、`ALGORITHM`、`ACCESS_TOKEN_EXPIRE_MINUTES` 和 `DATABASE_URL` 环境变量，再运行：
 
 ```powershell
-..\.venv\Scripts\python.exe -m alembic -c alembic.candidate.ini upgrade head
-..\.venv\Scripts\python.exe -m uvicorn app.candidate_main:app --host 127.0.0.1 --port 8000
+..\.venv\Scripts\python.exe -m alembic -c alembic.ini upgrade head
+..\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 前端在 `frontend/candidate/` 通过 `VITE_API_BASE_URL=http://127.0.0.1:8000` 启动 `npm run dev`。不复制旧目录中的个人 `.env`，也不自动修改个人 PostgreSQL。
 
 ## 工程边界
 
-后端独立入口是 `backend/app/candidate_main.py`。schema 继承、账户路由包装、候选人业务均在 `backend/app/candidate/`，原 `users`、`core`、`db`、`main.py` 不修改。技能规范化导入团队既有函数，评分在 `backend/app/matching.py`，两端共享。
+后端统一入口是 `backend/app/main.py`。账户包装和候选人业务在 `backend/app/candidate/`，共享入口挂载其路由并使用安全数据库会话。
 
-迁移配置、环境和新增迁移位于 `backend/alembic.candidate.ini` 与 `backend/candidate_alembic/`；既有迁移仅引用，不编辑。前端使用独立入口和依赖清单，账户类型与 CSS 导入原文件，其余派生页面保留原作者归属。
+总迁移配置 `backend/alembic.ini` 使用共享 `backend/alembic/env.py`，所有运行应用的迁移版本位于 `backend/alembic/versions/`，形成同一迁移链。前端使用独立入口和依赖清单，派生页面保留原作者归属。
 
 现有 `start.bat`、原应用入口、原 Dockerfile 和文档保持团队版本；它们不会自动启动候选人扩展。队友将来接入主应用时，使用 `CANDIDATE_INTEGRATION.md` 的说明自行处理归属范围内的入口。
 

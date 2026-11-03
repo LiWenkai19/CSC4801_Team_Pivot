@@ -3,6 +3,7 @@
 import sqlalchemy as sa
 from alembic import op
 
+# 这是独立迁移链的第一个版本，因此没有前置版本。
 revision = "owned_core_001"
 down_revision = None
 branch_labels = None
@@ -10,11 +11,13 @@ depends_on = None
 
 
 def timestamp(name):
+    # 构造不允许为空、由数据库提供默认当前时间的时间列。
     return sa.Column(name, sa.DateTime(timezone=True), nullable=False,
                      server_default=sa.func.current_timestamp())
 
 
 def add_updated_at_trigger(table):
+    # PostgreSQL 和 SQLite 的触发器语法不同；更新记录时维护 updated_at。
     if op.get_bind().dialect.name == "postgresql":
         op.execute(f"""CREATE TRIGGER owned_{table}_updated_at
             BEFORE UPDATE ON {table} FOR EACH ROW
@@ -31,6 +34,7 @@ def add_updated_at_trigger(table):
 
 
 def upgrade():
+    # 依次创建账号、候选人资料、技能和公司四张用户负责的核心表。
     op.create_table(
         "user",
         sa.Column("id", sa.Uuid(), primary_key=True),
@@ -40,7 +44,9 @@ def upgrade():
                                   native_enum=False, create_constraint=True), nullable=False),
         timestamp("created_at"),
     )
+    # 邮箱唯一索引既辅助查询，也由数据库阻止重复邮箱。
     op.create_index("ix_user_email", "user", ["email"], unique=True)
+    # 资料表的 user_id 是外键和主键，约束显示名称不能为空白。
     op.create_table(
         "candidate_profile",
         sa.Column("user_id", sa.Uuid(), sa.ForeignKey("user.id"), primary_key=True),
@@ -49,6 +55,7 @@ def upgrade():
         timestamp("updated_at"),
         sa.CheckConstraint("length(trim(display_name)) > 0", name="ck_candidate_display_name"),
     )
+    # 技能表使用候选人 ID 与规范名称的组合主键阻止重复技能。
     op.create_table(
         "candidate_skill",
         sa.Column("candidate_id", sa.Uuid(), sa.ForeignKey("candidate_profile.user_id"),
@@ -57,6 +64,7 @@ def upgrade():
         sa.CheckConstraint("length(name) > 0 AND name = lower(trim(name))",
                            name="ck_candidate_skill_normalized_name"),
     )
+    # 公司名称必须有效，描述可以为空字符串。
     op.create_table(
         "company",
         sa.Column("id", sa.Uuid(), primary_key=True),
@@ -66,6 +74,7 @@ def upgrade():
         timestamp("updated_at"),
         sa.CheckConstraint("length(trim(name)) > 0", name="ck_company_name"),
     )
+    # PostgreSQL 共用一个触发函数；SQLite 使用各表自己的触发器。
     if op.get_bind().dialect.name == "postgresql":
         op.execute("""CREATE FUNCTION owned_set_updated_at() RETURNS trigger AS $$
             BEGIN NEW.updated_at = CURRENT_TIMESTAMP; RETURN NEW; END;
@@ -75,4 +84,5 @@ def upgrade():
 
 
 def downgrade():
+    # 禁止自动删除业务表；回退前需要先备份并协调。
     raise RuntimeError("No automatic destructive downgrade; back up and coordinate table ownership first")
