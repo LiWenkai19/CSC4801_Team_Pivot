@@ -5,6 +5,7 @@ from sqlalchemy import pool
 
 
 from app.core.config import settings
+from app.employer import model as employer_model  # noqa: F401 -- 注册雇主业务表到 SQLModel.metadata。
 from app.users import model  # noqa: F401 -- 注册用户模型到 SQLModel.metadata。
 from alembic import context
 from sqlmodel import SQLModel
