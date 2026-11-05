@@ -1,5 +1,16 @@
 # 前端进度
 
+## 2026-11-05：完成雇主前端页面规划及补充验证
+
+- 状态：规划中的 4 个页面、NavPage 角色分流、受保护路由、9 个雇主 API 和共享类型均已完成。公司资料可查看及局部编辑；职位支持增删改查；申请人展示后端评分/排序及 UTC 预约，四种状态可独立保存。
+- 已验证空白校验、空技能清除、提交禁用与重复提交拦截、失败保留输入和重试、空列表、公司资料补填、401/403/404/409/422、两类删除依赖冲突，以及状态改变后保留预约。
+- 用户补充授权 common_api.ts、main.tsx、LoginPage.tsx、本进度、模块 REQUIREMENTS.md 和 frontend/tests/employer.browser.mjs 六个文件。公共 request/requestWithToken 的方法类型加入 PATCH，雇主更新接口复用该封装；DELETE 204 仍在 employer_api.ts 内兼容。清除 main/LoginPage 的未使用 React 导入。
+- 新增 src/pages/employer/REQUIREMENTS.md 摘录稳定业务要求；完成范围、需求核对、后续缺口及测试运行方法记录在 docs/雇主前端完成报告.md。
+- 验证：npm run build、npm run lint、显式开启 noUnusedLocals/noUnusedParameters 的 TypeScript 检查及浏览器脚本语法检查均通过。lint 仅保留 AuthContext 的两条既有 Fast Refresh 警告。
+- 仓库内浏览器脚本实际运行通过 29 组检查：自动创建 PostgreSQL 隔离库、运行迁移和测试数据，启动独立端口的真实后端及生产预览；最终停止临时服务并删除该隔离库，日志与截图留在系统临时目录。Playwright 由独立工具目录提供，未修改项目依赖配置。
+- 本轮累计后端相关回归 78 passed；全量 pytest 仍因 tests/users/test_schema.py 导入不存在的 CandidateProfileUpdate 而在收集阶段失败。该既有错误未在本次范围内修复。
+- 后续：候选人工作流、完整时段/预约接口与并发验证、全量有效单元测试及 SPEC/安装/README/Docker 交付仍待相应模块实施。预约显示完成不代表 FP-SCHED-1～3 完成。
+
 ## 2026-10-19：注册、登录及登录守卫统一资料补填引导
 
 - 用户确认四个目标源文件的实现方案，并额外授权同步本进度文档；函数模式预计 10 个新增或实质修改函数，不修改其他源文件。

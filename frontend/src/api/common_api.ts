@@ -47,7 +47,7 @@ async function showError(response: Response){
 
 export async function request<T>(
     path: string,
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     headers?: HeadersInit,
     body?: unknown,
 ): Promise<T> {
@@ -71,7 +71,7 @@ export async function request<T>(
 
 export async function requestWithToken<T>(
     path: string,
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     headers?: HeadersInit,
     body?: unknown,
 ): Promise<T> {

@@ -65,3 +65,68 @@ export interface EmployerProfilePublic {
   company_name: string
   company_description: string
 }
+
+/** 雇主公司接口与资料表使用相同字段。 */
+export interface CompanyPublic extends EmployerProfilePublic {}
+
+/** 省略字段表示不修改；不发送 null。 */
+export interface CompanyUpdate {
+  company_name?: string
+  company_description?: string
+}
+
+export interface JobCreate {
+  title: string
+  description: string
+  required_skills?: string[]
+}
+
+/** 技能传入时整体替换，空数组表示清空。 */
+export interface JobUpdate {
+  title?: string
+  description?: string
+  required_skills?: string[]
+}
+
+export interface JobPublic {
+  id: string
+  company_name: string
+  employer_id: string
+  title: string
+  description: string
+  required_skills: string[]
+  created_at: string
+  updated_at: string
+}
+
+export type ApplicationStatus = 'Pending' | 'Interviewing' | 'Rejected' | 'Accepted'
+
+export interface BookingPublic {
+  booking_id: string
+  slot_id: string
+  starts_at: string
+  ends_at: string
+}
+
+/** 不包含候选人私有简历等信息；分数及顺序由服务端决定。 */
+export interface ApplicantPublic {
+  application_id: string
+  candidate_id: string
+  display_name: string
+  skills: string[]
+  match_score: number
+  status: ApplicationStatus
+  booking: BookingPublic | null
+}
+
+export interface ApplicationStatusUpdate {
+  status: ApplicationStatus
+}
+
+export interface ApplicationStatusPublic {
+  application_id: string
+  job_id: string
+  candidate_id: string
+  status: ApplicationStatus
+  updated_at: string
+}
