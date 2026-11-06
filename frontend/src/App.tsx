@@ -9,6 +9,11 @@ import CompanyPage from './pages/employer/CompanyPage';
 import JobListPage from './pages/employer/JobListPage';
 import JobFormPage from './pages/employer/JobFormPage';
 import JobDetailPage from './pages/employer/JobDetailPage';
+import CandidateLayout from './pages/candidate/CandidateLayout';
+import ProfilePage from './pages/candidate/ProfilePage';
+import JobsPage from './pages/candidate/JobsPage';
+import JobPage from './pages/candidate/JobPage';
+import ApplicationsPage from './pages/candidate/ApplicationsPage';
 
 
 /** 注册页面入口，两种角色的资料页沿用现有登录守卫。 */
@@ -23,6 +28,12 @@ function App() {
                 <Route path='/candidate/details' element={<CandidateDetailsPage />}></Route>
                 <Route path='/employer/details' element={<EmployerDetailsPage />}></Route>
                 <Route path='/navpage' element={<NavPage />}></Route>
+                <Route element={<CandidateLayout />}>
+                    <Route path='/candidate/profile' element={<ProfilePage />} />
+                    <Route path='/candidate/jobs' element={<JobsPage />} />
+                    <Route path='/candidate/jobs/:jobId' element={<JobPage />} />
+                    <Route path='/candidate/applications' element={<ApplicationsPage />} />
+                </Route>
                 <Route path='/employer/company' element={<CompanyPage />} />
                 <Route path='/employer/jobs' element={<JobListPage />} />
                 <Route path='/employer/jobs/new' element={<JobFormPage />} />

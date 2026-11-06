@@ -1,0 +1,22 @@
+.candidate-page { width: 100%; padding: 20px; box-sizing: border-box; text-align: left; overflow-wrap: anywhere; }
+.candidate-page nav { display: flex; flex-wrap: wrap; gap: 12px 20px; margin-bottom: 24px; }
+.candidate-page nav [aria-current] { font-weight: 700; }
+.candidate-page p { margin: 8px 0; }
+.candidate-page ul { padding-left: 24px; }
+.candidate-page .records { list-style: none; padding: 0; }
+.candidate-page .records > li { padding: 24px 0; border-bottom: 1px solid var(--border); }
+.candidate-page .records h2 { margin-bottom: 12px; }
+.candidate-page .description { white-space: pre-wrap; max-width: 72ch; }
+.candidate-page form { max-width: 640px; }
+.candidate-page form > label { display: block; margin: 20px 0 8px; }
+.candidate-page input, .candidate-page textarea { box-sizing: border-box; width: 100%; padding: 8px; font: inherit; }
+.candidate-page button, .candidate-page select { font: inherit; max-width: 100%; padding: 6px 10px; }
+.candidate-page button { cursor: pointer; }
+.candidate-page button:disabled { cursor: default; opacity: .65; }
+.candidate-page :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.candidate-page a { text-underline-offset: 3px; }
+.candidate-page time { font-variant-numeric: tabular-nums; }
+.candidate-page [role=alert] { color: var(--text-h); }
+.candidate-page .booking-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.candidate-page .booking-controls select { min-width: 0; width: 100%; }
+.candidate-page ::selection { color: var(--text-h); background: var(--accent-bg); }

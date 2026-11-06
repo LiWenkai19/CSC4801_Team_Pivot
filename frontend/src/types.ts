@@ -130,3 +130,31 @@ export interface ApplicationStatusPublic {
   status: ApplicationStatus
   updated_at: string
 }
+
+/** 省略字段保留原值；空字符串或空数组清空，不接受 null。 */
+export interface CandidateProfileUpdate {
+  display_name?: string
+  resume_text?: string
+  skills?: string[]
+}
+
+export interface RecommendedJob extends JobPublic {
+  match_score: number
+  applied: boolean
+}
+
+export interface CandidateApplication {
+  application_id: string
+  job_id: string
+  job_title: string
+  company_name: string
+  status: ApplicationStatus
+  created_at: string
+  booking: BookingPublic | null
+}
+
+export interface InterviewSlot {
+  id: string
+  starts_at: string
+  ends_at: string
+}
