@@ -130,7 +130,6 @@ def update_my_profile(
         session.rollback()
         raise
     session.refresh(profile)
-    session.expire(profile, ["skills"])
     return _profile_public(session, profile)
 
 
@@ -144,60 +143,65 @@ def _active_job(session: Session, job_id: uuid.UUID, lock: bool = False) -> Job:
 
 
 def _recommended_jobs(
-    session: Session, user: User, jobs: list[Job]
+    session: Session, user: User, job_id: uuid.UUID | None = None
 ) -> list[RecommendedJob]:
-    """批量加载关联数据；职位数量增加不会增加每职位查询。"""
-    profile = _profile(session, user.id)
+    """三次批量查询组装推荐；指定 job_id 时只读取一个有效职位。"""
+    applied = (
+        select(Application.id)
+        .where(Application.candidate_id == user.id, Application.job_id == Job.id)
+        .exists()
+    )
+    statement = (
+        select(Job, EmployerProfile.company_name, applied)
+        .outerjoin(EmployerProfile, Job.employer_id == EmployerProfile.user_id)
+        .where(Job.is_deleted.is_(False))
+    )
+    if job_id is not None:
+        statement = statement.where(Job.id == job_id)
+    jobs = session.exec(statement).all()
+    if job_id is not None and not jobs:
+        raise NotFoundError("Job not found")
+
+    profile_skills = session.exec(
+        select(CandidateProfile.user_id, CandidateSkill.name)
+        .outerjoin(
+            CandidateSkill, CandidateProfile.user_id == CandidateSkill.candidate_id
+        )
+        .where(CandidateProfile.user_id == user.id)
+    ).all()
+    if not profile_skills:
+        raise NotFoundError("Candidate profile not found")
     if not jobs:
         return []
-    ids = [job.id for job in jobs]
+    candidate_skills = [name for _, name in profile_skills if name is not None]
+    ids = [job.id for job, _, _ in jobs]
     skills: dict[uuid.UUID, list[str]] = {job_id: [] for job_id in ids}
     for job_id, name in session.exec(
         select(JobSkill.job_id, JobSkill.name).where(JobSkill.job_id.in_(ids))
     ):
         skills[job_id].append(name)
-    companies = dict(
-        session.exec(
-            select(EmployerProfile.user_id, EmployerProfile.company_name).where(
-                EmployerProfile.user_id.in_({job.employer_id for job in jobs})
-            )
-        ).all()
-    )
-    candidate_skills = session.exec(
-        select(CandidateSkill.name).where(
-            CandidateSkill.candidate_id == profile.user_id
-        )
-    ).all()
-    applied = set(
-        session.exec(
-            select(Application.job_id).where(
-                Application.candidate_id == user.id, Application.job_id.in_(ids)
-            )
-        ).all()
-    )
     return [
         RecommendedJob(
             id=job.id,
             employer_id=job.employer_id,
             title=job.title,
             description=job.description,
-            company_name=companies.get(job.employer_id, ""),
+            company_name=company_name or "",
             required_skills=sorted(skills[job.id]),
             created_at=job.created_at,
             updated_at=job.updated_at,
             match_score=match_score(candidate_skills, skills[job.id]),
-            applied=job.id in applied,
+            applied=has_applied,
         )
-        for job in jobs
+        for job, company_name, has_applied in jobs
     ]
 
 
 def list_jobs(session: Session, user: User) -> list[RecommendedJob]:
     """全部有效职位按分数降序、标题忽略大小写、稳定 ID 排列。"""
     _require_candidate(user)
-    jobs = session.exec(select(Job).where(Job.is_deleted.is_(False))).all()
     return sorted(
-        _recommended_jobs(session, user, jobs),
+        _recommended_jobs(session, user),
         key=lambda row: (-row.match_score, row.title.lower(), str(row.id)),
     )
 
@@ -205,7 +209,7 @@ def list_jobs(session: Session, user: User) -> list[RecommendedJob]:
 def get_job(session: Session, user: User, job_id: uuid.UUID) -> RecommendedJob:
     """返回有效职位及当前候选人的投递标记。"""
     _require_candidate(user)
-    return _recommended_jobs(session, user, [_active_job(session, job_id)])[0]
+    return _recommended_jobs(session, user, job_id)[0]
 
 
 def _owned_application(
@@ -229,27 +233,28 @@ def _applications_public(
     if not applications:
         return []
     jobs = {
-        job.id: job
-        for job in session.exec(
-            select(Job).where(Job.id.in_({row.job_id for row in applications}))
+        job_id: (title, company_name or "")
+        for job_id, title, company_name in session.exec(
+            select(Job.id, Job.title, EmployerProfile.company_name)
+            .outerjoin(EmployerProfile, Job.employer_id == EmployerProfile.user_id)
+            .where(Job.id.in_({row.job_id for row in applications}))
         ).all()
     }
-    companies = dict(
-        session.exec(
-            select(EmployerProfile.user_id, EmployerProfile.company_name).where(
-                EmployerProfile.user_id.in_({job.employer_id for job in jobs.values()})
-            )
-        ).all()
-    )
     bookings = {
-        booking.application_id: BookingPublic(
-            booking_id=booking.id,
-            slot_id=slot.id,
-            starts_at=slot.starts_at,
-            ends_at=slot.ends_at,
+        application_id: BookingPublic(
+            booking_id=booking_id,
+            slot_id=slot_id,
+            starts_at=starts_at,
+            ends_at=ends_at,
         )
-        for booking, slot in session.exec(
-            select(Booking, InterviewSlot)
+        for application_id, booking_id, slot_id, starts_at, ends_at in session.exec(
+            select(
+                Booking.application_id,
+                Booking.id,
+                Booking.slot_id,
+                InterviewSlot.starts_at,
+                InterviewSlot.ends_at,
+            )
             .join(
                 InterviewSlot,
                 Booking.slot_id == InterviewSlot.id,
@@ -261,8 +266,8 @@ def _applications_public(
         ApplicationPublic(
             application_id=row.id,
             job_id=row.job_id,
-            job_title=jobs[row.job_id].title,
-            company_name=companies.get(jobs[row.job_id].employer_id, ""),
+            job_title=jobs[row.job_id][0],
+            company_name=jobs[row.job_id][1],
             status=row.status,
             created_at=row.created_at,
             booking=bookings.get(row.id),
@@ -354,6 +359,7 @@ def available_slots(
         .where(
             InterviewSlot.employer_id == job.employer_id,
             InterviewSlot.starts_at > utc_now(),
+            InterviewSlot.ends_at - InterviewSlot.starts_at == timedelta(minutes=30),
             InterviewSlot.id.not_in(select(Booking.slot_id)),
         )
         .order_by(InterviewSlot.starts_at, InterviewSlot.id)
@@ -361,7 +367,6 @@ def available_slots(
     return [
         SlotPublic(id=slot.id, starts_at=slot.starts_at, ends_at=slot.ends_at)
         for slot in slots
-        if slot.ends_at - slot.starts_at == timedelta(minutes=30)
     ]
 
 

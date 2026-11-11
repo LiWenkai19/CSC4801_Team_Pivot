@@ -48,7 +48,8 @@ The employer and candidate views call the same real matching implementation.
 | FP-SCHED-3 | PostgreSQL transactions and existing unique constraints | `backend/tests/candidate/test_booking.py::test_real_postgres_two_candidates_compete_for_one_slot`; `::test_same_application_concurrent_booking_has_one_winner` |
 | FP-SEC-1/2/3 | candidate authorization, ORM queries, escaped React text | profile permission matrix, candidate endpoint auth matrix, browser text/XSS checks in `frontend/tests/candidate.browser.mjs` |
 
-Current supported backend regression: **116 passed** on isolated PostgreSQL.
+Current supported backend regression: **117 passed** on isolated PostgreSQL
+(including the 2026-11-06 candidate query optimization).
 Full collection still fails on the pre-existing `tests/users/test_schema.py` import;
 the documented regression command explicitly excludes it. The earlier placeholder
 rows above remain team-owned roadmap entries; this table records candidate coverage.

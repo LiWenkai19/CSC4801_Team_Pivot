@@ -94,6 +94,7 @@ def test_recommendation_queries_do_not_grow_per_job(client, account, job, engine
             event.remove(engine, "before_cursor_execute", count_queries)
 
     one = measured("/candidate/jobs")
+    assert one == 4  # 三次业务查询，加一次真实账号认证查询。
     for index in range(12):
         job(employer, title=f"Job {index}")
     assert measured("/candidate/jobs") == one
@@ -104,7 +105,22 @@ def test_recommendation_queries_do_not_grow_per_job(client, account, job, engine
             ).status_code
             == 201
         )
-    assert measured("/candidate/applications") <= 5
+    assert measured("/candidate/applications") == 4
+
+
+def test_recommendations_require_profile_even_without_jobs(client, account, job):
+    """无技能不等于无资料；未建资料时保留原有 404 及错误优先级。"""
+    candidate, _ = account(complete=False)
+    expected = {"detail": "Candidate profile not found"}
+    response = client.get("/candidate/jobs", headers=candidate)
+    assert response.status_code == 404 and response.json() == expected
+    employer, _ = account("employer")
+    posting = job(employer)
+    for path in ["/candidate/jobs", f"/candidate/jobs/{posting['id']}"]:
+        response = client.get(path, headers=candidate)
+        assert response.status_code == 404 and response.json() == expected
+    missing = client.get(f"/candidate/jobs/{uuid.uuid4()}", headers=candidate)
+    assert missing.status_code == 404 and missing.json() == {"detail": "Job not found"}
 
 
 def test_deleted_missing_jobs_and_empty_lists(client, account, job):
