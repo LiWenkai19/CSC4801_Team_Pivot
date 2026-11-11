@@ -29,10 +29,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
 
     useEffect(() => {
+        // 会话 Cookie 是 HttpOnly 的，前端无法自己判断是否已登录，只能问后端。
         getCurrentUser().then((user) => {
             setCurrentUser(user);
         }).catch(() => {
-            apiLogout();
+            // 401 即未登录（没有 Cookie 或会话已过期/被吊销），无需清理任何本地存储。
+            setCurrentUser(null);
         }).finally(() => {
             setLoading(false);
         });
@@ -52,7 +54,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const response = await apiLogin(email, password);
             return finishAuthentication(response);
         } catch(error) {
-            apiLogout();
+            // 登录失败时后端不会建立会话，只需清空前端状态。
             setCurrentUser(null);
             throw error;
         } finally{
@@ -67,7 +69,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const response = await apiRegister(email, password, role);
             return finishAuthentication(response);
         } catch (error) {
-            apiLogout();
             setCurrentUser(null);
             throw error;
         } finally {
@@ -75,9 +76,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
+    /** 先让后端删除会话；即使请求失败（如会话已过期）也清空前端状态。 */
     const logout = async () => {
-        await apiLogout();
-        setCurrentUser(null);
+        try {
+            await apiLogout();
+        } finally {
+            setCurrentUser(null);
+        }
     };
 
     /** 刷新账户信息而不触发全局加载，保留当前页面的表单状态。 */

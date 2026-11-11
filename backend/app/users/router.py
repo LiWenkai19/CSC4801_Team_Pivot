@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlmodel import Session
+from app.core.config import settings
 from app.db.session import get_db
 from app.users.schema import (
     AuthResponse,
@@ -8,13 +8,12 @@ from app.users.schema import (
     CandidateProfilePublic,
     EmployerProfileCreate,
     EmployerProfilePublic,
-    Token,
     UserCreate,
     UserLogin,
     UserPublic,
 )
 from app.users.service import create_user
-from app.users.model import User
+from app.users.model import User, UserSession
 from app.users.service import get_current_user, authenticate_user
 from app.users.service import (
     CandidateRoleRequiredError,
@@ -23,33 +22,58 @@ from app.users.service import (
     create_employer_profile,
     create_candidate_profile,
     get_current_user_public,
+    create_session,
     require_candidate,
+    require_csrf,
     require_employer,
+    revoke_session,
 )
-from app.users.security import create_access_token
-
 
 
 user_router = APIRouter(prefix="/users", tags=["users"])
 
+
+def _set_auth_cookies(response: Response, token: str, row: UserSession, remember_me: bool) -> None:
+    """下发两个 Cookie：会话 ID（HttpOnly，JS 读不到）和 CSRF 令牌（JS 可读）。
+
+    凭证只经 Set-Cookie 传递，不出现在响应体中（FP-AUTH-2）。
+    """
+    # max_age=None 表示浏览器会话 Cookie：关闭浏览器即丢弃。
+    max_age = settings.SESSION_REMEMBER_DAYS * 24 * 3600 if remember_me else None
+    common = {
+        "max_age": max_age,
+        "path": "/",
+        "samesite": "lax",
+        "secure": settings.COOKIE_SECURE,
+    }
+    response.set_cookie(settings.SESSION_COOKIE_NAME, token, httponly=True, **common)
+    response.set_cookie(settings.CSRF_COOKIE_NAME, row.csrf_token, httponly=False, **common)
+
+
+def _clear_auth_cookies(response: Response) -> None:
+    response.delete_cookie(settings.SESSION_COOKIE_NAME, path="/")
+    response.delete_cookie(settings.CSRF_COOKIE_NAME, path="/")
+
+
 @user_router.post("/register", response_model=AuthResponse)
-def register_user(user: UserCreate, session: Session = Depends(get_db)) -> AuthResponse:
-    """注册账户并返回令牌及资料完成状态，供用户继续填写资料。"""
+def register_user(
+    user: UserCreate, response: Response, session: Session = Depends(get_db)
+) -> AuthResponse:
+    """注册账户并直接建立会话，返回资料完成状态，供用户继续填写资料。"""
     try:
         new_user = create_user(session, user)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     
-    token = create_access_token(new_user.email)
-    return AuthResponse(
-        access_token=token,
-        token_type="bearer",
-        user=get_current_user_public(session, new_user),
-    )
+    token, row = create_session(session, new_user, remember_me=False)
+    _set_auth_cookies(response, token, row, remember_me=False)
+    return AuthResponse(user=get_current_user_public(session, new_user))
         
 @user_router.post("/login", response_model=AuthResponse)
-def login(self_user: UserLogin, session: Session = Depends(get_db)) -> AuthResponse:
-    """验证登录凭据并返回令牌、账户信息及实时资料完成状态。"""
+def login(
+    self_user: UserLogin, response: Response, session: Session = Depends(get_db)
+) -> AuthResponse:
+    """验证登录凭据并建立新会话；登录前尚无会话，因此不校验 CSRF。"""
     try:
         user = authenticate_user(session, self_user.email, self_user.password)
     except ValueError as e:
@@ -58,32 +82,22 @@ def login(self_user: UserLogin, session: Session = Depends(get_db)) -> AuthRespo
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     
-    token = create_access_token(user.email)
-    return AuthResponse(
-        access_token=token,
-        token_type="bearer",
-        user=get_current_user_public(session, user),
-    )
+    token, row = create_session(session, user, self_user.remember_me)
+    _set_auth_cookies(response, token, row, self_user.remember_me)
+    return AuthResponse(user=get_current_user_public(session, user))
 
-# 测试环境的登陆接口
-@user_router.post("/token", response_model=Token)
-def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+
+@user_router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(
+    response: Response,
     session: Session = Depends(get_db),
-) -> Token:
-    user = authenticate_user(session, form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    sess: UserSession = Depends(require_csrf),
+) -> None:
+    """删除服务端会话并清除 Cookie；旧 Cookie 即使被留存也已失效（FP-AUTH-1 登出）。"""
+    revoke_session(session, sess)
+    _clear_auth_cookies(response)
 
-    token = create_access_token(user.email)
-    return Token(access_token=token, token_type="bearer")
-    
-    
-    
+
 @user_router.get("/me", response_model=UserPublic)
 def read_me(
     curr_user: User = Depends(get_current_user),

@@ -9,7 +9,7 @@ export interface UserCreate {
   role: Role
 }
 
-/** 登录已有账户；省略 remember_me 时，服务端默认为 false。 */
+/** 登录已有账户；remember_me 为 true 时会话与 Cookie 保留 30 天，否则关闭浏览器即失效。 */
 export interface UserLogin {
   email: string
   /** 非空密码；具体约束由服务端校验。 */
@@ -25,14 +25,8 @@ export interface UserPublic {
   profile_completed: boolean
 }
 
-/** 认证成功后签发的访问令牌。 */
-export interface Token {
-  access_token: string
-  token_type: 'bearer'
-}
-
-/** 认证响应包含访问令牌和账户信息。 */
-export interface AuthResponse extends Token {
+/** 认证响应只含账户信息；会话凭证由后端通过 HttpOnly Cookie 下发。 */
+export interface AuthResponse {
   user: UserPublic
 }
 

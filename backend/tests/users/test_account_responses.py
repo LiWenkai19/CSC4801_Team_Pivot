@@ -5,14 +5,40 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine, select
 
 
+def auth_of(response) -> dict:
+    """解析注册/登录响应，并附上以会话 Cookie 和 CSRF 令牌组成的认证请求头。
+
+    凭证只在 Set-Cookie 中下发；测试显式携带它们，模拟浏览器回传 Cookie
+    以及前端从可读的 csrf_token Cookie 取值放进 X-CSRF-Token 头。
+    """
+    data = response.json()
+    data["headers"] = {
+        "Cookie": f"session={response.cookies['session']}",
+        "X-CSRF-Token": response.cookies["csrf_token"],
+    }
+    return data
+
+
+def expire_all_sessions(engine) -> None:
+    """把库内全部会话改为已过期，模拟超过有效期后的请求。"""
+    import datetime
+
+    from app.users.model import UserSession, utc_now
+
+    with Session(engine) as session:
+        for row in session.exec(select(UserSession)).all():
+            row.expires_at = utc_now() - datetime.timedelta(minutes=1)
+            session.add(row)
+        session.commit()
+
+
 @pytest.fixture
 def client(monkeypatch):
     """用演示配置和内存数据库验证实际路由，不连接业务数据库。"""
     for key, value in {
         "APP_NAME": "Account response tests",
-        "SECRET_KEY": "isolated-test-key-with-at-least-32-characters",
-        "ALGORITHM": "HS256",
-        "ACCESS_TOKEN_EXPIRE_MINUTES": "10",
+        # http://testserver 不是 HTTPS，Secure Cookie 不会被回传，测试里关闭。
+        "COOKIE_SECURE": "false",
         "DATABASE_URL": "postgresql+psycopg://test:test@127.0.0.1:1/test",
     }.items():
         monkeypatch.setenv(key, value)
@@ -58,6 +84,11 @@ def client(monkeypatch):
     app.dependency_overrides[get_db] = test_db
     try:
         with TestClient(app) as test_client:
+            # Cookie 已在响应对象上解析完毕；清空客户端 Cookie 罐，
+            # 让每个请求的身份只由测试显式传入的 headers 决定，多账户切换不会串号。
+            test_client.event_hooks["response"].append(
+                lambda response: test_client.cookies.clear()
+            )
             yield test_client
     finally:
         app.dependency_overrides.clear()
@@ -70,14 +101,14 @@ def test_register_login_and_me_return_current_schema(client, role):
     credentials = {"email": f"{role}@example.com", "password": "demo-password"}
     registered = client.post("/users/register", json=credentials | {"role": role})
     assert registered.status_code == 200
-    assert set(registered.json()) == {"access_token", "token_type", "user"}
-    assert registered.json()["token_type"] == "bearer"
+    # FP-AUTH-2：认证机密不出现在响应体，只通过 Set-Cookie 下发。
+    assert set(registered.json()) == {"user"}
     account = registered.json()["user"]
     assert set(account) == {"id", "email", "role", "profile_completed"}
     assert account["email"] == credentials["email"]
     assert account["role"] == role
     assert account["profile_completed"] is False
-    signup_headers = {"Authorization": f"Bearer {registered.json()['access_token']}"}
+    signup_headers = auth_of(registered)["headers"]
     signup_me = client.get("/users/me", headers=signup_headers)
     assert signup_me.status_code == 200
     assert signup_me.json() == account
@@ -88,21 +119,18 @@ def test_register_login_and_me_return_current_schema(client, role):
 
     logged_in = client.post("/users/login", json=credentials)
     assert logged_in.status_code == 200
-    assert set(logged_in.json()) == {"access_token", "token_type", "user"}
-    assert logged_in.json()["token_type"] == "bearer"
+    assert set(logged_in.json()) == {"user"}
     assert logged_in.json()["user"] == account
-    headers = {"Authorization": f"Bearer {logged_in.json()['access_token']}"}
+    headers = auth_of(logged_in)["headers"]
     me = client.get("/users/me", headers=headers)
     assert me.status_code == 200
     assert me.json() == account
 
-    form_login = client.post(
-        "/users/token",
-        data={"username": credentials["email"], "password": credentials["password"]},
-    )
-    assert form_login.status_code == 200
-    form_headers = {"Authorization": f"Bearer {form_login.json()['access_token']}"}
-    assert client.get("/users/me", headers=form_headers).json() == account
+    # FP-AUTH-1：登出在服务端删除会话，留存的旧 Cookie 随即失效。
+    assert client.post("/users/logout", headers=headers).status_code == 204
+    assert client.get("/users/me", headers=headers).status_code == 401
+    # 注册时建立的会话与登录会话相互独立，不受这次登出影响。
+    assert client.get("/users/me", headers=signup_headers).json() == account
 
 
 def test_me_requires_valid_authentication(client):
@@ -110,7 +138,7 @@ def test_me_requires_valid_authentication(client):
     assert client.get("/users/me").status_code == 401
     assert (
         client.get(
-            "/users/me", headers={"Authorization": "Bearer invalid-token"}
+            "/users/me", headers={"Cookie": "session=invalid-token"}
         ).status_code
         == 401
     )
@@ -164,7 +192,7 @@ def test_role_dependencies_allow_matching_role_and_reject_other_role(
     assert auth.status_code == 200
     response = client.get(
         f"/test/{required_role}",
-        headers={"Authorization": f"Bearer {auth.json()['access_token']}"},
+        headers=auth_of(auth)["headers"],
     )
     if role == required_role:
         assert response.status_code == 200
@@ -184,19 +212,10 @@ def test_role_dependencies_require_valid_authentication(
     """角色依赖先执行认证，缺失、无效或过期 Token 都返回 401。"""
     headers = {}
     if token_kind == "invalid":
-        headers = {"Authorization": "Bearer invalid-token"}
+        headers = {"Cookie": "session=invalid-token"}
     elif token_kind == "expired":
-        import jwt
-
-        from app.core.config import settings
-        from app.users.model import utc_now
-
-        token = jwt.encode(
-            {"sub": "candidate@example.com", "exp": int(utc_now().timestamp()) - 60},
-            settings.SECRET_KEY,
-            algorithm=settings.ALGORITHM,
-        )
-        headers = {"Authorization": f"Bearer {token}"}
+        headers = register_profile_user(client, role=required_role)["headers"]
+        expire_all_sessions(client.app.state.test_engine)
     assert client.get(f"/test/{required_role}", headers=headers).status_code == 401
 
 
@@ -205,17 +224,17 @@ def test_employer_profile_is_saved_for_current_user(client, description):
     """雇主首次创建资料返回 201，描述可省略，数据库所属用户正确。"""
     from app.users.model import EmployerProfile
 
-    auth = client.post(
+    auth = auth_of(client.post(
         "/users/register",
         json={"email": "employer@example.com", "password": "demo", "role": "employer"},
-    ).json()
+    ))
     payload = {"company_name": " Demo Company "}
     if description is not None:
         payload["company_description"] = description
     response = client.post(
         "/users/employer/profile",
         json=payload,
-        headers={"Authorization": f"Bearer {auth['access_token']}"},
+        headers=auth["headers"],
     )
     assert response.status_code == 201
     assert response.json() == {
@@ -235,11 +254,11 @@ def test_employer_profile_duplicate_does_not_overwrite(client):
     from app.users.model import EmployerProfile
     from sqlmodel import select
 
-    auth = client.post(
+    auth = auth_of(client.post(
         "/users/register",
         json={"email": "employer@example.com", "password": "demo", "role": "employer"},
-    ).json()
-    headers = {"Authorization": f"Bearer {auth['access_token']}"}
+    ))
+    headers = auth["headers"]
     assert (
         client.post(
             "/users/employer/profile", json={"company_name": "First"}, headers=headers
@@ -268,14 +287,14 @@ def test_employer_profile_rejects_invalid_fields_without_writing(client, payload
     from app.users.model import EmployerProfile
     from sqlmodel import select
 
-    auth = client.post(
+    auth = auth_of(client.post(
         "/users/register",
         json={"email": "employer@example.com", "password": "demo", "role": "employer"},
-    ).json()
+    ))
     response = client.post(
         "/users/employer/profile",
         json=payload,
-        headers={"Authorization": f"Bearer {auth['access_token']}"},
+        headers=auth["headers"],
     )
     assert response.status_code == 422
     with Session(client.app.state.test_engine) as session:
@@ -288,7 +307,7 @@ def register_profile_user(client, role="candidate", email="candidate@example.com
         "/users/register", json={"email": email, "password": "demo", "role": role}
     )
     assert response.status_code == 200
-    return response.json()
+    return auth_of(response)
 
 
 @pytest.mark.parametrize(
@@ -301,7 +320,7 @@ def register_profile_user(client, role="candidate", email="candidate@example.com
 def test_me_refreshes_profile_status_after_creating_minimal_profile(client, role, payload):
     """仅填写名称即完成资料，原 Token 查询和再次登录均返回最新状态。"""
     auth = register_profile_user(client, role=role)
-    headers = {"Authorization": f"Bearer {auth['access_token']}"}
+    headers = auth["headers"]
     before = client.get("/users/me", headers=headers)
     assert before.status_code == 200
     assert before.json() == auth["user"] | {"profile_completed": False}
@@ -322,9 +341,9 @@ def test_me_refreshes_profile_status_after_creating_minimal_profile(client, role
         "/users/login", json={"email": auth["user"]["email"], "password": "demo"}
     )
     assert logged_in.status_code == 200
-    assert set(logged_in.json()) == {"access_token", "token_type", "user"}
+    assert set(logged_in.json()) == {"user"}
     assert logged_in.json()["user"] == after.json()
-    login_headers = {"Authorization": f"Bearer {logged_in.json()['access_token']}"}
+    login_headers = auth_of(logged_in)["headers"]
     assert client.get("/users/me", headers=login_headers).json() == after.json()
 
 
@@ -333,7 +352,7 @@ def test_me_ignores_other_users_profiles_and_client_supplied_owner(client, role)
     """他人资料和请求中伪造的用户 ID 都不影响本人完成状态。"""
     auth = register_profile_user(client, role=role)
     other = register_profile_user(client, role=role, email="other@example.com")
-    other_headers = {"Authorization": f"Bearer {other['access_token']}"}
+    other_headers = other["headers"]
     payload = (
         {"display_name": "Other", "resume_text": "Private resume"}
         if role == "candidate"
@@ -346,7 +365,7 @@ def test_me_ignores_other_users_profiles_and_client_supplied_owner(client, role)
     response = client.get(
         "/users/me",
         params={"user_id": other["user"]["id"]},
-        headers={"Authorization": f"Bearer {auth['access_token']}"},
+        headers=auth["headers"],
     )
     assert response.status_code == 200
     assert response.json() == auth["user"] | {"profile_completed": False}
@@ -374,7 +393,7 @@ def test_me_only_counts_profile_matching_current_role(client, role):
         session.commit()
 
     response = client.get(
-        "/users/me", headers={"Authorization": f"Bearer {auth['access_token']}"}
+        "/users/me", headers=auth["headers"]
     )
     assert response.status_code == 200
     assert response.json() == auth["user"] | {"profile_completed": False}
@@ -382,26 +401,28 @@ def test_me_only_counts_profile_matching_current_role(client, role):
 
 @pytest.mark.parametrize("identity", ["expired", "missing_account"])
 def test_me_rejects_expired_token_or_missing_account(client, identity):
-    """过期令牌及不存在的账户均返回 401，不泄露资料完成状态。"""
-    import jwt
+    """过期会话及已不存在的账户均返回 401，不泄露资料完成状态。"""
+    import uuid
 
-    from app.core.config import settings
-    from app.users.model import utc_now
-    from app.users.security import create_access_token
+    from app.users.model import User, UserSession
 
+    auth = register_profile_user(client)
+    engine = client.app.state.test_engine
     if identity == "expired":
-        auth = register_profile_user(client)
-        token = jwt.encode(
-            {"sub": auth["user"]["email"], "exp": int(utc_now().timestamp()) - 60},
-            settings.SECRET_KEY,
-            algorithm=settings.ALGORITHM,
-        )
+        expire_all_sessions(engine)
     else:
-        token = create_access_token("missing@example.com")
+        # SQLite 测试库不强制外键：直接删掉账户，只留下指向它的会话。
+        with Session(engine) as session:
+            session.delete(session.get(User, uuid.UUID(auth["user"]["id"])))
+            session.commit()
 
-    response = client.get("/users/me", headers={"Authorization": f"Bearer {token}"})
+    response = client.get("/users/me", headers=auth["headers"])
     assert response.status_code == 401
     assert "profile_completed" not in response.json()
+    if identity == "expired":
+        # 过期会话在被访问时顺手从库中删除。
+        with Session(engine) as session:
+            assert session.exec(select(UserSession)).all() == []
 
 
 @pytest.mark.parametrize("role", ["candidate", "employer"])
@@ -423,7 +444,7 @@ def test_me_does_not_treat_database_failure_as_incomplete_profile(client, monkey
     monkeypatch.setattr(Session, "get", failed_profile_get)
     with TestClient(client.app, raise_server_exceptions=False) as failing_client:
         response = failing_client.get(
-            "/users/me", headers={"Authorization": f"Bearer {auth['access_token']}"}
+            "/users/me", headers=auth["headers"]
         )
     assert response.status_code == 500
     assert "profile_completed" not in response.text
@@ -447,7 +468,7 @@ def test_candidate_profile_saves_normalized_skills_and_private_resume(
     response = client.post(
         "/users/candidate/profile",
         json=payload,
-        headers={"Authorization": f"Bearer {auth['access_token']}"},
+        headers=auth["headers"],
     )
     assert response.status_code == 201
     expected_skills = ["python", "sql"] if with_content else []
@@ -470,7 +491,7 @@ def test_candidate_profile_duplicate_preserves_original_records(client):
     from app.users.model import CandidateProfile, CandidateSkill
 
     auth = register_profile_user(client)
-    headers = {"Authorization": f"Bearer {auth['access_token']}"}
+    headers = auth["headers"]
     original = {
         "display_name": "Alice",
         "resume_text": "Private resume",
@@ -513,7 +534,7 @@ def test_candidate_profile_invalid_input_does_not_write(client, payload):
     response = client.post(
         "/users/candidate/profile",
         json=payload,
-        headers={"Authorization": f"Bearer {auth['access_token']}"},
+        headers=auth["headers"],
     )
     assert response.status_code == 422
     with Session(client.app.state.test_engine) as session:
@@ -528,12 +549,12 @@ def test_candidate_profile_requires_authenticated_candidate(client, identity):
 
     headers = {}
     if identity == "invalid":
-        headers = {"Authorization": "Bearer invalid-token"}
+        headers = {"Cookie": "session=invalid-token"}
     elif identity == "employer":
         auth = register_profile_user(
             client, role="employer", email="employer@example.com"
         )
-        headers = {"Authorization": f"Bearer {auth['access_token']}"}
+        headers = auth["headers"]
     response = client.post(
         "/users/candidate/profile",
         json={"display_name": "Alice", "resume_text": "Private", "skills": ["Python"]},
@@ -559,7 +580,7 @@ def test_candidate_profile_cannot_be_created_for_another_user(client):
             "user_id": other["user"]["id"],
             "skills": ["SQL"],
         },
-        headers={"Authorization": f"Bearer {auth['access_token']}"},
+        headers=auth["headers"],
     )
     assert response.status_code == 201
     assert response.json()["user_id"] == auth["user"]["id"]
@@ -615,17 +636,17 @@ def test_employer_profile_requires_authenticated_employer(client, identity):
 
     headers = {}
     if identity == "invalid":
-        headers = {"Authorization": "Bearer invalid-token"}
+        headers = {"Cookie": "session=invalid-token"}
     elif identity == "candidate":
-        auth = client.post(
+        auth = auth_of(client.post(
             "/users/register",
             json={
                 "email": "candidate@example.com",
                 "password": "demo",
                 "role": "candidate",
             },
-        ).json()
-        headers = {"Authorization": f"Bearer {auth['access_token']}"}
+        ))
+        headers = auth["headers"]
     response = client.post(
         "/users/employer/profile", json={"company_name": "Demo"}, headers=headers
     )
@@ -642,19 +663,19 @@ def test_employer_profile_ignores_client_supplied_owner(client):
     accounts = []
     for name in ["first", "second"]:
         accounts.append(
-            client.post(
+            auth_of(client.post(
                 "/users/register",
                 json={
                     "email": f"{name}@example.com",
                     "password": "demo",
                     "role": "employer",
                 },
-            ).json()
+            ))
         )
     response = client.post(
         "/users/employer/profile",
         json={"company_name": "Demo", "user_id": accounts[1]["user"]["id"]},
-        headers={"Authorization": f"Bearer {accounts[0]['access_token']}"},
+        headers=accounts[0]["headers"],
     )
     assert response.status_code == 201
     assert response.json()["user_id"] == accounts[0]["user"]["id"]
@@ -674,10 +695,10 @@ def test_employer_profile_rolls_back_failed_commit(client, monkeypatch):
     from app.users.schema import EmployerProfileCreate
     from app.users.service import create_employer_profile
 
-    auth = client.post(
+    auth = auth_of(client.post(
         "/users/register",
         json={"email": "employer@example.com", "password": "demo", "role": "employer"},
-    ).json()
+    ))
     with Session(client.app.state.test_engine) as session:
         user = session.get(User, uuid.UUID(auth["user"]["id"]))
         assert user is not None
@@ -693,3 +714,84 @@ def test_employer_profile_rolls_back_failed_commit(client, monkeypatch):
                 session, user, EmployerProfileCreate(company_name="Demo")
             )
         assert session.exec(select(EmployerProfile)).all() == []
+
+
+# ===== 会话 Cookie 与 CSRF =====
+
+
+def _set_cookie_headers(response) -> dict[str, str]:
+    """把多个 Set-Cookie 头按 Cookie 名整理成 {名称: 小写原始头}。"""
+    return {
+        header.split("=", 1)[0]: header.lower()
+        for header in response.headers.get_list("set-cookie")
+    }
+
+
+def test_session_cookie_is_httponly_and_csrf_cookie_is_readable(client):
+    """会话 Cookie 对 JS 不可见；CSRF Cookie 需要被前端读取。两者都带 SameSite=Lax。"""
+    response = client.post(
+        "/users/register",
+        json={"email": "candidate@example.com", "password": "demo", "role": "candidate"},
+    )
+    cookies = _set_cookie_headers(response)
+    assert "httponly" in cookies["session"]
+    assert "samesite=lax" in cookies["session"]
+    assert "httponly" not in cookies["csrf_token"]
+    assert "samesite=lax" in cookies["csrf_token"]
+
+
+def test_remember_me_controls_cookie_persistence(client):
+    """未勾选"记住我"为浏览器会话 Cookie；勾选后保留 30 天。"""
+    credentials = {"email": "candidate@example.com", "password": "demo"}
+    client.post("/users/register", json=credentials | {"role": "candidate"})
+
+    short = client.post("/users/login", json=credentials | {"remember_me": False})
+    assert "max-age" not in _set_cookie_headers(short)["session"]
+    long = client.post("/users/login", json=credentials | {"remember_me": True})
+    assert "max-age=2592000" in _set_cookie_headers(long)["session"]
+
+
+def test_each_login_creates_a_new_session_stored_only_as_hash(client):
+    """每次登录换新会话 ID（防会话固定）；库里只有哈希，查不到 Cookie 原文。"""
+    from app.users.model import UserSession
+
+    credentials = {"email": "candidate@example.com", "password": "demo"}
+    first = auth_of(
+        client.post("/users/register", json=credentials | {"role": "candidate"})
+    )["headers"]["Cookie"]
+    second = auth_of(client.post("/users/login", json=credentials))["headers"]["Cookie"]
+    assert first != second
+
+    with Session(client.app.state.test_engine) as session:
+        stored = session.exec(select(UserSession.token_hash)).all()
+    raw_ids = {first.removeprefix("session="), second.removeprefix("session=")}
+    assert len(stored) == 2
+    assert raw_ids.isdisjoint(stored)
+
+
+@pytest.mark.parametrize("csrf", [None, "wrong-token"])
+def test_unsafe_requests_require_matching_csrf_token(client, csrf):
+    """写请求缺少或带错 CSRF 令牌返回 403，且不写入任何数据；读请求不受影响。"""
+    from app.users.model import CandidateProfile
+
+    auth = register_profile_user(client)
+    headers = {"Cookie": auth["headers"]["Cookie"]}
+    if csrf:
+        headers["X-CSRF-Token"] = csrf
+
+    response = client.post(
+        "/users/candidate/profile", json={"display_name": "Alice"}, headers=headers
+    )
+    assert response.status_code == 403
+    assert response.json()["detail"] == "CSRF token missing or invalid"
+    with Session(client.app.state.test_engine) as session:
+        assert session.exec(select(CandidateProfile)).all() == []
+
+    assert client.get("/users/me", headers=headers).status_code == 200
+    assert client.post("/users/logout", headers=headers).status_code == 403
+    assert client.get("/users/me", headers=headers).status_code == 200
+
+
+def test_logout_requires_authentication(client):
+    """未登录时登出返回 401。"""
+    assert client.post("/users/logout").status_code == 401

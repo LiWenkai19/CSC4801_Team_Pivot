@@ -1,8 +1,18 @@
-import jwt
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlmodel import Session, select
+import datetime
 
-from app.users.model import CandidateProfile, CandidateSkill, EmployerProfile, Role, User
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlmodel import Session, delete, select
+
+from app.core.config import settings
+from app.users.model import (
+    CandidateProfile,
+    CandidateSkill,
+    EmployerProfile,
+    Role,
+    User,
+    UserSession,
+    utc_now,
+)
 from app.users.schema import (
     CandidateProfileCreate,
     CandidateProfilePublic,
@@ -11,9 +21,15 @@ from app.users.schema import (
     UserCreate,
     UserPublic,
 )
-from app.users.security import hash_password, verify_password, decode_access_token
-from fastapi.security import OAuth2PasswordBearer
-from fastapi import Depends, HTTPException, status
+from app.users.security import (
+    hash_password,
+    hash_session_token,
+    new_random_token,
+    tokens_equal,
+    verify_password,
+)
+from fastapi.security import APIKeyCookie, APIKeyHeader
+from fastapi import Depends, HTTPException, Request, status
 from app.db.session import get_db
 
 
@@ -60,20 +76,99 @@ def get_current_user_public(session: Session, curr_user: User) -> UserPublic:
     )
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/token")
-def get_current_user(session: Session = Depends(get_db), token: str = Depends(oauth2_scheme)) -> User:
-    try:
-        email= decode_access_token(token)
-        if email is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
-        user = get_user_by_email(session, email) 
-        
-        if user is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
-        return user
-    
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
+# ===== 会话管理 =====
+
+def session_lifetime(remember_me: bool) -> datetime.timedelta:
+    """"记住我"决定服务端会话的有效期。"""
+    if remember_me:
+        return datetime.timedelta(days=settings.SESSION_REMEMBER_DAYS)
+    return datetime.timedelta(minutes=settings.SESSION_TTL_MINUTES)
+
+
+def create_session(session: Session, user: User, remember_me: bool) -> tuple[str, UserSession]:
+    """为用户新建会话，返回 (会话 ID 原文, 会话行)。
+
+    原文只交给 router 写进 Cookie，数据库里只保存它的哈希。
+    每次登录都新建会话，防止会话固定攻击（攻击者预先塞给受害者一个已知 ID）。
+    """
+    token = new_random_token()
+    row = UserSession(
+        token_hash=hash_session_token(token),
+        csrf_token=new_random_token(),
+        user_id=user.id,
+        expires_at=utc_now() + session_lifetime(remember_me),
+    )
+    session.add(row)
+    session.commit()
+    session.refresh(row)
+    return token, row
+
+
+def revoke_session(session: Session, row: UserSession) -> None:
+    """删除会话行；之后同一个 Cookie 再来请求会得到 401。"""
+    session.delete(row)
+    session.commit()
+
+
+def revoke_all_sessions(session: Session, user_id) -> None:
+    """删除用户全部会话；改密码、禁用账号时调用。"""
+    session.exec(delete(UserSession).where(UserSession.user_id == user_id))  # type: ignore[call-overload]
+    session.commit()
+
+
+def _as_aware(value: datetime.datetime) -> datetime.datetime:
+    """SQLite（单元测试库）读回的时间不带时区，按 UTC 补齐后再比较。"""
+    return value if value.tzinfo else value.replace(tzinfo=datetime.timezone.utc)
+
+
+# ===== FastAPI 认证依赖 =====
+
+# APIKeyCookie / APIKeyHeader 会出现在 OpenAPI 文档里，Swagger 的 Authorize 可以填写 CSRF 令牌。
+session_cookie = APIKeyCookie(name=settings.SESSION_COOKIE_NAME, auto_error=False)
+csrf_header = APIKeyHeader(name="X-CSRF-Token", auto_error=False)
+
+# 会修改数据的 HTTP 方法；GET/HEAD/OPTIONS 必须保持无副作用。
+UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+def get_valid_session(
+    db: Session = Depends(get_db),
+    token: str | None = Depends(session_cookie),
+) -> UserSession:
+    """根据 Cookie 里的会话 ID 找到有效会话，否则 401（FP-AUTH-3 未认证）。"""
+    unauthorized = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    if not token:
+        raise unauthorized
+    # UserSession.user 配置为 joined 内连接：一次查询同时取回会话和账户。
+    row = db.exec(
+        select(UserSession).where(UserSession.token_hash == hash_session_token(token))
+    ).first()
+    if row is None:
+        raise unauthorized
+    if _as_aware(row.expires_at) <= utc_now():
+        revoke_session(db, row)  # 过期会话顺手清理
+        raise unauthorized
+    return row
+
+
+def require_csrf(
+    request: Request,
+    sess: UserSession = Depends(get_valid_session),
+    csrf: str | None = Depends(csrf_header),
+) -> UserSession:
+    """写请求必须带回与会话绑定的 CSRF 令牌，否则 403。"""
+    if request.method in UNSAFE_METHODS and not (csrf and tokens_equal(csrf, sess.csrf_token)):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF token missing or invalid")
+    return sess
+
+
+def get_current_user(sess: UserSession = Depends(require_csrf)) -> User:
+    """业务路由的认证入口：会话校验 + 写请求 CSRF 校验一并完成。
+
+    require_candidate / require_employer 均依赖它，签名保持不变，业务模块无需改动。
+    账户随会话一起加载，这里不再额外查询数据库。
+    """
+    return sess.user
 
 
 def require_candidate(curr_user: User = Depends(get_current_user)) -> User:

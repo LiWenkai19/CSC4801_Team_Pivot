@@ -27,11 +27,9 @@ def _build_test_database_url() -> str:
     return url.set(database=TEST_DATABASE).render_as_string(hide_password=False)
 
 
-# 在任何 app 导入前设定环境：仅复用数据库连接，认证密钥全部用测试占位值。
+# 在任何 app 导入前设定环境：仅复用数据库连接；http 测试客户端需关闭 Secure Cookie。
 os.environ["APP_NAME"] = "Employer workflow tests"
-os.environ["SECRET_KEY"] = "isolated-test-key-with-at-least-32-characters"
-os.environ["ALGORITHM"] = "HS256"
-os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "30"
+os.environ["COOKIE_SECURE"] = "false"
 os.environ["DATABASE_URL"] = _build_test_database_url()
 
 
@@ -131,6 +129,10 @@ def client(engine):
     application.dependency_overrides[get_db] = test_db
     try:
         with TestClient(application) as test_client:
+            # 每个请求的身份只由显式传入的认证头决定：清空 Cookie 罐，避免多账户串号。
+            test_client.event_hooks["response"].append(
+                lambda response: test_client.cookies.clear()
+            )
             yield test_client
     finally:
         application.dependency_overrides.clear()
@@ -138,7 +140,7 @@ def client(engine):
 
 @pytest.fixture
 def register(client):
-    """注册账户并返回认证请求头。"""
+    """注册账户并返回认证请求头（会话 Cookie + CSRF 令牌）。"""
 
     def _register(email=None, role="candidate"):
         """注册指定角色账户，邮箱缺省时随机生成。"""
@@ -148,7 +150,10 @@ def register(client):
             json={"email": email, "password": "demo-password", "role": role},
         )
         assert response.status_code == 200, response.text
-        return {"Authorization": f"Bearer {response.json()['access_token']}"}
+        return {
+            "Cookie": f"session={response.cookies['session']}",
+            "X-CSRF-Token": response.cookies["csrf_token"],
+        }
 
     return _register
 

@@ -116,10 +116,9 @@ def test_auth_response_excludes_password_hash_and_private_profile():
         email="demo@example.com", hashed_password="fake-hash", role=Role.Candidate
     )
     public = UserPublic.model_validate(user)
-    response = AuthResponse(access_token="fake-token", user=public).model_dump(
-        mode="json"
-    )
-    assert response["token_type"] == "bearer"
+    response = AuthResponse(user=public).model_dump(mode="json")
+    # 会话凭证只经 HttpOnly Cookie 下发，响应体只有账户信息。
+    assert set(response) == {"user"}
     assert response["user"] == {
         "id": str(user.id),
         "email": user.email,

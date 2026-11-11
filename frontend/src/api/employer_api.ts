@@ -1,4 +1,4 @@
-import { ApiError, requestWithToken } from './common_api'
+import { requestWithToken } from './common_api'
 import type {
     ApplicantPublic, ApplicationStatusPublic, ApplicationStatusUpdate,
     CompanyPublic, CompanyUpdate, JobCreate, JobPublic, JobUpdate,
@@ -29,23 +29,13 @@ export function updateJob(id: string, data: JobUpdate): Promise<JobPublic> {
     return requestWithToken(`employer/jobs/${encodeURIComponent(id)}`, 'PATCH', undefined, data)
 }
 
-/** DELETE 成功没有 JSON 响应体，在本模块兼容 204。 */
-export async function deleteJob(id: string): Promise<void> {
-    const token = localStorage.getItem('token')
-    if (!token) throw new ApiError('No token found', 401)
-    const response = await fetch(`http://127.0.0.1:8000/employer/jobs/${encodeURIComponent(id)}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-    })
-    if (!response.ok) {
-        const error = await response.json().catch(() => null)
-        let message = `Request failed with status ${response.status}`
-        if (typeof error?.detail === 'string') message = error.detail
-        else if (Array.isArray(error?.detail)) {
-            message = error.detail.map((entry: { loc: (string | number)[]; msg: string }) => `${entry.loc.join('.')}: ${entry.msg}`).join('; ')
-        }
-        throw new ApiError(message, response.status)
-    }
+/**
+ * 删除职位：成功为 204 无响应体，由公共请求函数统一兼容；
+ * 403（非本人职位）、404（不存在）、409（已有申请或面试时段）均以 ApiError 抛出，
+ * 页面可按 status 区分处理。
+ */
+export function deleteJob(id: string): Promise<void> {
+    return requestWithToken<void>(`employer/jobs/${encodeURIComponent(id)}`, 'DELETE')
 }
 
 export function listJobApplicants(id: string): Promise<ApplicantPublic[]> {

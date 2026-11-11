@@ -12,9 +12,8 @@ BACKEND = Path(__file__).resolve().parents[2]
 # 连接只作为建测试库的来源；实际测试从不使用来源库。
 SOURCE_URL = os.environ.get("CANDIDATE_TEST_DATABASE_URL")
 os.environ.setdefault("APP_NAME", "Candidate workflow tests")
-os.environ.setdefault("SECRET_KEY", "candidate-test-key-with-at-least-32-characters")
-os.environ.setdefault("ALGORITHM", "HS256")
-os.environ.setdefault("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
+# http 测试客户端需关闭 Secure Cookie。
+os.environ.setdefault("COOKIE_SECURE", "false")
 os.environ.setdefault(
     "DATABASE_URL", SOURCE_URL or "postgresql+psycopg://unused@127.0.0.1:1/unused"
 )
@@ -86,6 +85,10 @@ def client(engine):
     app.dependency_overrides[get_db] = test_db
     try:
         with TestClient(app) as test_client:
+            # 每个请求的身份只由显式传入的认证头决定：清空 Cookie 罐，避免多账户串号。
+            test_client.event_hooks["response"].append(
+                lambda response: test_client.cookies.clear()
+            )
             yield test_client
     finally:
         app.dependency_overrides.clear()
@@ -93,7 +96,7 @@ def client(engine):
 
 @pytest.fixture
 def account(client):
-    """通过真实注册和资料接口创建角色，返回认证头及 ID。"""
+    """通过真实注册和资料接口创建角色，返回认证头（会话 Cookie + CSRF 令牌）及 ID。"""
 
     def create(role="candidate", skills=None, complete=True):
         response = client.post(
@@ -106,7 +109,10 @@ def account(client):
         )
         assert response.status_code == 200, response.text
         data = response.json()
-        headers = {"Authorization": f"Bearer {data['access_token']}"}
+        headers = {
+            "Cookie": f"session={response.cookies['session']}",
+            "X-CSRF-Token": response.cookies["csrf_token"],
+        }
         if complete:
             payload = (
                 {

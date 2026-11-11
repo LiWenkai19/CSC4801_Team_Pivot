@@ -5,11 +5,16 @@ import type {
     EmployerProfileCreate,
     EmployerProfilePublic,
     Role,
-    Token,
     UserPublic,
 } from '../types'
 
-const API_BASE_URL = 'http://127.0.0.1:8000/'
+// 同源路径：开发时由 Vite 代理把 /api 去掉前缀后转发到后端，浏览器不发生跨源请求。
+const API_BASE_URL = '/api/'
+
+// 会修改数据的方法，需要携带 CSRF 令牌。
+const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 /** 保留 HTTP 状态码，供页面区分资料重复创建等业务错误。 */
 export class ApiError extends Error {
@@ -45,107 +50,103 @@ async function showError(response: Response){
     }
 }
 
+/**
+ * 读取后端下发的 CSRF 令牌（非 HttpOnly Cookie）。
+ * 会话 Cookie 是 HttpOnly 的，JS 读不到——这正是它防 XSS 窃取的原因。
+ */
+function readCsrfToken(): string | undefined {
+    const entry = document.cookie
+        .split('; ')
+        .find((item) => item.startsWith('csrf_token='))
+    return entry ? decodeURIComponent(entry.slice('csrf_token='.length)) : undefined
+}
+
+/**
+ * 统一发送请求。认证由浏览器自动携带的会话 Cookie 完成，前端不接触任何凭证；
+ * 写请求自动附加 X-CSRF-Token 头。body 为 FormData 时按文件上传处理。
+ */
+async function send<T>(
+    path: string,
+    method: HttpMethod,
+    headers?: HeadersInit,
+    body?: unknown,
+): Promise<T> {
+    const isForm = body instanceof FormData
+    const csrfToken = UNSAFE_METHODS.has(method) ? readCsrfToken() : undefined
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+        method,
+        // 同源请求默认就会带 Cookie，这里写明是为了表达意图。
+        credentials: 'same-origin',
+        headers: {
+            // FormData 不能手动设 Content-Type，浏览器会自动补上带 boundary 的 multipart/form-data
+            ...(body !== undefined && !isForm ? { 'Content-Type': 'application/json' } : {}),
+            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+            ...headers,
+        },
+        body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
+    })
+
+    await showError(response)
+
+    // 204 No Content（如删除职位、登出）没有响应体。
+    if (response.status === 204) {
+        return undefined as T
+    }
+    return response.json() as Promise<T>
+}
+
+/** 无需登录的请求（登录、注册）；会话 Cookie 仍由浏览器自动管理。 */
 export async function request<T>(
     path: string,
-    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+    method: HttpMethod,
     headers?: HeadersInit,
     body?: unknown,
 ): Promise<T> {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-        method,
-        headers: {
-            ...(body !== undefined
-                ? { 'Content-Type': 'application/json' }
-                : {}),
-            ...headers,
-        },
-        body: body !== undefined
-            ? JSON.stringify(body)
-            : undefined,
-    })
-
-    await showError(response)
-
-    return response.json() as Promise<T>
+    return send<T>(path, method, headers, body)
 }
 
+/**
+ * 需要登录的请求。保留原名和参数顺序，业务 API 无需改动；
+ * 认证已改为 HttpOnly 会话 Cookie，未登录时由后端返回 401。
+ */
 export async function requestWithToken<T>(
     path: string,
-    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+    method: HttpMethod,
     headers?: HeadersInit,
     body?: unknown,
 ): Promise<T> {
-    const token = localStorage.getItem('token')
-    if (!token) {
-        throw new Error('No token found')
-    }
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-        method,
-        headers: {
-            // Authorization 必须无条件带上：GET/DELETE 没有 body，
-            // 之前放在 body 判断里会导致这类请求缺少 token → 401
-            'Authorization': `Bearer ${token}`,
-            ...(body !== undefined
-                ? { 'Content-Type': 'application/json' }
-                : {}),
-            ...headers,
-        },
-        body: body !== undefined
-            ? JSON.stringify(body)
-            : undefined,
-    })
-
-    await showError(response)
-
-    return response.json() as Promise<T>
+    return send<T>(path, method, headers, body)
 }
 
+/** 文件上传；Content-Type 由浏览器根据 FormData 自动设置。 */
 export async function fileRequest<T>(
     path: string,
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     body: FormData,
     headers?: HeadersInit,
 ): Promise<T> {
-    const token = localStorage.getItem('token')
-    if (!token) {
-        throw new Error('No token found')
-    }
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-        // 注意：不要手动设 Content-Type，浏览器会自动补上带 boundary 的
-        // multipart/form-data，手写会导致后端解析不出文件
-        method,
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            ...headers,
-        },
-        body
-    })
-
-    await showError(response)
-    return response.json() as Promise<T>
+    return send<T>(path, method, headers, body)
 }
 
-/** JSON 登录，保存 Token，并返回后端提供的账户信息。 */
+/** JSON 登录；会话由后端通过 Set-Cookie 建立，响应体只含账户信息。 */
 export async function login(
     email: string,
     password: string,
     remember_me = false,
 ): Promise<AuthResponse> {
-    const response = await request<AuthResponse>('users/login', 'POST', {}, {
-            "email": email,
-            "password": password,
-            "remember_me": remember_me
-        }
-    )
-    localStorage.setItem('token', response.access_token)
-    return response
+    return request<AuthResponse>('users/login', 'POST', {}, {
+        "email": email,
+        "password": password,
+        "remember_me": remember_me
+    })
 }
 
+/** 通知后端删除会话并清除 Cookie；只删前端状态无法让会话失效。 */
 export async function logout(): Promise<void> {
-    localStorage.removeItem('token')
+    await request<void>('users/logout', 'POST')
 }
 
-/** 读取账户公开信息；供认证上下文恢复登录状态。 */
+/** 读取账户公开信息；这是前端判断"是否已登录"的唯一依据。 */
 export async function getUserPublic(): Promise<UserPublic> {
     return requestWithToken<UserPublic>('users/me', 'GET')
 }
@@ -155,33 +156,17 @@ export async function getCurrentUser(): Promise<UserPublic> {
     return getUserPublic()
 }
 
-/** 注册时只提交账户信息；成功后保存 Token，供后续填写资料使用。 */
+/** 注册时只提交账户信息；后端注册成功即建立会话，供后续填写资料使用。 */
 export async function createUser(
     email: string,
     password: string,
     role: Role,
 ): Promise<AuthResponse> {
-    const response = await request<AuthResponse>('users/register', 'POST', {}, {
+    return request<AuthResponse>('users/register', 'POST', {}, {
         "email": email,
         "password": password,
         "role": role
     })
-    localStorage.setItem('token', response.access_token)
-    return response
-}
-
-/** OAuth2 表单认证；与 Swagger 一致，username 字段实际传邮箱。 */
-export async function loginForAccessToken(email: string, password: string): Promise<Token> {
-    const body = new URLSearchParams({ username: email, password })
-    const response = await fetch(`${API_BASE_URL}users/token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body,
-    })
-    await showError(response)
-    const token: Token = await response.json()
-    localStorage.setItem('token', token.access_token)
-    return token
 }
 
 /** 首次保存当前候选人的资料；简历、技能可以省略。 */

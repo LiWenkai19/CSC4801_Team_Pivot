@@ -92,3 +92,32 @@ class CandidateSkill(SQLModel, table=True):
     name: str = Field(primary_key=True)
 
     candidate: CandidateProfile = Relationship(back_populates="skills")
+
+
+class UserSession(SQLModel, table=True):
+    """服务端会话：浏览器 Cookie 里只有随机会话 ID，库里只存它的 SHA-256 哈希。
+
+    删除这一行即令该会话立即失效（注销、改密码踢下线都依赖这一点）。
+    """
+
+    __tablename__ = "user_session"  # type: ignore
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    # 会话 ID 的哈希；数据库泄露时攻击者拿不到可直接使用的 Cookie 值。
+    token_hash: str = Field(nullable=False, unique=True, index=True)
+    # 与会话绑定的 CSRF 令牌；写请求必须在 X-CSRF-Token 头里原样带回。
+    csrf_token: str = Field(nullable=False)
+    # 删除用户时数据库级联删除其会话，清理账户的脚本无需额外处理。
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", ondelete="CASCADE", nullable=False, index=True
+    )
+    created_at: datetime.datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
+    expires_at: datetime.datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
+
+    # 加载会话时用内连接一并取回账户：认证只需一次查询；账户已删除的会话查不到。
+    user: User = Relationship(sa_relationship_kwargs={"lazy": "joined", "innerjoin": True})

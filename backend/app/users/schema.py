@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated, Literal
+from typing import Annotated
 
 from pydantic import EmailStr, StringConstraints
 from sqlmodel import Field, SQLModel
@@ -18,7 +18,7 @@ class UserCreate(SQLModel):
 
 
 class UserLogin(SQLModel):
-    """登录已有账户；remember_me 的有效期策略由认证服务处理。"""
+    """登录已有账户；remember_me 决定会话有效期与 Cookie 是否持久化。"""
 
     email: EmailStr
     password: str = Field(min_length=1)
@@ -34,15 +34,8 @@ class UserPublic(SQLModel):
     profile_completed: bool
 
 
-class Token(SQLModel):
-    """认证成功后签发的访问令牌。"""
-
-    access_token: str
-    token_type: Literal["bearer"] = "bearer"
-
-
-class AuthResponse(Token):
-    """认证响应包含访问令牌和账户信息。"""
+class AuthResponse(SQLModel):
+    """认证响应只含账户信息；会话凭证通过 HttpOnly Cookie 下发，不出现在响应体（FP-AUTH-2）。"""
 
     user: UserPublic
 

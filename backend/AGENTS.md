@@ -42,15 +42,20 @@ alembic upgrade head
 
 - 使用 `pydantic-settings` 的 Settings 类集中读取配置；按实际设置加载 `.env`。
 - 无默认值的必填配置缺失会导致 Settings 初始化失败。启动前核对必填项和环境文件的加载位置。
-- 常见配置包括应用名称、数据库地址；使用 JWT 时还包括密钥、算法和 Token 有效期。
+- 常见配置包括应用名称、数据库地址，以及会话有效期与 Cookie 相关配置（见 `app/core/config.py`，均有默认值）。
 - 管理员初始化、业务文件目录等配置根据新项目需求定义，不沿用旧项目的必填项清单。
 
 ## 登录相关技术经验
 
-- 使用同类方案时，可通过 `pwdlib` / Argon2 处理密码哈希，通过 PyJWT 签发与解析 JWT。
-- JWT 的 `sub` 用于标识账号，具体使用邮箱或其他标识由新项目确定；签发与解析两端应保持一致。
-- JSON 登录接口与 OAuth2 密码表单接口使用不同的请求格式；若保留表单接口，`OAuth2PasswordBearer` 的 `tokenUrl` 应指向实际接口。
-- FastAPI 的依赖注入可用于读取 Token 并加载当前用户，具体身份与权限模型按新项目需求设计。
+- 认证采用**服务端会话 + HttpOnly Cookie + CSRF 令牌**，不使用 JWT。
+- 密码用 `pwdlib` / Argon2；会话 ID 是 256 位随机串，`user_session.token_hash` 只存其 SHA-256，原文只存在于浏览器 Cookie。
+- 需要登录的路由依赖 `get_current_user` 或 `require_candidate` / `require_employer`：它们同时完成会话校验和写请求（POST/PUT/PATCH/DELETE）的 `X-CSRF-Token` 校验；新路由不要绕过它们自己读 Cookie。
+- 认证只发一次 SQL：`UserSession.user` 配置为 joined 内连接，会话与账户一起加载。候选人推荐接口的查询数测试依赖这一点。
+- GET 接口必须无副作用（`SameSite=Lax` 允许跨站顶级导航 GET 携带 Cookie）。
+- 改密码、禁用账号时调用 `revoke_all_sessions` 让该用户所有会话失效；删除用户时数据库级联删除其会话。
+- 前端统一请求 `/api/...`，由 Vite 代理去掉前缀后转发到后端（同源，Cookie 无跨源问题）；后端路由本身不带 `/api`。
+- 测试中用 `{"Cookie": "session=...", "X-CSRF-Token": ...}` 作为认证头，并清空 TestClient 的 Cookie 罐，避免多账户串号（见各模块 `conftest.py`）。
+- 部署到 HTTPS 时必须设置 `COOKIE_SECURE=true`。
 
 ## 后端开发与检查命令
 
