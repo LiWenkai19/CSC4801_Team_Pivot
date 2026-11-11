@@ -76,10 +76,11 @@ def main() -> int:
             print(f"Port {port} is already in use; no accounts were created.")
             return 1
 
-    from sqlalchemy import delete
+    from sqlalchemy import delete, select
     from sqlmodel import Session
 
     from app.db.session import engine
+    from app.employer.model import Application, Booking, InterviewSlot, Job, JobSkill
     from app.users.model import (
         CandidateProfile,
         CandidateSkill,
@@ -178,6 +179,41 @@ def main() -> int:
             try:
                 with Session(engine) as session:
                     for user_id in created:
+                        # Business rows first: FKs point job -> employer_profile
+                        # and application -> candidate_profile, so profiles and
+                        # the user row must go last.
+                        job_ids = select(Job.id).where(Job.employer_id == user_id)
+                        application_ids = select(Application.id).where(
+                            (Application.candidate_id == user_id)
+                            | (Application.job_id.in_(job_ids))
+                        )
+                        slot_ids = select(InterviewSlot.id).where(
+                            InterviewSlot.employer_id == user_id
+                        )
+                        session.execute(
+                            delete(Booking).where(
+                                (Booking.application_id.in_(application_ids))
+                                | (Booking.slot_id.in_(slot_ids))
+                            )
+                        )
+                        session.execute(
+                            delete(Application).where(
+                                (Application.candidate_id == user_id)
+                                | (Application.job_id.in_(job_ids))
+                            )
+                        )
+                        session.execute(
+                            delete(JobSkill).where(JobSkill.job_id.in_(job_ids))
+                        )
+                        session.execute(
+                            delete(InterviewSlot).where(
+                                (InterviewSlot.employer_id == user_id)
+                                | (InterviewSlot.job_id.in_(job_ids))
+                            )
+                        )
+                        session.execute(
+                            delete(Job).where(Job.employer_id == user_id)
+                        )
                         session.execute(
                             delete(CandidateSkill).where(
                                 CandidateSkill.candidate_id == user_id
