@@ -1,0 +1,9 @@
+.skill-picker { min-width: 0; margin: 16px 0; padding: 12px; border: 1px solid var(--border); }
+.skill-picker ul { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 8px 0; padding: 0; }
+.skill-picker li { max-width: 100%; overflow-wrap: anywhere; }
+.skill-picker .skill-input { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.skill-picker input { flex: 1; min-width: 120px; }
+.skill-picker button, .skill-picker input { font: inherit; padding: 6px 10px; }
+.skill-picker button { white-space: normal; overflow-wrap: anywhere; }
+.skill-picker :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.skill-picker button:disabled { opacity: .65; }

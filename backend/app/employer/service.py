@@ -153,7 +153,7 @@ def list_my_jobs(session: Session, user: User) -> list[JobPublic]:
     jobs = session.exec(
         select(Job).where(
             Job.employer_id == user.id,
-            Job.is_deleted.is_(False),
+            Job.is_deleted.is_(False),  # type: ignore[reportAttributeAccessIssue]
         )
     ).all()
     rows = [_job_public(session, job) for job in jobs]
@@ -198,7 +198,9 @@ def update_job(
     fields = changes.model_dump(exclude_unset=True)
     try:
         if "required_skills" in fields:
-            session.execute(delete(JobSkill).where(JobSkill.job_id == job.id))
+            session.execute(
+                delete(JobSkill).where(JobSkill.job_id == job.id)  # type: ignore[reportArgumentType]
+            )
             for name in normalize_skills(fields.pop("required_skills")):
                 session.add(JobSkill(job_id=job.id, name=name))
         for name, value in fields.items():
@@ -295,7 +297,7 @@ def list_job_applicants(
                 candidate_id=application.candidate_id,
                 display_name=profile.display_name,
                 skills=sorted(skills),
-                match_score=match_score(skills, required_skills),
+                match_score=match_score(list(skills), list(required_skills)),
                 status=application.status,
                 booking=_booking_public(session, application.id),
             )

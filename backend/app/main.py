@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.candidate.router import candidate_router
 # from app.db.session import engine
 from app.employer.router import employer_router
 from app.users.router import user_router
@@ -38,4 +39,5 @@ app.add_middleware(
 
 app.include_router(user_router)
 app.include_router(employer_router)
+app.include_router(candidate_router)
 

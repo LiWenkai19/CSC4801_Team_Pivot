@@ -32,3 +32,24 @@ optional requirements as `N/A`. The `pass` examples do not verify behavior.
 ## Document Index
 
 ## Known Limitations
+
+## Candidate Rebuild (2026-11-05)
+
+Candidate workflow is integrated into the existing application and frontend.
+See [candidate architecture, API, commands and verification boundaries](docs/CANDIDATE_REBUILD.md).
+The employer and candidate views call the same real matching implementation.
+
+| Requirement ID | Implementation | Named verification |
+|---|---|---|
+| FP-CAN-1 | `backend/app/candidate/service.py`; candidate profile page and shared skill picker | `backend/tests/candidate/test_profiles.py::test_profile_patch_persists_and_preserves_omitted_fields`; `::test_profile_permission_matrix`; `::test_profile_failed_commit_rolls_back_text_and_skills` |
+| FP-CAN-2 / FP-MATCH-1 (candidate) | `list_jobs`, shared employer `match_score` | `backend/tests/candidate/test_jobs.py::test_recommendations_share_scores_and_title_ties`; `::test_recommendation_queries_do_not_grow_per_job` |
+| FP-CAN-3 | candidate application services | `backend/tests/candidate/test_jobs.py::test_apply_once_in_every_status`; `::test_application_isolation_and_historical_records`; `::test_concurrent_duplicate_applications_have_one_winner` |
+| FP-SCHED-2 | candidate booking services, shared models | `backend/tests/candidate/test_booking.py::test_booking_visible_to_both_roles_and_survives_status_change`; `::test_booking_invalid_slot_rolls_back`; `::test_booking_rejects_foreign_application_and_non_interviewing` |
+| FP-SCHED-3 | PostgreSQL transactions and existing unique constraints | `backend/tests/candidate/test_booking.py::test_real_postgres_two_candidates_compete_for_one_slot`; `::test_same_application_concurrent_booking_has_one_winner` |
+| FP-SEC-1/2/3 | candidate authorization, ORM queries, escaped React text | profile permission matrix, candidate endpoint auth matrix, browser text/XSS checks in `frontend/tests/candidate.browser.mjs` |
+
+Current supported backend regression: **117 passed** on isolated PostgreSQL
+(including the 2026-11-06 candidate query optimization).
+Full collection still fails on the pre-existing `tests/users/test_schema.py` import;
+the documented regression command explicitly excludes it. The earlier placeholder
+rows above remain team-owned roadmap entries; this table records candidate coverage.

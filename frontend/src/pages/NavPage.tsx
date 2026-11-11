@@ -1,12 +1,10 @@
 import { useAuth } from '../contexts/AuthContext'
 import { Link, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
 
-/** 登录后的角色入口；候选人工作流按规划保留提示。 */
+/** 登录后的角色入口；各角色沿用各自的工作流。 */
 function NavPage() {
     const { currentUser, logout } = useAuth()
     const navigate = useNavigate()
-    const [notice, setNotice] = useState('')
     
     return (
         <div>
@@ -16,8 +14,8 @@ function NavPage() {
                 <p><Link to="/employer/company">公司资料</Link></p>
             </nav>}
             {currentUser?.role === 'candidate' && <>
-                <button type="button" onClick={() => setNotice('候选人工作流尚未实现')}>候选人工作流</button>
-                {notice && <p role="status">{notice}</p>}
+                <button type="button" onClick={() => navigate('/candidate/jobs')}>候选人工作流</button>
+                <p><Link to="/candidate/profile">我的资料</Link> · <Link to="/candidate/applications">我的申请</Link></p>
             </>}
             <button onClick={logout}>注销</button>
         </div>
