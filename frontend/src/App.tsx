@@ -6,6 +6,7 @@ import NavPage from './pages/NavPage';  // Import the NavPage component here
 import RegisterPage from './pages/users/RegisterPage';  // Import the RegisterPage component here
 import RequireAuth from './components/RequireAuth';  // Import the RequiredAuth component here
 import CompanyPage from './pages/employer/CompanyPage';
+import InterviewSlotsPage from './pages/employer/InterviewSlotsPage';
 import JobListPage from './pages/employer/JobListPage';
 import JobFormPage from './pages/employer/JobFormPage';
 import JobDetailPage from './pages/employer/JobDetailPage';
@@ -35,6 +36,7 @@ function App() {
                     <Route path='/candidate/applications' element={<ApplicationsPage />} />
                 </Route>
                 <Route path='/employer/company' element={<CompanyPage />} />
+                <Route path='/employer/interview-slots' element={<InterviewSlotsPage />} />
                 <Route path='/employer/jobs' element={<JobListPage />} />
                 <Route path='/employer/jobs/new' element={<JobFormPage />} />
                 <Route path='/employer/jobs/:jobId/edit' element={<JobFormPage />} />

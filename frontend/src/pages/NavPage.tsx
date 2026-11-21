@@ -12,6 +12,7 @@ function NavPage() {
             {currentUser?.role === 'employer' && <nav aria-label="雇主入口">
                 <p><button type="button" onClick={() => navigate('/employer/jobs')}>雇主工作流</button></p>
                 <p><Link to="/employer/company">公司资料</Link></p>
+                <p><Link to="/employer/interview-slots">面试时段</Link></p>
             </nav>}
             {currentUser?.role === 'candidate' && <>
                 <button type="button" onClick={() => navigate('/candidate/jobs')}>候选人工作流</button>

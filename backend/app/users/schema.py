@@ -1,7 +1,7 @@
 import uuid
-from typing import Annotated
+from typing import Annotated, Any
 
-from pydantic import EmailStr, StringConstraints
+from pydantic import EmailStr, StringConstraints, model_validator
 from sqlmodel import Field, SQLModel
 
 from app.users.model import Role
@@ -9,8 +9,11 @@ from app.users.model import Role
 
 NonBlankName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
+
 class UserCreate(SQLModel):
     """注册仅提交账户凭据和角色，资料在注册后单独填写。"""
+
+    model_config = {"extra": "forbid"}
 
     email: EmailStr
     password: str = Field(min_length=1)
@@ -51,8 +54,19 @@ class CandidateProfileCreate(SQLModel):
 class EmployerProfileCreate(SQLModel):
     """首次填写雇主资料；只要求公司名称，公司描述可以后补。"""
 
+    model_config = {"extra": "forbid"}
+
     company_name: NonBlankName
     company_description: str = ""
+
+    @model_validator(mode="before")
+    @classmethod
+    def ignore_client_supplied_owner(cls, value: Any) -> Any:
+        """兼容提交了 user_id 的请求，资料归属始终取自认证用户。"""
+        if isinstance(value, dict) and "user_id" in value:
+            value = value.copy()
+            del value["user_id"]
+        return value
 
 
 # class ProfileUpdateSchema(RequestSchema):

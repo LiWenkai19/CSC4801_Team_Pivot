@@ -1,7 +1,6 @@
-"""Run the local app with two accounts that belong only to this launch."""
+"""Run the local app with reusable development accounts."""
 
 import os
-import secrets
 import shutil
 import signal
 import socket
@@ -15,8 +14,10 @@ ROOT = BACKEND.parent
 FRONTEND = ROOT / "frontend"
 sys.path.insert(0, str(BACKEND))
 
-CANDIDATE_EMAIL = "dev-candidate@example.com"
-EMPLOYER_EMAIL = "dev-employer@example.com"
+# Keep these separate from the old accounts that used random passwords.
+CANDIDATE_EMAIL = "local-candidate@example.com"
+EMPLOYER_EMAIL = "local-employer@example.com"
+DEV_PASSWORD = "dev-local-only"
 
 
 def port_available(port: int) -> bool:
@@ -76,43 +77,38 @@ def main() -> int:
             print(f"Port {port} is already in use; no accounts were created.")
             return 1
 
-    from sqlalchemy import delete, select
+    from sqlalchemy.exc import IntegrityError
     from sqlmodel import Session
 
     from app.db.session import engine
-    from app.employer.model import Application, Booking, InterviewSlot, Job, JobSkill
-    from app.users.model import (
-        CandidateProfile,
-        CandidateSkill,
-        EmployerProfile,
-        Role,
-        User,
-    )
+    from app.users.model import Role
     from app.users.schema import UserCreate
     from app.users.service import create_user, get_user_by_email
 
     if os.name == "nt":
         signal.signal(signal.SIGBREAK, signal.default_int_handler)
 
-    created = []
     processes = []
     result = 0
     accounts = (
-        (CANDIDATE_EMAIL, Role.Candidate, secrets.token_urlsafe(18)),
-        (EMPLOYER_EMAIL, Role.Employer, secrets.token_urlsafe(18)),
+        (CANDIDATE_EMAIL, Role.Candidate),
+        (EMPLOYER_EMAIL, Role.Employer),
     )
     try:
         with Session(engine) as session:
-            for email, _, _ in accounts:
+            for email, role in accounts:
                 if get_user_by_email(session, email) is not None:
-                    raise RuntimeError(
-                        f"{email} already exists; no existing accounts will be changed."
+                    continue
+                try:
+                    create_user(
+                        session,
+                        UserCreate(email=email, role=role, password=DEV_PASSWORD),
                     )
-            for email, role, password in accounts:
-                user = create_user(
-                    session, UserCreate(email=email, role=role, password=password)
-                )
-                created.append(user.id)
+                except (IntegrityError, ValueError):
+                    # Another launch may have created the account in the meantime.
+                    session.rollback()
+                    if get_user_by_email(session, email) is None:
+                        raise
 
         flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
         processes.append(
@@ -149,18 +145,14 @@ def main() -> int:
             )
         )
         print(
-            "\nTemporary accounts (valid only while this window is running):",
+            "\nLocal development accounts (see the start.bat account guide):",
             flush=True,
         )
-        for email, role, password in accounts:
-            print(f"  {role.value}: {email} / {password}", flush=True)
+        for email, role in accounts:
+            print(f"  {role.value}: {email}", flush=True)
         print("Frontend: http://127.0.0.1:5173/", flush=True)
         print(
-            "Press Ctrl+C here to stop both servers and remove the accounts.",
-            flush=True,
-        )
-        print(
-            "Forced termination or power loss cannot run automatic cleanup.\n",
+            "Press Ctrl+C here to stop both servers. Development accounts persist.\n",
             flush=True,
         )
         while all(process.poll() is None for process in processes):
@@ -175,70 +167,6 @@ def main() -> int:
     finally:
         for process in reversed(processes):
             stop_process(process)
-        if created:
-            try:
-                with Session(engine) as session:
-                    for user_id in created:
-                        # Business rows first: FKs point job -> employer_profile
-                        # and application -> candidate_profile, so profiles and
-                        # the user row must go last.
-                        job_ids = select(Job.id).where(Job.employer_id == user_id)
-                        application_ids = select(Application.id).where(
-                            (Application.candidate_id == user_id)
-                            | (Application.job_id.in_(job_ids))
-                        )
-                        slot_ids = select(InterviewSlot.id).where(
-                            InterviewSlot.employer_id == user_id
-                        )
-                        session.execute(
-                            delete(Booking).where(
-                                (Booking.application_id.in_(application_ids))
-                                | (Booking.slot_id.in_(slot_ids))
-                            )
-                        )
-                        session.execute(
-                            delete(Application).where(
-                                (Application.candidate_id == user_id)
-                                | (Application.job_id.in_(job_ids))
-                            )
-                        )
-                        session.execute(
-                            delete(JobSkill).where(JobSkill.job_id.in_(job_ids))
-                        )
-                        session.execute(
-                            delete(InterviewSlot).where(
-                                (InterviewSlot.employer_id == user_id)
-                                | (InterviewSlot.job_id.in_(job_ids))
-                            )
-                        )
-                        session.execute(
-                            delete(Job).where(Job.employer_id == user_id)
-                        )
-                        session.execute(
-                            delete(CandidateSkill).where(
-                                CandidateSkill.candidate_id == user_id
-                            )
-                        )
-                        session.execute(
-                            delete(CandidateProfile).where(
-                                CandidateProfile.user_id == user_id
-                            )
-                        )
-                        session.execute(
-                            delete(EmployerProfile).where(
-                                EmployerProfile.user_id == user_id
-                            )
-                        )
-                        session.execute(delete(User).where(User.id == user_id))
-                    session.commit()
-                print("Temporary accounts and their profiles removed.", flush=True)
-            except Exception as error:
-                print(f"WARNING: account cleanup failed: {error}", flush=True)
-                print(
-                    f"Manually review account IDs: {', '.join(map(str, created))}",
-                    flush=True,
-                )
-                result = 1
         engine.dispose()
     return result
 

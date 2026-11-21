@@ -3,14 +3,14 @@ import uuid
 import pytest
 from pydantic import ValidationError
 
+from app.candidate.schema import ProfileUpdate
+from app.employer.schema import CompanyUpdate
 from app.users.model import Role, User
 from app.users.schema import (
     AuthResponse,
     CandidateProfileCreate,
     CandidateProfilePublic,
-    CandidateProfileUpdate,
     EmployerProfileCreate,
-    EmployerProfileUpdate,
     UserCreate,
     UserLogin,
     UserPublic,
@@ -69,39 +69,48 @@ def test_profile_create_allows_omitting_optional_content():
         (EmployerProfileCreate, {}),
         (EmployerProfileCreate, {"company_name": " \n "}),
         (CandidateProfileCreate, {"display_name": "Alice", "skills": [1]}),
-        (
-            CandidateProfileCreate,
-            {"display_name": "Alice", "user_id": str(uuid.uuid4())},
-        ),
         (EmployerProfileCreate, {"company_name": "Demo", "role": "candidate"}),
     ],
 )
-def test_profile_create_validates_names_types_and_ownership_fields(schema, payload):
-    """资料创建拒绝空白名称、无效技能及客户端指定所有者或角色。"""
+def test_profile_create_rejects_invalid_fields(schema, payload):
+    """资料创建拒绝空白名称、无效技能及雇主请求中的额外角色。"""
     with pytest.raises(ValidationError):
         schema.model_validate(payload)
 
 
+def test_candidate_profile_create_ignores_client_supplied_owner():
+    """首次创建候选人资料时，忽略客户端传入的所有者。"""
+    profile = CandidateProfileCreate.model_validate(
+        {"display_name": "Alice", "user_id": str(uuid.uuid4())}
+    )
+    assert profile.model_dump() == {
+        "display_name": "Alice",
+        "resume_text": "",
+        "skills": [],
+    }
+
+
 def test_profile_update_distinguishes_omission_from_clearing():
     """未传字段不更新，显式空内容用于清空可选字段。"""
-    assert CandidateProfileUpdate().model_dump(exclude_unset=True) == {}
-    assert EmployerProfileUpdate().model_dump(exclude_unset=True) == {}
-    assert CandidateProfileUpdate(resume_text="", skills=[]).model_dump(
-        exclude_unset=True
-    ) == {"resume_text": "", "skills": []}
-    assert EmployerProfileUpdate(company_description="").model_dump(
-        exclude_unset=True
-    ) == {"company_description": ""}
+    assert ProfileUpdate().model_dump(exclude_unset=True) == {}
+    assert CompanyUpdate().model_dump(exclude_unset=True) == {}
+    assert ProfileUpdate(resume_text="", skills=[]).model_dump(exclude_unset=True) == {
+        "resume_text": "",
+        "skills": [],
+    }
+    assert CompanyUpdate(company_description="").model_dump(exclude_unset=True) == {
+        "company_description": ""
+    }
 
 
 @pytest.mark.parametrize(
     "schema, field",
     [
-        (CandidateProfileUpdate, "display_name"),
-        (CandidateProfileUpdate, "resume_text"),
-        (CandidateProfileUpdate, "skills"),
-        (EmployerProfileUpdate, "company_name"),
-        (EmployerProfileUpdate, "company_description"),
+        (ProfileUpdate, "display_name"),
+        (ProfileUpdate, "resume_text"),
+        (ProfileUpdate, "skills"),
+        (CompanyUpdate, "company_name"),
+        (CompanyUpdate, "company_description"),
     ],
 )
 def test_profile_update_rejects_explicit_null(schema, field):
@@ -115,7 +124,7 @@ def test_auth_response_excludes_password_hash_and_private_profile():
     user = User(
         email="demo@example.com", hashed_password="fake-hash", role=Role.Candidate
     )
-    public = UserPublic.model_validate(user)
+    public = UserPublic.model_validate(user, update={"profile_completed": False})
     response = AuthResponse(user=public).model_dump(mode="json")
     # 会话凭证只经 HttpOnly Cookie 下发，响应体只有账户信息。
     assert set(response) == {"user"}
@@ -123,6 +132,7 @@ def test_auth_response_excludes_password_hash_and_private_profile():
         "id": str(user.id),
         "email": user.email,
         "role": "candidate",
+        "profile_completed": False,
     }
     assert "hashed_password" not in response["user"]
     assert "resume_text" not in response["user"]

@@ -1,7 +1,7 @@
 import { requestWithToken } from './common_api'
 import type {
     ApplicantPublic, ApplicationStatusPublic, ApplicationStatusUpdate,
-    CompanyPublic, CompanyUpdate, JobCreate, JobPublic, JobUpdate,
+    CompanyPublic, CompanyUpdate, InterviewSlot, JobCreate, JobPublic, JobUpdate,
 } from '../types'
 
 /** 雇主操作复用统一鉴权与错误解析，页面不直接发请求。 */
@@ -44,4 +44,21 @@ export function listJobApplicants(id: string): Promise<ApplicantPublic[]> {
 
 export function changeApplicationStatus(id: string, data: ApplicationStatusUpdate): Promise<ApplicationStatusPublic> {
     return requestWithToken(`employer/applications/${encodeURIComponent(id)}/status`, 'PATCH', undefined, data)
+}
+
+/** 获取当前雇主的未来空闲时段。 */
+export function listMyInterviewSlots(): Promise<InterviewSlot[]> {
+    return requestWithToken('employer/interview-slots', 'GET')
+}
+
+/** 提交带时区的开始时间，由后端计算结束时间。 */
+export function createInterviewSlot(startsAt: string): Promise<InterviewSlot> {
+    return requestWithToken('employer/interview-slots', 'POST', undefined, {
+        starts_at: startsAt,
+    })
+}
+
+/** 删除时段，公共请求层会处理 204 空响应。 */
+export function deleteInterviewSlot(id: string): Promise<void> {
+    return requestWithToken(`employer/interview-slots/${encodeURIComponent(id)}`, 'DELETE')
 }
