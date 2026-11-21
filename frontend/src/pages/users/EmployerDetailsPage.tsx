@@ -48,20 +48,20 @@ function EmployerDetailsPage() {
         await completeProfile()
     }
 
-    if (loading) return <p role="status">正在检查登录状态...</p>
+    if (loading) return <main className="work-page"><p className="feedback" role="status">正在检查登录状态...</p></main>
     if (!currentUser) return <Navigate to="/login" replace />
     if (currentUser.role !== 'employer' || currentUser.profile_completed) {
         return <Navigate to="/navpage" replace />
     }
 
     return (
-        <main style={{ width: '100%', maxWidth: 560, margin: '40px auto', padding: 20, boxSizing: 'border-box', textAlign: 'left' }}>
-            <h2>填写公司资料</h2>
-            <p style={{ marginBottom: 20 }}>填写公司名称即可继续，公司描述可以稍后补充。</p>
+        <main className="work-page work-page-narrow">
+            <h1>填写公司资料</h1>
+            <p className="page-intro">填写公司名称即可继续，公司描述可以稍后补充。</p>
             {profileSaved ? (
-                <div>
-                    <p role="status">公司资料已保存，正在确认账户状态。</p>
-                    {submitError && <p role="alert" style={{ margin: '12px 0' }}>{submitError}</p>}
+                <div className="panel page-section">
+                    <p className="feedback" role="status">公司资料已保存，正在确认账户状态。</p>
+                    {submitError && <p className="feedback" role="alert">{submitError}</p>}
                     <button type="button" onClick={completeProfile} disabled={submitting}>
                         {submitting ? '检查中...' : '重新检查'}
                     </button>
@@ -69,7 +69,7 @@ function EmployerDetailsPage() {
             ) : (
                 <EmployerForm submitting={submitting} submitError={submitError} onSubmit={handleSubmit} />
             )}
-            <button type="button" onClick={logout} disabled={submitting} style={{ marginTop: 16 }}>
+            <button className="button-quiet" type="button" onClick={logout} disabled={submitting}>
                 退出登录
             </button>
         </main>

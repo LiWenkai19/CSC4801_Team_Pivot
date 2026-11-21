@@ -7,14 +7,14 @@ import type { ApplicantPublic, ApplicationStatus, JobPublic } from '../../types'
 
 const statuses: ApplicationStatus[] = ['Pending', 'Interviewing', 'Rejected', 'Accepted']
 
-/** 预约统一显示 UTC；兼容本地测试库返回不带偏移的 UTC 时间。 */
+/** 预约按上海时间展示，兼容不带偏移量的 UTC 测试数据。 */
 function bookingTime(value: string): string {
     const timestamp = /(?:Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}Z`
-    return `${new Date(timestamp).toLocaleString('zh-CN', { timeZone: 'UTC', hour12: false })} UTC`
+    return new Date(timestamp).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })
 }
 
-/** 每行独立提交状态，失败保留选择，不改变已保存状态或预约。 */
-function ApplicantRow({ applicant, onUpdated }: { applicant: ApplicantPublic; onUpdated: (id: string, status: ApplicationStatus) => void }) {
+/** 每张申请人卡片独立保存状态，提交失败时保留当前选择。 */
+function ApplicantCard({ applicant, onUpdated }: { applicant: ApplicantPublic; onUpdated: (id: string, status: ApplicationStatus) => void }) {
     const [selected, setSelected] = useState<ApplicationStatus>(applicant.status)
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState('')
@@ -41,30 +41,52 @@ function ApplicantRow({ applicant, onUpdated }: { applicant: ApplicantPublic; on
         }
     }
 
-    return <tr>
-        <th scope="row" style={{ textAlign: 'left', overflowWrap: 'anywhere' }}>{applicant.display_name}<br /><small>{applicant.candidate_id}</small></th>
-        <td>{applicant.skills.join(', ') || '无'}</td>
-        <td>{applicant.match_score}</td>
-        <td>
-            <p>当前状态：{applicant.status}</p>
-            <form onSubmit={handleSubmit} aria-busy={submitting}>
-                <select aria-label={`${applicant.display_name}的申请状态`} value={selected} disabled={submitting} onChange={event => {
-                    const status = statuses.find(value => value === event.target.value)
-                    if (status) setSelected(status)
-                    setNotice('')
-                }}>
-                    {statuses.map(status => <option key={status} value={status}>{status}</option>)}
-                </select>{' '}
-                <button type="submit" disabled={submitting}>{submitting ? '保存中...' : '保存状态'}</button>
-            </form>
-            {error && <p role="alert">{error} · <Link to="/employer/jobs">返回职位列表</Link></p>}
-            {notice && <p role="status">{notice}</p>}
-        </td>
-        <td>{applicant.booking ? <>
-            <time dateTime={applicant.booking.starts_at}>{bookingTime(applicant.booking.starts_at)}</time><br />至<br />
-            <time dateTime={applicant.booking.ends_at}>{bookingTime(applicant.booking.ends_at)}</time>
-        </> : '无'}</td>
-    </tr>
+    return <li className="panel employer-applicant-card">
+        <header className="employer-applicant-heading">
+            <div>
+                <h3>{applicant.display_name}</h3>
+                <p className="employer-applicant-id">候选人 ID {applicant.candidate_id}</p>
+            </div>
+            <p className="employer-applicant-score">
+                <span>匹配分</span>
+                <strong>{applicant.match_score}<small> / 100</small></strong>
+            </p>
+        </header>
+        <div className="employer-applicant-body">
+            <section className="employer-applicant-section">
+                <h4>技能</h4>
+                {applicant.skills.length > 0
+                    ? <div className="skill-tags">
+                        {applicant.skills.map(skill => <span className="skill-tag" key={skill}>{skill}</span>)}
+                    </div>
+                    : <p className="record-meta">暂无技能</p>}
+            </section>
+            <section className="employer-applicant-section">
+                <h4>申请状态</h4>
+                <p className="status-chip">当前状态：{applicant.status}</p>
+                <form className="employer-applicant-form" onSubmit={handleSubmit} aria-busy={submitting}>
+                    <select aria-label={`${applicant.display_name}的申请状态`} value={selected} disabled={submitting} onChange={event => {
+                        const status = statuses.find(value => value === event.target.value)
+                        if (status) setSelected(status)
+                        setNotice('')
+                    }}>
+                        {statuses.map(status => <option key={status} value={status}>{status}</option>)}
+                    </select>
+                    <button type="submit" disabled={submitting}>{submitting ? '保存中...' : '保存状态'}</button>
+                </form>
+                {error && <p className="feedback" role="alert">{error} <Link to="/employer/jobs">返回职位列表</Link></p>}
+                {notice && <p className="feedback" role="status">{notice}</p>}
+            </section>
+            <section className="employer-applicant-section">
+                <h4>面试预约</h4>
+                {applicant.booking ? <p className="employer-applicant-time">
+                    <time dateTime={applicant.booking.starts_at}>{bookingTime(applicant.booking.starts_at)}</time>
+                    {' 至 '}
+                    <time dateTime={applicant.booking.ends_at}>{bookingTime(applicant.booking.ends_at)}</time>
+                </p> : <p className="record-meta">未预约</p>}
+            </section>
+        </div>
+    </li>
 }
 
 /** 职位与申请人分别显示加载结果，沿用后端匹配分及平级排序。 */
@@ -110,31 +132,43 @@ function JobDetail({ jobId }: { jobId: string | undefined }) {
         setApplicants(previous => previous.map(applicant => applicant.application_id === id ? { ...applicant, status } : applicant))
     }
 
-    if (!isEmployer) return <main><p role="alert">仅雇主可访问此页面。</p><Link to="/navpage">返回主页</Link></main>
-    return <main style={{ width: '100%', padding: 20, boxSizing: 'border-box', textAlign: 'left' }}>
+    if (!isEmployer) return <main className="work-page"><p className="feedback" role="alert">仅雇主可访问此页面。</p><Link to="/navpage">返回主页</Link></main>
+    return <main className="work-page">
+        <nav className="page-nav" aria-label="职位详情导航"><Link to="/employer/jobs">返回职位列表</Link></nav>
         <h1>职位详情与申请人</h1>
-        <Link to="/employer/jobs">返回职位列表</Link>
-        {loading && <p role="status">正在加载职位与申请人...</p>}
-        {jobError && <p role="alert">{jobError}</p>}
-        {applicantsError && <p role="alert">{applicantsError}</p>}
+        {loading && <p className="feedback" role="status">正在加载职位与申请人...</p>}
+        {jobError && <p className="feedback" role="alert">{jobError}</p>}
+        {applicantsError && <p className="feedback" role="alert">{applicantsError}</p>}
         {!loading && (jobError || applicantsError) && <button type="button" onClick={retryLoad}>重新加载</button>}
         {!loading && job && <>
-            <section aria-label="职位信息" style={{ margin: '20px 0' }}>
-                <h2>{job.title}</h2>
-                <p>公司：{job.company_name}</p>
-                <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{job.description}</p>
-                <p>所需技能：{job.required_skills.join(', ') || '无'}</p>
-                <p>创建时间：<time dateTime={job.created_at}>{job.created_at}</time></p>
-                <Link to={`/employer/jobs/${job.id}/edit`}>编辑职位</Link>
+            <section className="panel employer-job-overview" aria-label="职位信息">
+                <header className="section-heading employer-job-heading">
+                    <h2>{job.title}</h2>
+                    <Link className="button" to={`/employer/jobs/${job.id}/edit`}>编辑职位</Link>
+                </header>
+                <div className="employer-job-overview-body">
+                    <section className="employer-job-content">
+                        <h3>职位描述</h3>
+                        <p className="description">{job.description}</p>
+                    </section>
+                    <section className="employer-job-skill-panel">
+                        <h3>所需技能</h3>
+                        {job.required_skills.length > 0
+                            ? <div className="skill-tags">
+                                {job.required_skills.map(skill => <span className="skill-tag" key={skill}>{skill}</span>)}
+                            </div>
+                            : <p className="record-meta">无指定技能</p>}
+                    </section>
+                </div>
             </section>
-            <section aria-label="申请人列表">
-                <h2>申请人（按匹配分从高到低）</h2>
-                {!applicantsError && (applicants.length === 0 ? <p>暂无申请人</p> : <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderSpacing: '12px', textAlign: 'left' }}>
-                        <thead><tr><th scope="col">候选人</th><th scope="col">技能</th><th scope="col">匹配分</th><th scope="col">申请状态</th><th scope="col">面试预约（UTC）</th></tr></thead>
-                        <tbody>{applicants.map(applicant => <ApplicantRow key={applicant.application_id} applicant={applicant} onUpdated={updateStatus} />)}</tbody>
-                    </table>
-                </div>)}
+            <section className="page-section" aria-label="申请人列表">
+                <header className="section-heading">
+                    <h2>申请人</h2>
+                    <p className="page-intro">按匹配分从高到低排列，面试时间为上海时间（UTC+8）。</p>
+                </header>
+                {!applicantsError && (applicants.length === 0 ? <p className="panel empty-state">暂无申请人</p> : <ul className="employer-applicant-list" role="list">
+                    {applicants.map(applicant => <ApplicantCard key={applicant.application_id} applicant={applicant} onUpdated={updateStatus} />)}
+                </ul>)}
             </section>
         </>}
     </main>

@@ -7,7 +7,7 @@ from sqlmodel import Session
 
 from app.db.session import get_db
 from app.interview import service
-from app.interview.schema import SlotCreate, SlotPublic
+from app.interview.schema import ManagedSlotPublic, SlotCreate, SlotPublic
 from app.users.model import User
 from app.users.service import require_employer
 
@@ -37,12 +37,12 @@ def create_slot(
         raise HTTPException(ERROR_STATUS[type(error)], str(error)) from error
 
 
-@interview_router.get("", response_model=list[SlotPublic])
+@interview_router.get("", response_model=list[ManagedSlotPublic])
 def list_slots(
     session: Session = Depends(get_db),
     employer: User = Depends(require_employer),
-) -> list[SlotPublic]:
-    """查询当前雇主的可用时段。"""
+) -> list[ManagedSlotPublic]:
+    """查询当前雇主尚未开始的时段及预约状态。"""
     return service.list_slots(session, employer)
 
 

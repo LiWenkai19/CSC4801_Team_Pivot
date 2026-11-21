@@ -54,22 +54,38 @@ function JobListPage() {
         }
     }
 
-    if (!isEmployer) return <main><p role="alert">仅雇主可访问此页面。</p><Link to="/navpage">返回主页</Link></main>
-    return <main style={{ width: '100%', padding: 20, boxSizing: 'border-box', textAlign: 'left' }}>
+    if (!isEmployer) return <main className="work-page"><p className="feedback" role="alert">仅雇主可访问此页面。</p><Link to="/navpage">返回主页</Link></main>
+    return <main className="work-page">
+        <nav className="page-nav" aria-label="职位管理导航">
+            <Link to="/navpage">返回主页</Link>
+            <Link to="/employer/company">公司资料</Link>
+            <div className="page-nav-actions">
+                <Link className="button" to="/employer/interview-slots">创建面试时段</Link>
+                <Link className="button" to="/employer/jobs/new">新建职位</Link>
+            </div>
+        </nav>
         <h1>我的职位</h1>
-        <nav><Link to="/navpage">返回主页</Link> · <Link to="/employer/company">公司资料</Link> · <Link to="/employer/jobs/new">新建职位</Link></nav>
-        {loading && <p role="status">正在加载职位...</p>}
-        {loadError && <div><p role="alert">{loadError}</p><button type="button" onClick={retryLoad}>重新加载</button></div>}
-        {actionError && <p role="alert">{actionError}</p>}
-        {notice && <p role="status">{notice}</p>}
-        {!loading && !loadError && (jobs.length === 0 ? <p>暂无职位</p> : <ul>
-            {jobs.map(job => <li key={job.id} style={{ margin: '20px 0' }}>
-                <h2>{job.title}</h2>
-                <p>公司：{job.company_name}</p>
-                <p>所需技能：{job.required_skills.join(', ') || '无'}</p>
-                <p>创建时间：<time dateTime={job.created_at}>{job.created_at}</time></p>
-                <Link to={`/employer/jobs/${job.id}`}>查看详情/申请人</Link> · <Link to={`/employer/jobs/${job.id}/edit`}>编辑</Link> · {' '}
-                <button type="button" disabled={deleting !== null} onClick={() => handleDelete(job)}>{deleting === job.id ? '删除中...' : '删除'}</button>
+        {loading && <p className="feedback" role="status">正在加载职位...</p>}
+        {loadError && <div className="page-section"><p className="feedback" role="alert">{loadError}</p><button type="button" onClick={retryLoad}>重新加载</button></div>}
+        {actionError && <p className="feedback" role="alert">{actionError}</p>}
+        {notice && <p className="feedback" role="status">{notice}</p>}
+        {!loading && !loadError && (jobs.length === 0 ? <p className="panel empty-state">暂无职位</p> : <ul className="employer-job-list" role="list">
+            {jobs.map(job => <li key={job.id} className="panel employer-job-summary">
+                <div className="employer-job-content">
+                    <h2>{job.title}</h2>
+                    <p className="employer-job-excerpt">{job.description}</p>
+                    <div className="skill-tags employer-job-skills">
+                        <span className="record-meta">所需技能</span>
+                        {job.required_skills.length > 0
+                            ? job.required_skills.map(skill => <span className="skill-tag" key={skill}>{skill}</span>)
+                            : <span className="record-meta">无指定技能</span>}
+                    </div>
+                </div>
+                <div className="employer-job-actions">
+                    <Link className="button button-primary" to={`/employer/jobs/${job.id}`}>查看详情/申请人</Link>
+                    <Link className="button" to={`/employer/jobs/${job.id}/edit`}>编辑</Link>
+                    <button className="button-danger" type="button" disabled={deleting !== null} onClick={() => handleDelete(job)}>{deleting === job.id ? '删除中...' : '删除'}</button>
+                </div>
             </li>)}
         </ul>)}
     </main>

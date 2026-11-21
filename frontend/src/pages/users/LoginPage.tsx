@@ -2,9 +2,9 @@ import LoginForm from './LoginForm';
 
 function LoginPage() {
     return (
-        <div>
+        <main className="auth-page">
             <LoginForm />
-        </div>
+        </main>
     );
 }
 

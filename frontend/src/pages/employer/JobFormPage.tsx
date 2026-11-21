@@ -74,25 +74,31 @@ function JobForm({ jobId }: { jobId: string | undefined }) {
         }
     }
 
-    if (!isEmployer) return <main><p role="alert">仅雇主可访问此页面。</p><Link to="/navpage">返回主页</Link></main>
-    return <main style={{ maxWidth: 640, width: '100%', margin: '32px auto', padding: 20, boxSizing: 'border-box', textAlign: 'left' }}>
+    if (!isEmployer) return <main className="work-page"><p className="feedback" role="alert">仅雇主可访问此页面。</p><Link to="/navpage">返回主页</Link></main>
+    return <main className="work-page work-page-narrow">
+        <nav className="page-nav" aria-label="职位表单导航"><Link to="/employer/jobs">返回职位列表</Link></nav>
         <h1>{jobId ? '编辑职位' : '新建职位'}</h1>
-        <Link to="/employer/jobs">返回职位列表</Link>
-        {loading && <p role="status">正在加载职位...</p>}
-        {loadError && <div><p role="alert">{loadError}</p><button type="button" onClick={retryLoad}>重新加载</button></div>}
-        {!loading && !loadError && <form onSubmit={handleSubmit} aria-busy={submitting}>
-            <fieldset disabled={submitting} style={{ margin: '16px 0', minWidth: 0 }}>
+        {loading && <p className="feedback" role="status">正在加载职位...</p>}
+        {loadError && <div className="page-section"><p className="feedback" role="alert">{loadError}</p><button type="button" onClick={retryLoad}>重新加载</button></div>}
+        {!loading && !loadError && <form className="form-panel" onSubmit={handleSubmit} aria-busy={submitting}>
+            <fieldset disabled={submitting}>
                 <legend>职位信息</legend>
-                <p><label htmlFor="job-title">标题（必填）</label></p>
-                <input id="job-title" value={title} required onChange={event => setTitle(event.target.value)} style={{ width: '100%', boxSizing: 'border-box' }} />
-                <p><label htmlFor="job-description">描述（必填）</label></p>
-                <textarea id="job-description" value={description} required rows={6} onChange={event => setDescription(event.target.value)} style={{ width: '100%', boxSizing: 'border-box' }} />
-                <p><label htmlFor="job-skills">所需技能（逗号分隔，可留空）</label></p>
-                <input id="job-skills" value={skills} onChange={event => setSkills(event.target.value)} style={{ width: '100%', boxSizing: 'border-box' }} />
+                <div className="field">
+                    <label htmlFor="job-title">标题（必填）</label>
+                    <input id="job-title" value={title} required onChange={event => setTitle(event.target.value)} />
+                </div>
+                <div className="field">
+                    <label htmlFor="job-description">描述（必填）</label>
+                    <textarea id="job-description" value={description} required rows={6} onChange={event => setDescription(event.target.value)} />
+                </div>
+                <div className="field">
+                    <label htmlFor="job-skills">所需技能（逗号分隔，可留空）</label>
+                    <input id="job-skills" value={skills} onChange={event => setSkills(event.target.value)} />
+                </div>
                 <button type="submit">{submitting ? '保存中...' : '保存职位'}</button>
             </fieldset>
         </form>}
-        {submitError && <p role="alert">{submitError}</p>}
+        {submitError && <p className="feedback" role="alert">{submitError}</p>}
     </main>
 }
 

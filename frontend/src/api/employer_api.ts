@@ -1,7 +1,7 @@
 import { requestWithToken } from './common_api'
 import type {
     ApplicantPublic, ApplicationStatusPublic, ApplicationStatusUpdate,
-    CompanyPublic, CompanyUpdate, InterviewSlot, JobCreate, JobPublic, JobUpdate,
+    CompanyPublic, CompanyUpdate, InterviewSlot, JobCreate, JobPublic, JobUpdate, ManagedInterviewSlot,
 } from '../types'
 
 /** 雇主操作复用统一鉴权与错误解析，页面不直接发请求。 */
@@ -46,8 +46,8 @@ export function changeApplicationStatus(id: string, data: ApplicationStatusUpdat
     return requestWithToken(`employer/applications/${encodeURIComponent(id)}/status`, 'PATCH', undefined, data)
 }
 
-/** 获取当前雇主的未来空闲时段。 */
-export function listMyInterviewSlots(): Promise<InterviewSlot[]> {
+/** 获取当前雇主尚未开始的时段及预约状态。 */
+export function listMyInterviewSlots(): Promise<ManagedInterviewSlot[]> {
     return requestWithToken('employer/interview-slots', 'GET')
 }
 

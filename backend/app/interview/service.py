@@ -7,7 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, col, select
 
 from app.employer.model import Booking, InterviewSlot
-from app.interview.schema import SlotCreate, SlotPublic
+from app.interview.schema import ManagedSlotPublic, SlotCreate, SlotPublic
 from app.users.model import EmployerProfile, User, utc_now
 
 SLOT_LENGTH = timedelta(minutes=30)
@@ -69,19 +69,23 @@ def create_slot(session: Session, employer: User, payload: SlotCreate) -> SlotPu
     return response
 
 
-def list_slots(session: Session, employer: User) -> list[SlotPublic]:
-    """只返回当前雇主尚未被预约的未来时段。"""
+def list_slots(session: Session, employer: User) -> list[ManagedSlotPublic]:
+    """返回当前雇主尚未开始的时段及预约状态。"""
+    is_booked = (
+        select(Booking.id).where(col(Booking.slot_id) == col(InterviewSlot.id)).exists()
+    )
     statement = (
-        select(InterviewSlot)
+        select(InterviewSlot, is_booked.label("is_booked"))
         .where(
             InterviewSlot.employer_id == employer.id,
             InterviewSlot.starts_at > utc_now(),
-            col(InterviewSlot.ends_at) - col(InterviewSlot.starts_at) == SLOT_LENGTH,
-            col(InterviewSlot.id).not_in(select(Booking.slot_id)),
         )
         .order_by(col(InterviewSlot.starts_at), col(InterviewSlot.id))
     )
-    return [SlotPublic.model_validate(slot) for slot in session.exec(statement)]
+    return [
+        ManagedSlotPublic.model_validate(slot, update={"is_booked": booked})
+        for slot, booked in session.exec(statement)
+    ]
 
 
 def delete_slot(session: Session, employer: User, slot_id: UUID) -> None:

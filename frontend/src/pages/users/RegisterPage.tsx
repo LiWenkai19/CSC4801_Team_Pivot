@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { Role } from "../../types"
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import Brand from '../../components/Brand';
 /** 注册账号并直接进入认证结果指定的角色资料页。 */
 function RegisterPage() {
     const [email, setEmail] = useState('');
@@ -38,72 +39,75 @@ function RegisterPage() {
     };
 
     return (
-        <div style={{ maxWidth: 360, margin: '80px auto', fontFamily: 'sans-serif' }}>
-            <h2>注册 SYManage</h2>
-            <form onSubmit={handleSubmit}>
-                <div style={{ marginBottom: 12 }}>
-                    <label>邮箱</label>
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        style={{ display: 'block', width: '100%' }}
-                        required
-                        disabled={loading}
-                    />
+        <main className="auth-page">
+            <section className="auth-panel" aria-labelledby="register-title">
+                <header className="auth-brand"><Brand showDescription /></header>
+                <div className="auth-content">
+                    <h1 id="register-title">注册</h1>
+                    <form onSubmit={handleSubmit}>
+                        <div className="field">
+                            <label htmlFor="register-email">邮箱</label>
+                            <input
+                                id="register-email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                autoComplete="username"
+                                required
+                                disabled={loading}
+                            />
+                        </div>
+                        <div className="field">
+                            <label htmlFor="register-password">密码</label>
+                            <input
+                                id="register-password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                autoComplete="new-password"
+                                required
+                                disabled={loading}
+                            />
+                        </div>
+                        <div className="field">
+                            <label htmlFor="register-confirm">确认密码</label>
+                            <input
+                                id="register-confirm"
+                                type="password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                autoComplete="new-password"
+                                required
+                                disabled={loading}
+                            />
+                        </div>
+                        <div className="field">
+                            <label htmlFor="role">角色</label>
+                            <select
+                                id="role"
+                                value={role}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (value === 'candidate' || value === 'employer') {
+                                        setRole(value);
+                                    }
+                                }}
+                                required
+                                disabled={loading}
+                            >
+                                <option value="candidate">候选人</option>
+                                <option value="employer">雇主</option>
+                            </select>
+                        </div>
+                        {error && <p className="feedback" role="alert">{error}</p>}
+                        <button type="submit" disabled={loading}>
+                            {loading ? '注册中...' : '注册'}
+                        </button>
+                    </form>
+                    <p className="auth-switch"><button className="button-quiet" onClick={handleBackToLogin} disabled={loading}>返回登录</button></p>
                 </div>
-                <div style={{ marginBottom: 12 }}>
-                    <label>密码</label>
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        style={{ display: 'block', width: '100%' }}
-                        required
-                        disabled={loading}
-                    />
-                </div>
-                <div style={{ marginBottom: 12 }}>
-                    <label>确认密码</label>
-                    <input
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        style={{ display: 'block', width: '100%' }}
-                        required
-                        disabled={loading}
-                    />
-                </div>
-                <div style={{ marginBottom: 12 }}>
-                    <label htmlFor="role">角色</label>
-                    <select
-                        id="role"
-                        value={role}
-                        onChange={(e) => {
-                            const value = e.target.value;
-                            if (value === 'candidate' || value === 'employer') {
-                                setRole(value);
-                            }
-                        }}
-                        style={{ display: 'block', width: '100%' }}
-                        required
-                        disabled={loading}
-                    >
-                        <option value="candidate">候选人</option>
-                        <option value="employer">雇主</option>
-                    </select>
-                </div>
-                <button type="submit" disabled={loading}>
-                    {loading ? '注册中...' : '注册'}
-                </button>
-            </form>
-
-            <button onClick={handleBackToLogin} disabled={loading} style={{ marginTop: 8 }}>
-                返回登录
-            </button>
-
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-        </div>
+            </section>
+        </main>
     );
 }
 

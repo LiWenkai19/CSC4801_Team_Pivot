@@ -46,18 +46,22 @@ function ProfilePage() {
 
     return <>
         <h1>我的资料</h1>
-        {loading && <p role="status">正在加载资料...</p>}
-        {loadError && <div><p role="alert">{loadError}</p><button type="button" onClick={() => { setLoadError(''); setLoading(true); setAttempt(value => value + 1) }}>重新加载</button></div>}
-        {!loading && !loadError && profile && <form onSubmit={save} aria-busy={saving}>
-            <fieldset disabled={saving} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
-                <label htmlFor="display-name">显示名称（必填）</label>
-                <input id="display-name" required value={profile.display_name} onChange={event => edit({ display_name: event.target.value })} />
-                <label htmlFor="resume">简历（选填）</label>
-                <textarea id="resume" rows={10} value={profile.resume_text} onChange={event => edit({ resume_text: event.target.value })} />
+        {loading && <p className="feedback" role="status">正在加载资料...</p>}
+        {loadError && <div className="page-section"><p className="feedback" role="alert">{loadError}</p><button type="button" onClick={() => { setLoadError(''); setLoading(true); setAttempt(value => value + 1) }}>重新加载</button></div>}
+        {!loading && !loadError && profile && <form className="form-panel" onSubmit={save} aria-busy={saving}>
+            <fieldset disabled={saving}>
+                <div className="field">
+                    <label htmlFor="display-name">显示名称（必填）</label>
+                    <input id="display-name" required value={profile.display_name} onChange={event => edit({ display_name: event.target.value })} />
+                </div>
+                <div className="field">
+                    <label htmlFor="resume">简历（选填）</label>
+                    <textarea id="resume" rows={10} value={profile.resume_text} onChange={event => edit({ resume_text: event.target.value })} />
+                </div>
                 <SkillTagPicker value={profile.skills} onChange={skills => edit({ skills })} />
-                <p>简历仅向你本人及你已投递职位的雇主开放。</p>
-                {error && <p role="alert">{error}</p>}
-                {notice && <p role="status">{notice}</p>}
+                <p className="page-intro">简历仅向你本人及你已投递职位的雇主开放。</p>
+                {error && <p className="feedback" role="alert">{error}</p>}
+                {notice && <p className="feedback" role="status">{notice}</p>}
                 <button type="submit">{saving ? '保存中...' : '保存资料'}</button>
             </fieldset>
         </form>}

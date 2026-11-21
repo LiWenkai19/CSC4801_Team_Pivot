@@ -44,9 +44,9 @@ function CandidateForm({ submitting, submitError, onSubmit }: CandidateFormProps
     }
 
     return (
-        <form onSubmit={handleSubmit} aria-busy={submitting}>
-            <fieldset disabled={submitting} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
-                <div style={{ marginBottom: 16 }}>
+        <form className="form-panel" onSubmit={handleSubmit} aria-busy={submitting}>
+            <fieldset disabled={submitting}>
+                <div className="field">
                     <label htmlFor={`${formId}-name`}>显示名称（必填）</label>
                     <input
                         id={`${formId}-name`}
@@ -54,22 +54,20 @@ function CandidateForm({ submitting, submitError, onSubmit }: CandidateFormProps
                         onChange={event => setDisplayName(event.target.value)}
                         required
                         autoComplete="nickname"
-                        style={{ display: 'block', width: '100%', boxSizing: 'border-box' }}
                     />
                 </div>
-                <div style={{ marginBottom: 16 }}>
+                <div className="field">
                     <label htmlFor={`${formId}-resume`}>简历（选填）</label>
                     <textarea
                         id={`${formId}-resume`}
                         value={resumeText}
                         onChange={event => setResumeText(event.target.value)}
                         rows={6}
-                        style={{ display: 'block', width: '100%', boxSizing: 'border-box' }}
                     />
                 </div>
                 <SkillTagPicker value={skills} onChange={setSkills} />
-                {formError && <p role="alert" style={{ color: 'var(--text-h)', marginBottom: 8 }}>{formError}</p>}
-                {submitError && <p role="alert" style={{ color: 'var(--text-h)', marginBottom: 8 }}>{submitError}</p>}
+                {formError && <p className="feedback" role="alert">{formError}</p>}
+                {submitError && <p className="feedback" role="alert">{submitError}</p>}
                 <button type="submit">{submitting ? '保存中...' : '保存并继续'}</button>
             </fieldset>
         </form>

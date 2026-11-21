@@ -40,16 +40,16 @@ function BookingForm({ applicationId, onBooked, onRefresh }: { applicationId: st
             setSelected('')
         } finally { pending.current = false; setSaving(false) }
     }
-    return <div>
+    return <div className="page-section">
         <button type="button" disabled={loading || saving} onClick={load}>{loading ? '加载中...' : '加载可预约时段'}</button>
-        {error && <div><p role="alert">{error}</p><button type="button" onClick={onRefresh}>刷新申请</button></div>}
+        {error && <div className="record-stack"><p className="feedback" role="alert">{error}</p><div><button type="button" onClick={onRefresh}>刷新申请</button></div></div>}
         {slots && (slots.length === 0 ? <p>暂无可预约时段，请稍后重新加载。</p> : <div className="booking-controls">
             <label htmlFor={`slot-${applicationId}`}>选择面试时段（上海时间）</label>
             <select id={`slot-${applicationId}`} value={selected} disabled={saving || loading} onChange={event => setSelected(event.target.value)}>
                 <option value="">请选择时段</option>
                 {slots.map(slot => <option key={slot.id} value={slot.id}>{displayTime(slot.starts_at)} – {displayTime(slot.ends_at)}</option>)}
             </select>
-            <button type="button" disabled={!selected || saving || loading} onClick={book}>{saving ? '预约中...' : '确认预约'}</button>
+            <button className="button-primary" type="button" disabled={!selected || saving || loading} onClick={book}>{saving ? '预约中...' : '确认预约'}</button>
         </div>)}
     </div>
 }
@@ -69,15 +69,17 @@ function ApplicationsPage() {
         return () => { active = false }
     }, [attempt])
     return <>
-        <h1>我的申请</h1><p>面试时间均为上海时间（UTC+8）。</p>
-        <button type="button" disabled={loading} onClick={refresh}>刷新申请</button>
-        {loading && <p role="status">正在加载申请...</p>}
-        {error && <p role="alert">{error} 请刷新申请重试。</p>}
-        {!loading && !error && (rows.length === 0 ? <p>暂无申请，前往<Link to="/candidate/jobs">职位推荐</Link>开始投递。</p> : <ul className="records">
-            {rows.map(row => <li key={row.application_id}>
-                <h2><Link to={`/candidate/jobs/${row.job_id}`}>{row.job_title}</Link></h2>
-                <p>公司：{row.company_name}</p><p>申请状态：{statuses[row.status]}</p>
-                {row.booking ? <p role="status">面试已预约：<time dateTime={row.booking.starts_at}>{displayTime(row.booking.starts_at)}</time> – <time dateTime={row.booking.ends_at}>{displayTime(row.booking.ends_at)}</time>（上海时间）</p>
+        <header className="section-heading candidate-toolbar">
+            <div><h1>我的申请</h1><p className="page-intro">面试时间均为上海时间（UTC+8）。</p></div>
+            <button type="button" disabled={loading} onClick={refresh}>刷新申请</button>
+        </header>
+        {loading && <p className="feedback" role="status">正在加载申请...</p>}
+        {error && <p className="feedback" role="alert">{error} 请刷新申请重试。</p>}
+        {!loading && !error && (rows.length === 0 ? <p className="panel empty-state">暂无申请，前往<Link to="/candidate/jobs">职位推荐</Link>开始投递。</p> : <ul className="records" role="list">
+            {rows.map(row => <li key={row.application_id} className="record-stack">
+                <h2><Link className="record-title" to={`/candidate/jobs/${row.job_id}`}>{row.job_title}</Link></h2>
+                <p className="record-meta">公司：{row.company_name}</p><p className="status-chip">申请状态：{statuses[row.status]}</p>
+                {row.booking ? <p className="feedback" role="status">面试已预约：<time dateTime={row.booking.starts_at}>{displayTime(row.booking.starts_at)}</time> – <time dateTime={row.booking.ends_at}>{displayTime(row.booking.ends_at)}</time>（上海时间）</p>
                     : row.status === 'Interviewing' ? <BookingForm applicationId={row.application_id} onRefresh={refresh} onBooked={booking => setRows(previous => previous.map(item => item.application_id === row.application_id ? { ...item, booking } : item))} />
                     : <p>暂无面试预约。</p>}
             </li>)}

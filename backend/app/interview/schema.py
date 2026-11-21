@@ -8,6 +8,12 @@ from sqlmodel import SQLModel
 from app.candidate.schema import SlotPublic as SlotPublic
 
 
+class ManagedSlotPublic(SlotPublic):
+    """雇主列表另带预约状态，用于控制删除操作。"""
+
+    is_booked: bool
+
+
 class SlotCreate(SQLModel):
     """创建时段只接收开始时间，结束时间由服务计算。"""
 

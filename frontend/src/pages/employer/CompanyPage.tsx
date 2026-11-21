@@ -90,25 +90,29 @@ function CompanyPage() {
         }
     }
 
-    if (!isEmployer) return <main><p role="alert">仅雇主可访问此页面。</p><Link to="/navpage">返回主页</Link></main>
-    return <main style={{ maxWidth: 640, width: '100%', margin: '32px auto', padding: 20, boxSizing: 'border-box', textAlign: 'left' }}>
+    if (!isEmployer) return <main className="work-page"><p className="feedback" role="alert">仅雇主可访问此页面。</p><Link to="/navpage">返回主页</Link></main>
+    return <main className="work-page work-page-narrow">
+        <nav className="page-nav" aria-label="公司资料导航"><Link to="/navpage">返回主页</Link><Link to="/employer/jobs">职位列表</Link></nav>
         <h1>公司资料</h1>
-        <nav><Link to="/navpage">返回主页</Link> · <Link to="/employer/jobs">职位列表</Link></nav>
-        {loading && <p role="status">正在加载公司资料...</p>}
-        {error && <p role="alert">{error}</p>}
+        {loading && <p className="feedback" role="status">正在加载公司资料...</p>}
+        {error && <p className="feedback" role="alert">{error}</p>}
         {missing && <p>请先填写公司资料。<Link to="/employer/details" onClick={openProfileCreation}>填写公司资料</Link></p>}
         {!loading && !company && !missing && <button type="button" onClick={retryLoad}>重新加载</button>}
-        {!loading && company && <form onSubmit={handleSubmit} aria-busy={submitting}>
-            <fieldset disabled={submitting} style={{ margin: '16px 0', minWidth: 0 }}>
+        {!loading && company && <form className="form-panel" onSubmit={handleSubmit} aria-busy={submitting}>
+            <fieldset disabled={submitting}>
                 <legend>编辑公司资料</legend>
-                <p><label htmlFor="company-name">公司名称（必填）</label></p>
-                <input id="company-name" value={name} required autoComplete="organization" onChange={event => { setName(event.target.value); setNotice('') }} style={{ width: '100%', boxSizing: 'border-box' }} />
-                <p><label htmlFor="company-description">公司描述</label></p>
-                <textarea id="company-description" value={description} rows={6} onChange={event => { setDescription(event.target.value); setNotice('') }} style={{ width: '100%', boxSizing: 'border-box' }} />
+                <div className="field">
+                    <label htmlFor="company-name">公司名称（必填）</label>
+                    <input id="company-name" value={name} required autoComplete="organization" onChange={event => { setName(event.target.value); setNotice('') }} />
+                </div>
+                <div className="field">
+                    <label htmlFor="company-description">公司描述</label>
+                    <textarea id="company-description" value={description} rows={6} onChange={event => { setDescription(event.target.value); setNotice('') }} />
+                </div>
                 <button type="submit">{submitting ? '保存中...' : '保存公司资料'}</button>
             </fieldset>
         </form>}
-        {notice && <p role="status">{notice}</p>}
+        {notice && <p className="feedback" role="status">{notice}</p>}
     </main>
 }
 

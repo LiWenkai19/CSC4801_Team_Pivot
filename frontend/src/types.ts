@@ -152,3 +152,7 @@ export interface InterviewSlot {
   starts_at: string
   ends_at: string
 }
+
+export interface ManagedInterviewSlot extends InterviewSlot {
+  is_booked: boolean
+}

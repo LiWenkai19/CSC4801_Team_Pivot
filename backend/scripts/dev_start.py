@@ -111,6 +111,19 @@ def main() -> int:
                         raise
 
         flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
+        use_reload_console = (
+            os.name == "nt" and os.environ.get("UVICORN_RELOAD") == "true"
+        )
+        backend_flags = flags
+        backend_startup = None
+        if use_reload_console:
+            # Uvicorn uses Ctrl+C to stop its worker on reload. Give it its own
+            # console so that signal can reach the worker without stopping the launcher.
+            backend_flags = subprocess.CREATE_NEW_CONSOLE
+            backend_startup = subprocess.STARTUPINFO()
+            backend_startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            backend_startup.wShowWindow = subprocess.SW_HIDE
+
         processes.append(
             subprocess.Popen(
                 [
@@ -124,7 +137,11 @@ def main() -> int:
                     "8000",
                 ],
                 cwd=BACKEND,
-                creationflags=flags,
+                creationflags=backend_flags,
+                startupinfo=backend_startup,
+                stdin=subprocess.DEVNULL if use_reload_console else None,
+                stdout=sys.stdout if use_reload_console else None,
+                stderr=sys.stderr if use_reload_console else None,
             )
         )
         processes.append(

@@ -8,7 +8,7 @@ function RequireAuth() {
     const { pathname } = useLocation();
 
     if (loading) {
-        return <div>Loading...</div>;
+        return <main className="work-page"><p className="feedback" role="status">正在检查登录状态...</p></main>;
     };
 
     if (!currentUser) {

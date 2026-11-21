@@ -12,7 +12,7 @@ function getAuthDestination(user: CurrentUser): AuthDestination {
 
 type AuthContextValue = {
     currentUser: CurrentUser | null;
-    login: (email: string, password: string) => Promise<AuthDestination>;
+    login: (email: string, password: string, rememberMe?: boolean) => Promise<AuthDestination>;
     register: (email: string, password: string, role: Role) => Promise<AuthDestination>;
     getAuthDestination: (user: CurrentUser) => AuthDestination;
     logout: () => Promise<void>;
@@ -48,10 +48,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     /** 验证登录凭据，并直接返回后端账户状态对应的目标地址。 */
-    const login = async (email: string, password: string): Promise<AuthDestination> => {
+    const login = async (email: string, password: string, rememberMe = false): Promise<AuthDestination> => {
         setLoading(true);
         try{
-            const response = await apiLogin(email, password);
+            const response = await apiLogin(email, password, rememberMe);
             return finishAuthentication(response);
         } catch(error) {
             // 登录失败时后端不会建立会话，只需清空前端状态。

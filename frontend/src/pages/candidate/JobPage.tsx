@@ -18,13 +18,16 @@ function JobContent({ jobId }: { jobId: string }) {
         return () => { active = false }
     }, [jobId, attempt])
     return <>
-        {loading && <p role="status">正在加载职位...</p>}
-        {error && <div><h1>无法读取职位</h1><p role="alert">{error}</p><button type="button" onClick={() => { setLoading(true); setError(''); setAttempt(value => value + 1) }}>重新加载</button></div>}
+        {loading && <p className="feedback" role="status">正在加载职位...</p>}
+        {error && <div className="page-section"><h1>无法读取职位</h1><p className="feedback" role="alert">{error}</p><button type="button" onClick={() => { setLoading(true); setError(''); setAttempt(value => value + 1) }}>重新加载</button></div>}
         {!loading && !error && job?.id === jobId && <>
-            <h1>{job.title}</h1><p>公司：{job.company_name}</p>
-            <p>匹配分数：{job.match_score} / 100</p><p>所需技能：{job.required_skills.join(', ') || '无'}</p>
-            <h2>职位描述</h2><p className="description">{job.description}</p>
-            <ApplyButton key={job.id} jobId={job.id} applied={job.applied} />
+            <header className="candidate-heading"><h1>{job.title}</h1><p className="page-intro">公司：{job.company_name}</p></header>
+            <section className="panel page-section">
+                <p>匹配分数：<strong>{job.match_score} / 100</strong></p>
+                <p>所需技能：{job.required_skills.join(', ') || '无'}</p>
+                <h2>职位描述</h2><p className="description">{job.description}</p>
+                <ApplyButton key={job.id} jobId={job.id} applied={job.applied} />
+            </section>
         </>}
     </>
 }

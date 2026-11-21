@@ -30,6 +30,8 @@ if not exist "%ROOT%frontend\node_modules\.bin\vite.cmd" (
 
 pushd "%ROOT%backend"
 if errorlevel 1 exit /b 1
+rem Enable Uvicorn reload for the local backend.
+set "UVICORN_RELOAD=true"
 "%PYTHON_EXE%" scripts\dev_start.py
 set "RESULT=%ERRORLEVEL%"
 popd

@@ -1,9 +1,18 @@
-.skill-picker { min-width: 0; margin: 16px 0; padding: 12px; border: 1px solid var(--border); }
-.skill-picker ul { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 8px 0; padding: 0; }
+.skill-picker {
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.skill-picker legend { padding-inline: 5px; }
+.skill-picker ul { display: flex; flex-wrap: wrap; gap: 7px; list-style: none; margin: 8px 0; padding: 0; }
+.skill-picker ul:empty, .skill-picker [role="status"]:empty { display: none; }
 .skill-picker li { max-width: 100%; overflow-wrap: anywhere; }
+.skill-picker ul:first-of-type li { border-radius: 6px; padding: 2px 5px 2px 9px; background: var(--canvas); }
+.skill-picker ul button { min-height: 32px; padding: 3px 7px; font-size: 13px; overflow-wrap: anywhere; }
 .skill-picker .skill-input { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
-.skill-picker input { flex: 1; min-width: 120px; }
-.skill-picker button, .skill-picker input { font: inherit; padding: 6px 10px; }
-.skill-picker button { white-space: normal; overflow-wrap: anywhere; }
-.skill-picker :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.skill-picker button:disabled { opacity: .65; }
+.skill-picker input { flex: 1 1 145px; }
+.skill-picker p { color: var(--muted); font-size: 14px; }

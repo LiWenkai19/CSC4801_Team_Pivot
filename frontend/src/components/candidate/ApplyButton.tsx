@@ -24,10 +24,10 @@ function ApplyButton({ jobId, applied }: { jobId: string; applied: boolean }) {
             setSubmitting(false)
         }
     }
-    return <div>
-        <button type="button" disabled={applied || done || submitting} onClick={apply}>{applied || done ? '已申请' : submitting ? '提交中...' : '申请职位'}</button>
-        {(applied || done) && <p role="status">你已申请该职位，请勿重复申请。</p>}
-        {error && <p role="alert">{error} 请重试；如已提交成功，重试会同步申请状态。</p>}
+    return <div className="apply-action record-stack">
+        <button className="button-primary" type="button" disabled={applied || done || submitting} onClick={apply}>{applied || done ? '已申请' : submitting ? '提交中...' : '申请职位'}</button>
+        {(applied || done) && <p className="apply-notice" role="status">你已申请该职位，请勿重复申请。</p>}
+        {error && <p className="feedback" role="alert">{error} 请重试；如已提交成功，重试会同步申请状态。</p>}
     </div>
 }
 
