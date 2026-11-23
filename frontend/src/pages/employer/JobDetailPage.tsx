@@ -43,10 +43,7 @@ function ApplicantCard({ applicant, onUpdated }: { applicant: ApplicantPublic; o
 
     return <li className="panel employer-applicant-card">
         <header className="employer-applicant-heading">
-            <div>
-                <h3>{applicant.display_name}</h3>
-                <p className="employer-applicant-id">候选人 ID {applicant.candidate_id}</p>
-            </div>
+            <h3>{applicant.display_name}</h3>
             <p className="employer-applicant-score">
                 <span>匹配分</span>
                 <strong>{applicant.match_score}<small> / 100</small></strong>

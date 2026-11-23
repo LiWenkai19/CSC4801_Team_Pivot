@@ -143,10 +143,9 @@
 }
 
 .job-actions { display: grid; gap: 4px; text-align: center; font-size: 14px; font-weight: 600; }
-.job-actions > a { padding-block: 4px; }
 .apply-action { justify-items: start; }
 .job-actions .apply-action { justify-items: stretch; }
-.job-actions button { min-height: 38px; }
+.job-actions > .button, .job-actions button { min-height: 38px; }
 .job-actions .apply-notice, .job-cell-label {
   position: absolute;
   width: 1px;
@@ -189,5 +188,4 @@
   }
   .job-score-number { font-size: 24px; }
   .job-actions { grid-template-columns: minmax(120px, 1fr) minmax(85px, 1fr); align-items: start; gap: 10px; }
-  .job-actions > a { min-height: 38px; padding-block: 7px; }
 }

@@ -393,14 +393,13 @@ label, legend { font-weight: 650; }
 .employer-applicant-heading {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
+  align-items: center;
   gap: 12px;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--border);
 }
 
 .employer-applicant-heading h3 { font-size: clamp(19px, 2vw, 23px); }
-.employer-applicant-id { margin-top: 4px; color: var(--muted); font-size: 13px; }
 .employer-applicant-score {
   display: grid;
   justify-items: end;

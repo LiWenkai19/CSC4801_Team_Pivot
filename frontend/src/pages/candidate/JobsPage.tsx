@@ -49,7 +49,7 @@ function JobsPage() {
                     </div>
                     <div className="job-actions">
                         <ApplyButton jobId={job.id} applied={job.applied} />
-                        <Link to={`/candidate/jobs/${job.id}`}>查看职位</Link>
+                        <Link className="button button-primary" to={`/candidate/jobs/${job.id}`}>查看职位</Link>
                     </div>
                 </li>)}
             </ul>

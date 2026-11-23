@@ -79,7 +79,7 @@ function ApplicationsPage() {
             {rows.map(row => <li key={row.application_id} className="record-stack">
                 <h2><Link className="record-title" to={`/candidate/jobs/${row.job_id}`}>{row.job_title}</Link></h2>
                 <p className="record-meta">公司：{row.company_name}</p><p className="status-chip">申请状态：{statuses[row.status]}</p>
-                {row.booking ? <p className="feedback" role="status">面试已预约：<time dateTime={row.booking.starts_at}>{displayTime(row.booking.starts_at)}</time> – <time dateTime={row.booking.ends_at}>{displayTime(row.booking.ends_at)}</time>（上海时间）</p>
+                {row.booking ? <p className="feedback" role="status">面试已预约：<time dateTime={row.booking.starts_at}>{displayTime(row.booking.starts_at)}</time> – <time dateTime={row.booking.ends_at}>{displayTime(row.booking.ends_at)}</time></p>
                     : row.status === 'Interviewing' ? <BookingForm applicationId={row.application_id} onRefresh={refresh} onBooked={booking => setRows(previous => previous.map(item => item.application_id === row.application_id ? { ...item, booking } : item))} />
                     : <p>暂无面试预约。</p>}
             </li>)}
