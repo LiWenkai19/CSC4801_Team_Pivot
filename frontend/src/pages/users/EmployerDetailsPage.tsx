@@ -4,12 +4,16 @@ import { ApiError, createEmployerProfile } from '../../api/common_api'
 import { useAuth } from '../../contexts/AuthContext'
 import type { EmployerProfileCreate } from '../../types'
 import EmployerForm from './EmployerForm'
+import { useLanguage } from '../../i18n/LanguageContext'
+import type { MessageKey } from '../../i18n/zh-CN'
+import { apiFeedback } from '../../i18n/apiFeedback'
 
 /** 为雇主首次保存公司资料，支持未完成资料时直接退出登录。 */
 function EmployerDetailsPage() {
+    const { t } = useLanguage()
     const { currentUser, loading, refreshCurrentUser, logout } = useAuth()
     const [submitting, setSubmitting] = useState(false)
-    const [submitError, setSubmitError] = useState('')
+    const [submitError, setSubmitError] = useState<MessageKey | ''>('')
     const [profileSaved, setProfileSaved] = useState(false)
 
     /** 保存成功后重新确认状态；检查失败时允许重试，避免再次创建资料。 */
@@ -19,10 +23,10 @@ function EmployerDetailsPage() {
         try {
             const user = await refreshCurrentUser()
             if (!user.profile_completed) {
-                setSubmitError('暂未确认公司资料状态，请重新检查。')
+                setSubmitError('onboarding.employerUnconfirmed')
             }
         } catch {
-            setSubmitError('公司资料已保存，但暂时无法确认状态，请重新检查。')
+            setSubmitError('onboarding.employerCheckFailed')
         } finally {
             setSubmitting(false)
         }
@@ -38,8 +42,8 @@ function EmployerDetailsPage() {
         } catch (error) {
             if (!(error instanceof ApiError && error.status === 409)) {
                 setSubmitError(error instanceof TypeError
-                    ? '暂时无法保存公司资料，请检查网络或稍后重试。'
-                    : error instanceof Error ? error.message : '保存失败，请重试。')
+                    ? 'onboarding.employerNetwork'
+                    : apiFeedback(error, 'common.saveFailed'))
                 setSubmitting(false)
                 return
             }
@@ -48,7 +52,7 @@ function EmployerDetailsPage() {
         await completeProfile()
     }
 
-    if (loading) return <main className="work-page"><p className="feedback" role="status">正在检查登录状态...</p></main>
+    if (loading) return <main className="work-page"><p className="feedback" role="status">{t('auth.checking')}</p></main>
     if (!currentUser) return <Navigate to="/login" replace />
     if (currentUser.role !== 'employer' || currentUser.profile_completed) {
         return <Navigate to="/navpage" replace />
@@ -56,21 +60,21 @@ function EmployerDetailsPage() {
 
     return (
         <main className="work-page work-page-narrow">
-            <h1>填写公司资料</h1>
-            <p className="page-intro">填写公司名称即可继续，公司描述可以稍后补充。</p>
+            <h1>{t('onboarding.employerTitle')}</h1>
+            <p className="page-intro">{t('onboarding.employerIntro')}</p>
             {profileSaved ? (
                 <div className="panel page-section">
-                    <p className="feedback" role="status">公司资料已保存，正在确认账户状态。</p>
-                    {submitError && <p className="feedback" role="alert">{submitError}</p>}
+                    <p className="feedback" role="status">{t('onboarding.employerPending')}</p>
+                    {submitError && <p className="feedback" role="alert">{t(submitError)}</p>}
                     <button type="button" onClick={completeProfile} disabled={submitting}>
-                        {submitting ? '检查中...' : '重新检查'}
+                        {submitting ? t('onboarding.checking') : t('onboarding.checkAgain')}
                     </button>
                 </div>
             ) : (
                 <EmployerForm submitting={submitting} submitError={submitError} onSubmit={handleSubmit} />
             )}
             <button className="button-quiet" type="button" onClick={logout} disabled={submitting}>
-                退出登录
+                {t('auth.logOut')}
             </button>
         </main>
     )

@@ -2,21 +2,25 @@ import { useId, useRef, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import type { CandidateProfileCreate } from '../../types'
 import SkillTagPicker from '../../components/skills/SkillTagPicker'
+import { useLanguage } from '../../i18n/LanguageContext'
+import type { MessageKey } from '../../i18n/zh-CN'
+import { apiFeedback } from '../../i18n/apiFeedback'
 
 type CandidateFormProps = {
     submitting: boolean
-    submitError: string
+    submitError: MessageKey | ''
     onSubmit: (data: CandidateProfileCreate) => Promise<void>
 }
 
 /** 管理候选人输入，将校验后的资料交给页面提交。 */
 function CandidateForm({ submitting, submitError, onSubmit }: CandidateFormProps) {
+    const { t } = useLanguage()
     const formId = useId()
     const pending = useRef(false)
     const [displayName, setDisplayName] = useState('')
     const [resumeText, setResumeText] = useState('')
     const [skills, setSkills] = useState<string[]>([])
-    const [formError, setFormError] = useState('')
+    const [formError, setFormError] = useState<MessageKey | ''>('')
 
     /** 拒绝空白名称，过滤空技能并防止重复提交，保留简历原文。 */
     async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
@@ -25,7 +29,7 @@ function CandidateForm({ submitting, submitError, onSubmit }: CandidateFormProps
         setFormError('')
         const name = displayName.trim()
         if (!name) {
-            setFormError('请输入显示名称，不能只填写空格。')
+            setFormError('profile.nameWhitespace')
             return
         }
 
@@ -37,7 +41,7 @@ function CandidateForm({ submitting, submitError, onSubmit }: CandidateFormProps
                 skills,
             })
         } catch (error) {
-            setFormError(error instanceof Error ? error.message : '提交失败，请重试。')
+            setFormError(apiFeedback(error, 'common.submitFailed'))
         } finally {
             pending.current = false
         }
@@ -47,7 +51,7 @@ function CandidateForm({ submitting, submitError, onSubmit }: CandidateFormProps
         <form className="form-panel" onSubmit={handleSubmit} aria-busy={submitting}>
             <fieldset disabled={submitting}>
                 <div className="field">
-                    <label htmlFor={`${formId}-name`}>显示名称（必填）</label>
+                    <label htmlFor={`${formId}-name`}>{t('profile.name')}</label>
                     <input
                         id={`${formId}-name`}
                         value={displayName}
@@ -57,7 +61,7 @@ function CandidateForm({ submitting, submitError, onSubmit }: CandidateFormProps
                     />
                 </div>
                 <div className="field">
-                    <label htmlFor={`${formId}-resume`}>简历（选填）</label>
+                    <label htmlFor={`${formId}-resume`}>{t('profile.resume')}</label>
                     <textarea
                         id={`${formId}-resume`}
                         value={resumeText}
@@ -66,9 +70,9 @@ function CandidateForm({ submitting, submitError, onSubmit }: CandidateFormProps
                     />
                 </div>
                 <SkillTagPicker value={skills} onChange={setSkills} />
-                {formError && <p className="feedback" role="alert">{formError}</p>}
-                {submitError && <p className="feedback" role="alert">{submitError}</p>}
-                <button type="submit">{submitting ? '保存中...' : '保存并继续'}</button>
+                {formError && <p className="feedback" role="alert">{t(formError)}</p>}
+                {submitError && <p className="feedback" role="alert">{t(submitError)}</p>}
+                <button type="submit">{submitting ? t('common.saving') : t('common.saveAndContinue')}</button>
             </fieldset>
         </form>
     )

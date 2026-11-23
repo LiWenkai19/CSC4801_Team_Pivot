@@ -4,12 +4,16 @@ import { ApiError, createCandidateProfile } from '../../api/common_api'
 import { useAuth } from '../../contexts/AuthContext'
 import type { CandidateProfileCreate } from '../../types'
 import CandidateForm from './CandidateForm'
+import { useLanguage } from '../../i18n/LanguageContext'
+import type { MessageKey } from '../../i18n/zh-CN'
+import { apiFeedback } from '../../i18n/apiFeedback'
 
 /** 为候选人首次保存资料，支持未完成资料时直接退出登录。 */
 function CandidateDetailsPage() {
+    const { t } = useLanguage()
     const { currentUser, loading, refreshCurrentUser, logout } = useAuth()
     const [submitting, setSubmitting] = useState(false)
-    const [submitError, setSubmitError] = useState('')
+    const [submitError, setSubmitError] = useState<MessageKey | ''>('')
     const [profileSaved, setProfileSaved] = useState(false)
 
     /** 保存成功后重新确认状态；检查失败时允许重试，避免再次创建资料。 */
@@ -19,10 +23,10 @@ function CandidateDetailsPage() {
         try {
             const user = await refreshCurrentUser()
             if (!user.profile_completed) {
-                setSubmitError('暂未确认资料状态，请重新检查。')
+                setSubmitError('onboarding.candidateUnconfirmed')
             }
         } catch {
-            setSubmitError('资料已保存，但暂时无法确认状态，请重新检查。')
+            setSubmitError('onboarding.candidateCheckFailed')
         } finally {
             setSubmitting(false)
         }
@@ -38,8 +42,8 @@ function CandidateDetailsPage() {
         } catch (error) {
             if (!(error instanceof ApiError && error.status === 409)) {
                 setSubmitError(error instanceof TypeError
-                    ? '暂时无法保存资料，请检查网络或稍后重试。'
-                    : error instanceof Error ? error.message : '保存失败，请重试。')
+                    ? 'onboarding.candidateNetwork'
+                    : apiFeedback(error, 'common.saveFailed'))
                 setSubmitting(false)
                 return
             }
@@ -48,7 +52,7 @@ function CandidateDetailsPage() {
         await completeProfile()
     }
 
-    if (loading) return <main className="work-page"><p className="feedback" role="status">正在检查登录状态...</p></main>
+    if (loading) return <main className="work-page"><p className="feedback" role="status">{t('auth.checking')}</p></main>
     if (!currentUser) return <Navigate to="/login" replace />
     if (currentUser.role !== 'candidate' || currentUser.profile_completed) {
         return <Navigate to="/navpage" replace />
@@ -56,21 +60,21 @@ function CandidateDetailsPage() {
 
     return (
         <main className="work-page work-page-narrow">
-            <h1>填写候选人资料</h1>
-            <p className="page-intro">填写显示名称即可继续，简历和技能可以稍后补充。</p>
+            <h1>{t('onboarding.candidateTitle')}</h1>
+            <p className="page-intro">{t('onboarding.candidateIntro')}</p>
             {profileSaved ? (
                 <div className="panel page-section">
-                    <p className="feedback" role="status">资料已保存，正在确认账户状态。</p>
-                    {submitError && <p className="feedback" role="alert">{submitError}</p>}
+                    <p className="feedback" role="status">{t('onboarding.candidatePending')}</p>
+                    {submitError && <p className="feedback" role="alert">{t(submitError)}</p>}
                     <button type="button" onClick={completeProfile} disabled={submitting}>
-                        {submitting ? '检查中...' : '重新检查'}
+                        {submitting ? t('onboarding.checking') : t('onboarding.checkAgain')}
                     </button>
                 </div>
             ) : (
                 <CandidateForm submitting={submitting} submitError={submitError} onSubmit={handleSubmit} />
             )}
             <button className="button-quiet" type="button" onClick={logout} disabled={submitting}>
-                退出登录
+                {t('auth.logOut')}
             </button>
         </main>
     )

@@ -5,9 +5,13 @@ import { ApiError } from '../../api/common_api'
 import { getMyCompany, updateMyCompany } from '../../api/employer_api'
 import { useAuth } from '../../contexts/AuthContext'
 import type { CompanyPublic, CompanyUpdate } from '../../types'
+import { useLanguage } from '../../i18n/LanguageContext'
+import type { MessageKey } from '../../i18n/zh-CN'
+import { apiFeedback } from '../../i18n/apiFeedback'
 
 /** 查看和就地编辑本人公司资料，失败时保留输入。 */
 function CompanyPage() {
+    const { t } = useLanguage()
     const { currentUser, refreshCurrentUser } = useAuth()
     const navigate = useNavigate()
     const isEmployer = currentUser?.role === 'employer'
@@ -17,8 +21,8 @@ function CompanyPage() {
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
     const [missing, setMissing] = useState(false)
-    const [error, setError] = useState('')
-    const [notice, setNotice] = useState('')
+    const [error, setError] = useState<MessageKey | ''>('')
+    const [notice, setNotice] = useState<MessageKey | ''>('')
     const [attempt, setAttempt] = useState(0)
     const pending = useRef(false)
 
@@ -33,7 +37,7 @@ function CompanyPage() {
         }).catch(reason => {
             if (!active) return
             setMissing(reason instanceof ApiError && reason.status === 404)
-            setError(reason instanceof Error ? reason.message : '加载失败，请重试。')
+            setError(apiFeedback(reason, 'common.loadFailed'))
         }).finally(() => { if (active) setLoading(false) })
         return () => { active = false }
     }, [isEmployer, attempt])
@@ -52,7 +56,7 @@ function CompanyPage() {
             await refreshCurrentUser()
             navigate('/employer/details')
         } catch (reason) {
-            setError(reason instanceof Error ? reason.message : '无法检查资料状态，请重试。')
+            setError(apiFeedback(reason, 'company.checkFailed'))
         }
     }
 
@@ -63,14 +67,14 @@ function CompanyPage() {
         setError('')
         setNotice('')
         if (!name.trim()) {
-            setError('请输入公司名称，不能只填写空格。')
+            setError('company.nameRequired')
             return
         }
         const changes: CompanyUpdate = {}
         if (name !== company.company_name) changes.company_name = name.trim()
         if (description !== company.company_description) changes.company_description = description
         if (Object.keys(changes).length === 0) {
-            setNotice('没有需要保存的修改。')
+            setNotice('company.noChanges')
             return
         }
         pending.current = true
@@ -80,39 +84,39 @@ function CompanyPage() {
             setCompany(saved)
             setName(saved.company_name)
             setDescription(saved.company_description)
-            setNotice('已保存')
+            setNotice('common.saved')
         } catch (reason) {
             setMissing(reason instanceof ApiError && reason.status === 404)
-            setError(reason instanceof Error ? reason.message : '保存失败，请重试。')
+            setError(apiFeedback(reason, 'common.saveFailed'))
         } finally {
             pending.current = false
             setSubmitting(false)
         }
     }
 
-    if (!isEmployer) return <main className="work-page"><p className="feedback" role="alert">仅雇主可访问此页面。</p><Link to="/navpage">返回主页</Link></main>
+    if (!isEmployer) return <main className="work-page"><p className="feedback" role="alert">{t('auth.employerOnly')}</p><Link to="/navpage">{t('common.home')}</Link></main>
     return <main className="work-page work-page-narrow">
-        <nav className="page-nav" aria-label="公司资料导航"><Link to="/navpage">返回主页</Link><Link to="/employer/jobs">职位列表</Link></nav>
-        <h1>公司资料</h1>
-        {loading && <p className="feedback" role="status">正在加载公司资料...</p>}
-        {error && <p className="feedback" role="alert">{error}</p>}
-        {missing && <p>请先填写公司资料。<Link to="/employer/details" onClick={openProfileCreation}>填写公司资料</Link></p>}
-        {!loading && !company && !missing && <button type="button" onClick={retryLoad}>重新加载</button>}
+        <nav className="page-nav" aria-label={t('company.nav')}><Link to="/navpage">{t('common.home')}</Link><Link to="/employer/jobs">{t('jobs.list')}</Link></nav>
+        <h1>{t('company.title')}</h1>
+        {loading && <p className="feedback" role="status">{t('company.loading')}</p>}
+        {error && <p className="feedback" role="alert">{t(error)}</p>}
+        {missing && <p>{t('api.companyRequired')} <Link to="/employer/details" onClick={openProfileCreation}>{t('onboarding.employerTitle')}</Link></p>}
+        {!loading && !company && !missing && <button type="button" onClick={retryLoad}>{t('common.reload')}</button>}
         {!loading && company && <form className="form-panel" onSubmit={handleSubmit} aria-busy={submitting}>
             <fieldset disabled={submitting}>
-                <legend>编辑公司资料</legend>
+                <legend>{t('company.edit')}</legend>
                 <div className="field">
-                    <label htmlFor="company-name">公司名称（必填）</label>
+                    <label htmlFor="company-name">{t('company.name')}</label>
                     <input id="company-name" value={name} required autoComplete="organization" onChange={event => { setName(event.target.value); setNotice('') }} />
                 </div>
                 <div className="field">
-                    <label htmlFor="company-description">公司描述</label>
+                    <label htmlFor="company-description">{t('company.description')}</label>
                     <textarea id="company-description" value={description} rows={6} onChange={event => { setDescription(event.target.value); setNotice('') }} />
                 </div>
-                <button type="submit">{submitting ? '保存中...' : '保存公司资料'}</button>
+                <button type="submit">{submitting ? t('common.saving') : t('company.save')}</button>
             </fieldset>
         </form>}
-        {notice && <p className="feedback" role="status">{notice}</p>}
+        {notice && <p className="feedback" role="status">{t(notice)}</p>}
     </main>
 }
 

@@ -5,27 +5,26 @@ import { ApiError } from '../../api/common_api'
 import { createInterviewSlot, deleteInterviewSlot, listMyInterviewSlots } from '../../api/employer_api'
 import { useAuth } from '../../contexts/AuthContext'
 import type { ManagedInterviewSlot } from '../../types'
+import { useLanguage } from '../../i18n/LanguageContext'
+import type { MessageKey } from '../../i18n/zh-CN'
+import { apiFeedback } from '../../i18n/apiFeedback'
+import { formatShanghaiTime } from '../../i18n/dates'
 
-const slotTime = new Intl.DateTimeFormat('zh-CN', {
-    timeZone: 'Asia/Shanghai',
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    hour12: false,
-})
 const slotDurationMinutes = 30
 
 type SlotAction = { kind: 'create' } | { kind: 'delete'; slotId: string }
 
 /** 雇主查看尚未开始的时段，管理其中未预约的时段。 */
 function InterviewSlotsPage() {
+    const { locale, t } = useLanguage()
     const { currentUser } = useAuth()
     const isEmployer = currentUser?.role === 'employer'
     const [slots, setSlots] = useState<ManagedInterviewSlot[]>([])
     const [startTime, setStartTime] = useState('')
     const [loading, setLoading] = useState(true)
-    const [loadError, setLoadError] = useState('')
-    const [actionError, setActionError] = useState('')
-    const [notice, setNotice] = useState('')
+    const [loadError, setLoadError] = useState<MessageKey | ''>('')
+    const [actionError, setActionError] = useState<MessageKey | ''>('')
+    const [notice, setNotice] = useState<MessageKey | ''>('')
     const [action, setAction] = useState<SlotAction | null>(null)
     const [attempt, setAttempt] = useState(0)
     const pending = useRef(false)
@@ -41,7 +40,7 @@ function InterviewSlotsPage() {
         listMyInterviewSlots()
             .then(data => { if (active) setSlots(data) })
             .catch(reason => {
-                if (active) setLoadError(reason instanceof Error ? reason.message : '加载失败，请刷新重试。')
+                if (active) setLoadError(apiFeedback(reason, 'slots.loadFailed'))
             })
             .finally(() => { if (active) setLoading(false) })
         return () => { active = false }
@@ -61,7 +60,7 @@ function InterviewSlotsPage() {
         setNotice('')
         setActionError('')
         if (!Number.isFinite(startTimestamp) || startTimestamp <= Date.now()) {
-            setActionError('请选择未来的开始时间。')
+            setActionError('slots.future')
             return
         }
         pending.current = true
@@ -69,14 +68,14 @@ function InterviewSlotsPage() {
         try {
             await createInterviewSlot(startsAt)
             setStartTime('')
-            setNotice('已创建面试时段。')
+            setNotice('slots.created')
             reloadSlots()
         } catch (reason) {
             if (reason instanceof ApiError && reason.status === 409) {
-                setActionError('与已有面试时段重叠，请选择其他开始时间。')
+                setActionError('slots.overlap')
                 reloadSlots()
             } else {
-                setActionError(reason instanceof Error ? reason.message : '创建失败，请重试。')
+                setActionError(apiFeedback(reason, 'slots.createFailed'))
             }
         } finally {
             pending.current = false
@@ -94,14 +93,14 @@ function InterviewSlotsPage() {
         setActionError('')
         try {
             await deleteInterviewSlot(slotId)
-            setNotice('已删除面试时段。')
+            setNotice('slots.deleted')
             reloadSlots()
         } catch (reason) {
             if (reason instanceof ApiError && (reason.status === 409 || reason.status === 404)) {
-                setActionError(reason.status === 409 ? '时段已被预约或已开始，无法删除。' : '该时段已不存在。')
+                setActionError(reason.status === 409 ? 'slots.deleteConflict' : 'api.slotMissing')
                 reloadSlots()
             } else {
-                setActionError(reason instanceof Error ? reason.message : '删除失败，请重试。')
+                setActionError(apiFeedback(reason, 'common.deleteFailed'))
             }
         } finally {
             pending.current = false
@@ -109,17 +108,17 @@ function InterviewSlotsPage() {
         }
     }
 
-    if (!isEmployer) return <main className="work-page"><p className="feedback" role="alert">仅雇主可访问此页面。</p><Link to="/navpage">返回主页</Link></main>
+    if (!isEmployer) return <main className="work-page"><p className="feedback" role="alert">{t('auth.employerOnly')}</p><Link to="/navpage">{t('common.home')}</Link></main>
 
     return <main className="work-page">
-        <nav className="page-nav" aria-label="面试时段导航">
-            <Link to="/navpage">返回主页</Link>
-            <Link to="/employer/jobs">职位列表</Link>
+        <nav className="page-nav" aria-label={t('slots.nav')}>
+            <Link to="/navpage">{t('common.home')}</Link>
+            <Link to="/employer/jobs">{t('jobs.list')}</Link>
         </nav>
-        <h1>面试时段</h1>
+        <h1>{t('slots.title')}</h1>
         <form className="form-panel slot-form" onSubmit={handleCreate}>
             <div className="field">
-                <label htmlFor="interview-start-time">开始时间（上海时间 UTC+8）</label>
+                <label htmlFor="interview-start-time">{t('slots.start')}</label>
                 <div className="slot-time-field">
                     <input
                         id="interview-start-time"
@@ -131,34 +130,34 @@ function InterviewSlotsPage() {
                         required
                     />
                     <output id="interview-end-time" htmlFor="interview-start-time">
-                        <span>结束时间</span>
-                        {endTime ? <time dateTime={endTime.toISOString()}>{slotTime.format(endTime)}</time> : '—'}
+                        <span>{t('slots.end')}</span>
+                        {endTime ? <time dateTime={endTime.toISOString()}>{formatShanghaiTime(endTime, locale)}</time> : '—'}
                     </output>
                 </div>
             </div>
             <button type="submit" disabled={loading || action !== null}>
-                {action?.kind === 'create' ? '创建中...' : `创建 ${slotDurationMinutes} 分钟时段`}
+                {action?.kind === 'create' ? t('slots.creating') : t('slots.createDuration', { minutes: slotDurationMinutes })}
             </button>
         </form>
-        {actionError && <p className="feedback" role="alert">{actionError}</p>}
-        {notice && <p className="feedback" role="status">{notice}</p>}
+        {actionError && <p className="feedback" role="alert">{t(actionError)}</p>}
+        {notice && <p className="feedback" role="status">{t(notice)}</p>}
         <section className="page-section" aria-labelledby="interview-slot-list">
             <header className="section-heading">
-                <h2 id="interview-slot-list">时段列表</h2>
-                <button type="button" onClick={reloadSlots} disabled={loading || action !== null}>刷新时段</button>
+                <h2 id="interview-slot-list">{t('slots.list')}</h2>
+                <button type="button" onClick={reloadSlots} disabled={loading || action !== null}>{t('slots.refresh')}</button>
             </header>
-            {loading && <p className="feedback" role="status">正在加载时段...</p>}
-            {loadError && <p className="feedback" role="alert">{loadError}</p>}
-            {!loading && !loadError && (slots.length === 0 ? <p className="panel empty-state">暂无未开始的面试时段。</p> : <ul className="records" role="list">
+            {loading && <p className="feedback" role="status">{t('slots.loading')}</p>}
+            {loadError && <p className="feedback" role="alert">{t(loadError)}</p>}
+            {!loading && !loadError && (slots.length === 0 ? <p className="panel empty-state">{t('slots.empty')}</p> : <ul className="records" role="list">
                 {slots.map(slot => <li className="section-heading" key={slot.id}>
                     <div className="record-stack">
-                        <p><time dateTime={slot.starts_at}>{slotTime.format(new Date(slot.starts_at))}</time>
+                        <p><time dateTime={slot.starts_at}>{formatShanghaiTime(slot.starts_at, locale)}</time>
                         {' – '}
-                        <time dateTime={slot.ends_at}>{slotTime.format(new Date(slot.ends_at))}</time></p>
-                        <span className="status-chip">{slot.is_booked ? '已预约' : '未预约'}</span>
+                        <time dateTime={slot.ends_at}>{formatShanghaiTime(slot.ends_at, locale)}</time></p>
+                        <span className="status-chip">{slot.is_booked ? t('slots.booked') : t('slots.unbooked')}</span>
                     </div>
                     <button className="button-danger" type="button" onClick={() => handleDelete(slot)} disabled={slot.is_booked || action !== null}>
-                        {action?.kind === 'delete' && action.slotId === slot.id ? '删除中...' : '删除'}
+                        {action?.kind === 'delete' && action.slotId === slot.id ? t('common.deleting') : t('common.delete')}
                     </button>
                 </li>)}
             </ul>)}

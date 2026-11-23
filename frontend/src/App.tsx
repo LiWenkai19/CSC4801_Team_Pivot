@@ -19,7 +19,7 @@ import ApplicationsPage from './pages/candidate/ApplicationsPage';
 
 /** 注册页面入口，两种角色的资料页沿用现有登录守卫。 */
 function App() {
-    return(
+    return (
         <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<LoginPage/>}></Route>
@@ -42,7 +42,7 @@ function App() {
                 <Route path='/employer/jobs/:jobId/edit' element={<JobFormPage />} />
                 <Route path='/employer/jobs/:jobId' element={<JobDetailPage />} />
             </Route>
-       </Routes>
+        </Routes>
     )
 }
 

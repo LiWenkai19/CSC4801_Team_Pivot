@@ -24,7 +24,7 @@
   margin-block-start: 44px;
 }
 
-.workspace-nav a {
+.workspace-nav :is(a, .language-switch) {
   display: flex;
   align-items: center;
   gap: 11px;
@@ -37,9 +37,16 @@
   text-decoration: none;
 }
 
-.workspace-nav a:hover, .workspace-nav a[aria-current] { background: var(--nav-active); color: #fff; }
+.workspace-nav :is(a, .language-switch):hover, .workspace-nav a[aria-current] { background: var(--nav-active); color: #fff; }
 .workspace-nav a[aria-current] { box-shadow: inset 3px 0 var(--mint); }
-.workspace-nav .nav-back { margin-block-start: auto; border-top: 1px solid #4e7167; }
+.workspace-nav .language-switch {
+  justify-content: flex-start;
+  margin-block-start: auto;
+  padding-inline-start: 39px;
+  border: 0;
+  background: transparent;
+}
+.workspace-nav .nav-back { border-top: 1px solid #4e7167; }
 .workspace-nav .nav-back span { width: 16px; font-size: 21px; line-height: 1; }
 
 .nav-icon { position: relative; display: inline-block; flex: none; width: 16px; height: 15px; }
@@ -163,14 +170,15 @@
   .workspace-nav { position: static; min-height: 0; gap: 15px; padding: 14px var(--gutter) 10px; }
   .workspace-nav .brand { margin: 0; }
   .workspace-nav nav { flex-direction: row; flex-wrap: wrap; gap: 4px; margin: 0; }
-  .workspace-nav .nav-back { margin: 0 0 0 auto; border-top: 0; }
+  .workspace-nav .language-switch { margin: 0 0 0 auto; padding-inline-start: 12px; }
+  .workspace-nav .nav-back { border-top: 0; }
   .workspace-nav a[aria-current] { box-shadow: inset 0 -3px var(--mint); }
 }
 
 @media (max-width: 615px) {
-  .workspace-nav a { gap: 6px; padding-inline: 8px; font-size: 14px; }
+  .workspace-nav :is(a, .language-switch) { gap: 6px; padding-inline: 8px; font-size: 14px; }
   .workspace-nav .nav-icon { display: none; }
-  .workspace-nav .nav-back { margin-inline-start: 0; }
+  .workspace-nav .language-switch { margin-inline-start: 0; }
   .workspace-nav .nav-back span { width: auto; }
   .job-board-header { display: none; }
   .recommended-job { grid-template-columns: minmax(0, 1fr) minmax(90px, .68fr); }

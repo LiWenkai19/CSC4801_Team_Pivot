@@ -3,14 +3,18 @@ import type { SubmitEvent } from 'react'
 import { getMyProfile, updateMyProfile } from '../../api/candidate_api'
 import SkillTagPicker from '../../components/skills/SkillTagPicker'
 import type { CandidateProfilePublic } from '../../types'
+import { useLanguage } from '../../i18n/LanguageContext'
+import type { MessageKey } from '../../i18n/zh-CN'
+import { apiFeedback } from '../../i18n/apiFeedback'
 
 /** 本人资料编辑；加载失败不覆盖输入，保存成功后使用服务端规范化结果。 */
 function ProfilePage() {
+    const { t } = useLanguage()
     const [profile, setProfile] = useState<CandidateProfilePublic | null>(null)
     const [loading, setLoading] = useState(true)
-    const [loadError, setLoadError] = useState('')
-    const [error, setError] = useState('')
-    const [notice, setNotice] = useState('')
+    const [loadError, setLoadError] = useState<MessageKey | ''>('')
+    const [error, setError] = useState<MessageKey | ''>('')
+    const [notice, setNotice] = useState<MessageKey | ''>('')
     const [saving, setSaving] = useState(false)
     const [attempt, setAttempt] = useState(0)
     const pending = useRef(false)
@@ -22,7 +26,7 @@ function ProfilePage() {
     useEffect(() => {
         let active = true
         getMyProfile().then(data => { if (active) setProfile(data) })
-            .catch(reason => { if (active) setLoadError(reason instanceof Error ? reason.message : '资料加载失败。') })
+            .catch(reason => { if (active) setLoadError(apiFeedback(reason, 'profile.loadFailed')) })
             .finally(() => { if (active) setLoading(false) })
         return () => { active = false }
     }, [attempt])
@@ -30,7 +34,7 @@ function ProfilePage() {
     async function save(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         if (!profile || pending.current) return
-        if (!profile.display_name.trim()) { setError('请输入显示名称。'); return }
+        if (!profile.display_name.trim()) { setError('profile.nameRequired'); return }
         pending.current = true
         setSaving(true)
         setError('')
@@ -38,31 +42,31 @@ function ProfilePage() {
         try {
             const saved = await updateMyProfile({ display_name: profile.display_name, resume_text: profile.resume_text, skills: profile.skills })
             setProfile(saved)
-            setNotice('资料已保存，职位推荐会使用最新技能。')
+            setNotice('profile.saved')
         } catch (reason) {
-            setError(reason instanceof Error ? reason.message : '保存失败，请重试。')
+            setError(apiFeedback(reason, 'common.saveFailed'))
         } finally { pending.current = false; setSaving(false) }
     }
 
     return <>
-        <h1>我的资料</h1>
-        {loading && <p className="feedback" role="status">正在加载资料...</p>}
-        {loadError && <div className="page-section"><p className="feedback" role="alert">{loadError}</p><button type="button" onClick={() => { setLoadError(''); setLoading(true); setAttempt(value => value + 1) }}>重新加载</button></div>}
+        <h1>{t('profile.title')}</h1>
+        {loading && <p className="feedback" role="status">{t('profile.loading')}</p>}
+        {loadError && <div className="page-section"><p className="feedback" role="alert">{t(loadError)}</p><button type="button" onClick={() => { setLoadError(''); setLoading(true); setAttempt(value => value + 1) }}>{t('common.reload')}</button></div>}
         {!loading && !loadError && profile && <form className="form-panel" onSubmit={save} aria-busy={saving}>
             <fieldset disabled={saving}>
                 <div className="field">
-                    <label htmlFor="display-name">显示名称（必填）</label>
+                    <label htmlFor="display-name">{t('profile.name')}</label>
                     <input id="display-name" required value={profile.display_name} onChange={event => edit({ display_name: event.target.value })} />
                 </div>
                 <div className="field">
-                    <label htmlFor="resume">简历（选填）</label>
+                    <label htmlFor="resume">{t('profile.resume')}</label>
                     <textarea id="resume" rows={10} value={profile.resume_text} onChange={event => edit({ resume_text: event.target.value })} />
                 </div>
                 <SkillTagPicker value={profile.skills} onChange={skills => edit({ skills })} />
-                <p className="page-intro">简历仅向你本人及你已投递职位的雇主开放。</p>
-                {error && <p className="feedback" role="alert">{error}</p>}
-                {notice && <p className="feedback" role="status">{notice}</p>}
-                <button type="submit">{saving ? '保存中...' : '保存资料'}</button>
+                <p className="page-intro">{t('profile.privacy')}</p>
+                {error && <p className="feedback" role="alert">{t(error)}</p>}
+                {notice && <p className="feedback" role="status">{t(notice)}</p>}
+                <button type="submit">{saving ? t('common.saving') : t('profile.save')}</button>
             </fieldset>
         </form>}
     </>

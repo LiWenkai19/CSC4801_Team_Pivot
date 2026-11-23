@@ -9,17 +9,37 @@ const require = createRequire(import.meta.url);
 const ts = require('typescript');
 const React = require('react');
 const {renderToStaticMarkup} = require('react-dom/server');
-const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src/components/skills/SkillTagPicker.tsx');
-// Transpile the actual component without rewriting its rendering expressions.
-const code = ts.transpileModule(fs.readFileSync(source, 'utf8'), {
-    compilerOptions: {jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022},
-    fileName: source,
-}).outputText;
-const componentModule = {exports: {}};
-const componentRequire = id => id.endsWith('.css') ? {} : require(id);
-new Function('require', 'module', 'exports', code)(componentRequire, componentModule, componentModule.exports);
-const SkillTagPicker = componentModule.exports.default;
-const render = value => renderToStaticMarkup(React.createElement(SkillTagPicker, {value, onChange() {}}));
+const src = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src');
+const sourceModules = new Map();
+
+// Load the actual component and its language provider without rewriting either one.
+function loadSource(file) {
+    if (sourceModules.has(file)) return sourceModules.get(file).exports;
+    const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), {
+        compilerOptions: {jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022},
+        fileName: file,
+    }).outputText;
+    const sourceModule = {exports: {}};
+    sourceModules.set(file, sourceModule);
+    const sourceRequire = id => {
+        if (id.endsWith('.css')) return {};
+        if (!id.startsWith('.')) return require(id);
+        const target = path.resolve(path.dirname(file), id);
+        const candidate = ['.ts', '.tsx'].map(ext => target + ext).find(fs.existsSync);
+        if (!candidate) throw new Error(`Cannot resolve ${id} from ${file}`);
+        return loadSource(candidate);
+    };
+    new Function('require', 'module', 'exports', code)(sourceRequire, sourceModule, sourceModule.exports);
+    return sourceModule.exports;
+}
+
+const SkillTagPicker = loadSource(path.join(src, 'components/skills/SkillTagPicker.tsx')).default;
+const LanguageProvider = loadSource(path.join(src, 'i18n/LanguageProvider.tsx')).default;
+const render = value => renderToStaticMarkup(React.createElement(
+    LanguageProvider,
+    null,
+    React.createElement(SkillTagPicker, {value, onChange() {}}),
+));
 
 test('FP-SEC-3 actual component renders the required script string as text', () => {
     const html = render(['<script>alert(1)</script>']);

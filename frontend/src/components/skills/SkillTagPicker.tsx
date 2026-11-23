@@ -1,5 +1,7 @@
-import { useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import './SkillTagPicker.css'
+import { useLanguage } from '../../i18n/LanguageContext'
+import type { Message } from '../../i18n/LanguageContext'
 
 const suggestions = [
     // 常用技能
@@ -323,47 +325,54 @@ type Props = { value: string[]; onChange: (skills: string[]) => void }
 
 /** 首次填写与编辑共用：搜索预设技能，也可添加自己的标签。 */
 function SkillTagPicker({ value, onChange }: Props) {
+    const { t } = useLanguage()
     const id = useId()
     const input = useRef<HTMLInputElement>(null)
     const [query, setQuery] = useState('')
-    const [notice, setNotice] = useState('')
+    const [notice, setNotice] = useState<Message | ''>('')
+    const validationMessage = t('skills.uncommitted')
     const options = suggestions.filter(skill => normalize(skill).includes(normalize(query)) && !value.includes(normalize(skill)))
+
+    useEffect(() => {
+        const field = input.current
+        field?.setCustomValidity(field.value.trim() ? validationMessage : '')
+    }, [validationMessage])
 
     function add(text: string) {
         const name = normalize(text)
         if (!name) return
         if (!value.includes(name)) onChange([...value, name])
-        setNotice(value.includes(name) ? `已选择 ${name}` : `已添加 ${name}`)
+        setNotice({ key: value.includes(name) ? 'skills.alreadySelected' : 'skills.added', values: { skill: name } })
         setQuery('')
         input.current?.setCustomValidity('')
         input.current?.focus()
     }
 
     return <fieldset className="skill-picker">
-        <legend>技能（选填）</legend>
-        <ul aria-label="已选技能">
-            {value.map(skill => <li key={skill}>{skill} <button type="button" aria-label={`移除 ${skill}`} onClick={() => onChange(value.filter(item => item !== skill))}>移除</button></li>)}
+        <legend>{t('skills.optional')}</legend>
+        <ul aria-label={t('skills.selected')}>
+            {value.map(skill => <li key={skill}>{skill} <button type="button" aria-label={t('skills.removeOne', { skill })} onClick={() => onChange(value.filter(item => item !== skill))}>{t('skills.remove')}</button></li>)}
         </ul>
-        <label htmlFor={id}>搜索或输入技能</label>
+        <label htmlFor={id}>{t('skills.search')}</label>
         <div className="skill-input">
             <input ref={input} id={id} value={query} autoComplete="off" aria-describedby={`${id}-help`} onChange={event => {
                 const next = event.target.value
                 setQuery(next)
-                event.target.setCustomValidity(next.trim() ? '请先添加此技能，或清空输入后保存。' : '')
+                event.target.setCustomValidity(next.trim() ? validationMessage : '')
             }} onKeyDown={event => {
                 if (event.key === 'Enter' && !event.nativeEvent.isComposing && event.keyCode !== 229) {
                     event.preventDefault()
                     add(query)
                 }
             }} />
-            <button type="button" disabled={!query.trim()} onClick={() => add(query)}>添加技能</button>
+            <button type="button" disabled={!query.trim()} onClick={() => add(query)}>{t('skills.add')}</button>
         </div>
-        <p id={`${id}-help`}>搜索后选择建议，或按 Enter 添加自定义技能。</p>
-        {query.trim() && <ul aria-label="技能建议">
+        <p id={`${id}-help`}>{t('skills.help')}</p>
+        {query.trim() && <ul aria-label={t('skills.suggestions')}>
             {options.slice(0, 8).map(skill => <li key={skill}><button type="button" onClick={() => add(skill)}>{skill}</button></li>)}
-            {!options.length && <li>没有匹配建议，可添加自定义技能。</li>}
+            {!options.length && <li>{t('skills.noMatches')}</li>}
         </ul>}
-        <p role="status">{notice}</p>
+        <p role="status">{notice && t(notice)}</p>
     </fieldset>
 }
 
