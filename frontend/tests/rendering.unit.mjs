@@ -45,20 +45,20 @@ test('FP-SEC-3 actual component renders the required script string as text', () 
     const html = render(['<script>alert(1)</script>']);
     assert(html.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));
     assert(!/<script(?:\s|>)/i.test(html));
-    assert(!html.includes('aria-label="移除 <script>'));
+    assert(!html.includes('aria-label="Remove <script>'));
 });
 
 test('FP-SEC-3 ordinary Unicode and quotes survive text rendering', () => {
     const html = render(['中文 Résumé 🙂', 'C++ & "SQL"']);
     assert(html.includes('中文 résumé 🙂'));
     assert(html.includes('c++ &amp; &quot;sql&quot;'));
-    assert(html.includes('aria-label="移除 c++ &amp; &quot;sql&quot;"'));
+    assert(html.includes('aria-label="Remove c++ &amp; &quot;sql&quot;"'));
 });
 
 test('skill picker label points to the actual input', () => {
     const html = render(['python']);
     const labelId = html.match(/<label for="([^"]+)"/)[1];
     assert(html.includes(`id="${labelId}"`));
-    assert(html.includes('aria-label="已选技能"'));
-    assert(html.includes('aria-label="移除 Python"'));
+    assert(html.includes('aria-label="Selected Skills"'));
+    assert(html.includes('aria-label="Remove Python"'));
 });

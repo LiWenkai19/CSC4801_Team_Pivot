@@ -10,10 +10,10 @@ const dictionaries = { 'zh-CN': zhCN, 'en-US': enUS }
 
 function initialLocale(): Locale {
     try {
-        return window.localStorage.getItem(storageKey) === 'en-US' ? 'en-US' : 'zh-CN'
+        return window.localStorage.getItem(storageKey) === 'zh-CN' ? 'zh-CN' : 'en-US'
     } catch {
         // 浏览器限制存储时，本次页面仍可切换语言。
-        return 'zh-CN'
+        return 'en-US'
     }
 }
 
