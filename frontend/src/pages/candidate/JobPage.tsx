@@ -21,7 +21,7 @@ function JobContent({ jobId }: { jobId: string }) {
         {loading && <p className="feedback" role="status">正在加载职位...</p>}
         {error && <div className="page-section"><h1>无法读取职位</h1><p className="feedback" role="alert">{error}</p><button type="button" onClick={() => { setLoading(true); setError(''); setAttempt(value => value + 1) }}>重新加载</button></div>}
         {!loading && !error && job?.id === jobId && <>
-            <header className="candidate-heading"><h1>{job.title}</h1><p className="page-intro">公司：{job.company_name}</p></header>
+            <header className="candidate-heading"><h1>{job.title}</h1><p className="page-intro company-summary">{job.company_name}{job.company_description.trim() ? `：${job.company_description}` : ''}</p></header>
             <section className="panel page-section">
                 <p>匹配分数：<strong>{job.match_score} / 100</strong></p>
                 <p>所需技能：{job.required_skills.join(', ') || '无'}</p>

@@ -318,6 +318,7 @@ label, legend { font-weight: 650; }
 .record-title { color: var(--ink); text-decoration: none; }
 .record-title:hover { text-decoration: underline; }
 .record-meta { color: var(--muted); }
+.company-summary { overflow-wrap: anywhere; white-space: pre-wrap; }
 .record-stack { display: grid; gap: 7px; }
 .skill-tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .skill-tag, .status-chip {

@@ -52,6 +52,7 @@ class ProfileUpdate(RequestSchema):
 class RecommendedJob(JobPublic):
     """职位与当前候选人的实时匹配分、投递状态。"""
 
+    company_description: str
     match_score: int
     applied: bool
     created_at: UTCDateTime

@@ -73,6 +73,68 @@ def test_recommendations_share_scores_and_title_ties(client, account, job):
         assert ours["applied"] is True
 
 
+def test_job_company_descriptions_follow_current_company_profile(client, account, job, db):
+    """列表和详情读取实时公司简介，保留空白、中文和 HTML 原文。"""
+    import random
+    from app.users.model import EmployerProfile
+
+    employer, _ = account("employer")
+    other_employer, _ = account("employer")
+    candidate, _ = account()
+    posting = job(employer)
+    other_posting = job(other_employer)
+    baseline = client.get("/candidate/jobs", headers=candidate)
+    assert baseline.status_code == 200
+
+    def without_company_text(rows):
+        return [
+            {key: value for key, value in row.items()
+             if key not in {"company_name", "company_description"}}
+            for row in rows
+        ]
+
+    original_jobs = without_company_text(baseline.json())
+    descriptions = [
+        "",
+        " \n\t ",
+        "\u00a0\u3000\ufeff",
+        "一家科技企业",
+        "  中文简介\n第二行 <b>研发 & 服务</b>  ",
+        "LongUnbrokenDescription" * 100,
+    ]
+    rng = random.Random(4801)
+    alphabet = "科技企业研发ABCxyz0123 :&<>\"'\n\t\u00a0\u3000é🌏"
+    descriptions += [
+        "".join(rng.choice(alphabet) for _ in range(rng.randrange(65)))
+        for _ in range(64)
+    ]
+    for description in descriptions:
+        updated = client.patch(
+            "/employer/company",
+            headers=employer,
+            json={
+                "company_name": "华为技术有限公司",
+                "company_description": description,
+            },
+        )
+        assert updated.status_code == 200
+        listed = client.get("/candidate/jobs", headers=candidate)
+        assert listed.status_code == 200
+        assert without_company_text(listed.json()) == original_jobs
+        rows = {row["id"]: row for row in listed.json()}
+        detail = client.get(f"/candidate/jobs/{posting['id']}", headers=candidate)
+        assert detail.status_code == 200
+        assert rows[posting["id"]] == detail.json()
+        assert detail.json()["company_name"] == "华为技术有限公司"
+        assert detail.json()["company_description"] == description
+        assert rows[other_posting["id"]]["company_description"] == ""
+        assert db.exec(
+            select(EmployerProfile.company_description).where(
+                EmployerProfile.user_id == uuid.UUID(posting["employer_id"])
+            )
+        ).one() == description
+
+
 def test_recommendation_queries_do_not_grow_per_job(client, account, job, engine):
     employer, _ = account("employer")
     candidate, _ = account()
