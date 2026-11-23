@@ -1,0 +1,254 @@
+{
+  "historical_final_business_sha": "8569b72ac1d965c252a741f3e62ed71b01f630e7",
+  "open_non_docker_tracking_entries": 12,
+  "findings": [
+    {
+      "id": "SE-02",
+      "category": "安装说明",
+      "priority": "P1",
+      "title": "INSTALL与示例配置不足，无法按文档独立启动",
+      "expected": "普通干净环境只按文档与示例完成配置、迁移、seed、启动和实质测试。",
+      "actual": "六个非Docker操作章节为空；.env.example不含当前必需配置。干净导入缺APP_NAME/DATABASE_URL，两种实际依赖安装及显式配置阳性对照正常。",
+      "reason": "运行前提和配置迁移已变化，安装文档/根示例仍未补齐；不能用测试工具额外推导出的步骤代替文档。",
+      "impact": "新成员或评分方无法只依现有INSTALL复现运行。",
+      "reproduction": "在新工作目录、无额外APP_NAME/DATABASE_URL时导入应用；另按原.env.example建立配置后再导入；与显式隔离配置导入作对照。",
+      "latest_evidence": "8569b72直接执行21项交付核查中的3个相关失败；两种全新安装命令均成功。",
+      "files": [
+        "INSTALL.md",
+        ".env.example"
+      ],
+      "post_fix_new_tests": [
+        "文档修复后，在带空格及中文路径的新目录中，使用普通新shell按文档逐条执行完整非Docker安装/初始化/启动/测试流程。",
+        "新增配置省略、占位符未替换及frontend/backend工作目录切换场景，核对说明能定位错误且不依赖测试harness额外变量。"
+      ]
+    },
+    {
+      "id": "SE-03",
+      "category": "需求追踪文档",
+      "priority": "P2",
+      "title": "README映射、占位测试引用及旧验证结论未更新",
+      "expected": "25个需求ID有准确实现/具名测试或验证证据；可选项正确标明；命令与当前提交一致。",
+      "actual": "12个ID未映射，AUTH-1仍引用pass占位测试；正文仍写117通过、users/schema收集阻塞，而当前145项可收集并全部通过。",
+      "reason": "README保留初始模板与较早候选集成记录，未同步完整模块和当前基线。",
+      "impact": "需求覆盖与测试证据不能由仓库README独立追踪；不代表12项功能全部未实现。",
+      "reproduction": "逐ID对照REQUIREMENTS与README映射，检查被引用测试的断言，并与当前145项基线结果对照。",
+      "latest_evidence": "最终复核README与f12f819逐字节相同；当前145项基线有新SHA实测证据。",
+      "files": [
+        "README.md",
+        "tests/unit/test_auth.py",
+        "tests/unit/test_scheduling.py"
+      ],
+      "post_fix_new_tests": [
+        "完成文档修订后，从新归档解析每个需求ID→实现→具名测试，实际收集所引用测试，拒绝悬空名称与pass模板。",
+        "用可选需求N/A、多个ID合写及跨模块同名测试作新增对照，避免仅靠字符串出现判断完整。"
+      ]
+    },
+    {
+      "id": "SE-04",
+      "category": "活规格",
+      "priority": "P2",
+      "title": "SPEC缺少架构、认证、页面及安全等必需设计说明",
+      "expected": "同一提交的SPEC承载课程要求的当前设计，足以建立一致判据。",
+      "actual": "新版已补时段管理语义，但架构、关系、认证授权、API/页面、安全等10个二级章节仍无正文；后附候选记录不足以完整替代。",
+      "reason": "模块计划和历史附录未汇入完整活规格；不是单纯因为空标题就报缺陷。",
+      "impact": "部分功能必须从模块资料重建设计；隐私策略与CI要求仍有独立待确认项。",
+      "reproduction": "以FP-PROC-1要求对照当前SPEC全部章节及附录；区分已有时段说明与仍缺内容。",
+      "latest_evidence": "最终在8569b72重新检查现有SPEC，确认10个空二级章节与内容范围，未照搬旧时段条款。",
+      "files": [
+        "SPEC.md"
+      ],
+      "post_fix_new_tests": [
+        "规格补齐后，用新增跨角色端到端场景逐步核对条款、API与页面；对新确认的隐私条款建立正反角色判据。",
+        "对新旧版本间变化做条款差异检查，确保时间列表、认证形式和事务说明同步到实现。"
+      ]
+    },
+    {
+      "id": "SE-05",
+      "category": "演示数据",
+      "priority": "P1",
+      "title": "seed唯一60分钟时段不满足30分钟预约资格",
+      "expected": "重置后两个Interviewing候选可选择同一未来空闲30分钟时段并演示竞争。",
+      "actual": "唯一时段为2026-12-01 10:00–11:00 UTC，检测日期尚未过期；SQL合格配对0、双方可用列表空、实际预约均409。",
+      "reason": "演示数据时长为60分钟，与候选准入的严格30分钟规则不一致。",
+      "impact": "seed虽成功且可重复，仍无法完成要求的预约演示。新版雇主管理列表可显示该遗留时段，不应再以其为空作为判据。",
+      "reproduction": "两次真实reset/seed比较语义快照，分别以Alice/Bob读取时段和尝试预约；独立API创建合法30分钟时段作阳性对照。",
+      "latest_evidence": "8569b72实际seed、SQL和两候选API复现；四评分例与重置确定性另行通过。",
+      "files": [
+        "backend/scripts/seed_demo.py"
+      ],
+      "post_fix_new_tests": [
+        "修复seed后新增固定时钟跨日期边界的资格验证，区别时间已过与时长错误，不把本轮普通双候选复现算新增。",
+        "新增已有登录会话、预约及职位改动后再次reset，检查数据/会话/关联都回到所声明演示状态；多雇主时段不得串用。"
+      ]
+    },
+    {
+      "id": "SE-06",
+      "category": "模型迁移一致性",
+      "priority": "P3",
+      "title": "Application.status的数据库默认Pending未进入迁移",
+      "expected": "主迁移链创建的实际模式包含模型声明的server_default。",
+      "actual": "空库、旧版本升级及重复升级结构一致，但status均无默认值；直接SQL省略status触发NotNullViolation，ORM投递仍正确赋Pending。",
+      "reason": "模型增加或声明了server_default，迁移列定义未体现；默认alembic check不比较该项。",
+      "impact": "部署模式漂移，影响依赖数据库默认的写入；不计作已复现普通API投递失败或直接课程MUST违例。",
+      "reproduction": "实际升级三个隔离数据库，启用compare_server_default后比较；对照原始SQL省略状态与普通ORM写入。",
+      "latest_evidence": "8569b72实际数据库比较及原始写入复核；空库/旧库用户保留/重复升级均通过。",
+      "files": [
+        "backend/app/employer/model.py",
+        "backend/alembic/versions/c8f4a2b91d37_create_employer_workflow_tables.py"
+      ],
+      "post_fix_new_tests": [
+        "迁移修复后新增显式NULL仍应拒绝、显式Accepted不得被默认覆盖的对照，区分省略字段与显式赋值。",
+        "新增已有四种状态数据的旧库升级，检查状态保存、默认值生效且重复升级不改业务数据。"
+      ]
+    },
+    {
+      "id": "SLOT-01",
+      "category": "时间边界功能",
+      "priority": "P2",
+      "title": "已接受的极端日期在数据库返回时区下无法读回",
+      "expected": "被接受并持久化的时段可读、可删除并正常参与预约；不支持的日期应在写入前清晰拒绝。",
+      "actual": "Asia/Shanghai下接受starts_at=9999-12-31T15:30:00Z，结束时刻转换为第10000年，psycopg DataError；列表、删除、候选可用/预约500。",
+      "reason": "请求验证和结束时间计算只验证 UTC Python datetime 范围，未保证 timestamptz 在数据库返回时区下仍可被驱动解码；错误发生在 ORM 行读取时，早于响应 schema 的 UTC 归一化。",
+      "impact": "同雇主列表会受该行影响；触发极端且环境相关，不能当作日常高频故障。",
+      "reproduction": "正常雇主创建上述30分钟时段后再次列表；UTC会话读取同一行正常作为环境对照。",
+      "latest_evidence": "78c3cb6外部套件及真实HTTP动态复现；最终逐文件确认backend/app到8569b72未变，不冒称新执行。",
+      "files": [
+        "backend/app/interview/schema.py",
+        "backend/app/interview/service.py",
+        "backend/app/candidate/service.py"
+      ],
+      "post_fix_new_tests": [
+        "原测试未覆盖的正/负数据库返回时区与各自范围边界",
+        "极端时间以等价 ISO 偏移表示，而非只用 Z 输入",
+        "两个雇主、普通和边界时段混合后的归属隔离与完整列表",
+        "边界时段经历完整状态变化与删除/预约竞争"
+      ]
+    },
+    {
+      "id": "REG-CAND-01",
+      "category": "并发完整性",
+      "priority": "P2",
+      "title": "候选技能整体替换竞争会合并集合或返回500",
+      "expected": "两个成功整体替换的最终集合等于其中一份完整请求，或明确拒绝冲突。",
+      "actual": "旧技能legacy，两个正常PATCH分别替换为python与sql，均200但最终两者并存；推荐50可错误变100。交叉输入还可触发主键冲突500。",
+      "reason": "在 READ COMMITTED 下，先读父对象但不锁住它，再 DELETE 旧技能并 INSERT 新技能，不能实现并发整体替换。第二个 DELETE 在第一个事务提交前已取得语句快照；等锁释放后会略过已删除的旧行，却看不到第一个事务刚插入的新技能。互斥输入随后合并；交叉输入触发技能主键重复。",
+      "impact": "保存结果与任一整体替换请求不符，并改变下游评分；并非匹配公式计算错误。",
+      "reproduction": "真实PostgreSQL独立连接，在旧技能DELETE边界安排等待，提交后核对完整集合与独立分数；与顺序替换对照。",
+      "latest_evidence": "f12f819及78c3cb6分别动态复现；8569b72后端同源证明。",
+      "files": [
+        "backend/app/candidate/service.py"
+      ],
+      "post_fix_new_tests": [
+        "初始技能为空、三个更新含清空的组合；技能与仅改简历请求交错，验证独立字段不丢失。"
+      ]
+    },
+    {
+      "id": "REG-JOB-01",
+      "category": "并发完整性",
+      "priority": "P2",
+      "title": "职位要求技能的独立替换实现存在同类竞争",
+      "expected": "并发要求整体替换保持某个完整结果或明确业务拒绝。",
+      "actual": "python与sql请求均200后得到两项并集；仅有python候选的分数变50，而完整替换的正确结果只可能100或0；交叉输入可500。",
+      "reason": "在 READ COMMITTED 下，先读父对象但不锁住它，再 DELETE 旧技能并 INSERT 新技能，不能实现并发整体替换。第二个 DELETE 在第一个事务提交前已取得语句快照；等锁释放后会略过已删除的旧行，却看不到第一个事务刚插入的新技能。互斥输入随后合并；交叉输入触发技能主键重复。",
+      "impact": "职位要求及申请人评分不符合提交；与候选实现同类，但代码落点独立，修复须分别验收。",
+      "reproduction": "真实PG两个正常职位PATCH在DELETE边界同步；观察锁等待、最终要求和独立分数。",
+      "latest_evidence": "f12f819及78c3cb6分别动态复现；8569b72后端同源证明。",
+      "files": [
+        "backend/app/employer/service.py"
+      ],
+      "post_fix_new_tests": [
+        "要求替换与title-only更新、初始无要求、三请求和清空组合；更新与允许删除/投递交错。"
+      ]
+    },
+    {
+      "id": "REG-TEXT-01",
+      "category": "输入持久化边界",
+      "priority": "P2",
+      "title": "实际NUL被Schema接受，持久化时返回500",
+      "expected": "无法由存储表示的输入应明确4xx拒绝，相关业务状态不变；普通Unicode仍支持。",
+      "actual": "JSON中的真实NUL通过str/list[str]校验，PostgreSQL text/VARCHAR写入抛DataError。职位标题/描述/要求、候选简历/技能、公司描述均有证据。",
+      "reason": "JSON/schema 的 str/list[str] 校验接受实际 NUL 字符，但 PostgreSQL text/VARCHAR 不可表示 NUL。错误到写入/flush 才由驱动抛 DataError；事务回滚，但未转换成清晰的输入校验 4xx，最终返回 500。不是评分公式错误或 Unicode 普遍不支持。",
+      "impact": "输入错误被报告为服务器故障；失败八表快照不变，无证据表明数据破坏或安全利用。",
+      "reproduction": "在正常文本中含一个真实NUL执行原接口；对照普通Unicode、标点和换行，并比较失败前后快照。",
+      "latest_evidence": "f12f819驱动异常、78c3cb6动态复现；8569b72后端同源证明。",
+      "files": [
+        "backend/app/candidate/service.py",
+        "backend/app/employer/schema.py",
+        "backend/app/employer/service.py"
+      ],
+      "post_fix_new_tests": [
+        "NUL首尾及列表中间位置；字面反斜线u0000与真实NUL对照；多行、tab与非BMP合法文本往返。"
+      ]
+    },
+    {
+      "id": "AUTH-01",
+      "category": "并发冲突分类",
+      "priority": "P2",
+      "title": "同邮箱并发注册的失败方返回500",
+      "expected": "一个成功，另一个400/409明确重复身份拒绝，且只有一个用户/会话。",
+      "actual": "两个正常请求均通过预查后，数据库唯一约束保住1用户1会话，但失败提交抛UniqueViolation并返回500。",
+      "reason": "create_user先查询邮箱后提交INSERT；两个合法请求均通过预查后，数据库ix_user_email唯一约束拒绝后一提交。service未捕获并分类该冲突（请求Session退出时仍会回滚），router只捕获ValueError，导致500。",
+      "impact": "正确守住唯一性，但错误语义失当；不构成重复账户成功或权限绕过。",
+      "reproduction": "同邮箱两个合法注册在查询不存在后同步提交；分别用两种角色和独立清洁数据库对照。",
+      "latest_evidence": "f12f819及78c3cb6动态复现；8569b72后端同源证明。",
+      "files": [
+        "backend/app/users/service.py",
+        "backend/app/users/router.py"
+      ],
+      "post_fix_new_tests": [
+        "三个正常注册请求竞争同一邮箱，确认恰一成功和两次明确业务拒绝",
+        "成功/冲突后同一连接池继续注册新邮箱并登录，确认事务恢复；不把已运行的双请求/不同邮箱对照算修后新增"
+      ]
+    },
+    {
+      "id": "UI-02",
+      "category": "页面恢复",
+      "priority": "P3",
+      "title": "过期会话注销留下未处理Promise拒绝",
+      "expected": "预期401注销后完成既定页面恢复，且无未处理浏览器异常。",
+      "actual": "两个原入口都能回登录页，后端也正确拒绝；浏览器仍记录Not authenticated的pageerror。",
+      "reason": "AuthContext.logout在finally清空currentUser，但apiLogout返回401后的Promise仍拒绝；NavPage/CandidateDetailsPage直接把异步logout用作onClick而没有处理拒绝。",
+      "impact": "遗留客户端异常；不是无法退出，也没有会话绕过证据。",
+      "reproduction": "正常登录后使本地会话过期，从NavPage/CandidateDetailsPage点击退出，同时观察最终页面、401和pageerror。",
+      "latest_evidence": "78c3cb6三引擎复现；最终验证Context及两个调用方与8569b72逐字节一致。",
+      "files": [
+        "frontend/src/contexts/AuthContext.tsx",
+        "frontend/src/pages/NavPage.tsx",
+        "frontend/src/pages/users/CandidateDetailsPage.tsx"
+      ],
+      "post_fix_new_tests": [
+        "分别模拟本地网络中断与503，核对按最终确认的交互契约恢复且无未处理拒绝",
+        "雇主首次资料页的退出入口在过期条件下检查相同共享Context调用方；本轮未执行该入口的过期场景"
+      ]
+    },
+    {
+      "id": "DEL-01",
+      "category": "测试交付工具",
+      "priority": "P2",
+      "title": "仓库原浏览器脚本仍依赖旧Bearer/access_token",
+      "expected": "原脚本按当前Cookie/CSRF与代理合同维持会话并能验证真实页面流程。",
+      "actual": "两个原辅助函数登录后读取access_token，Node fetch无Cookie jar，受保护读取401；原固定8000拦截另为静态线索。",
+      "reason": "两份tracked脚本取access_token或localStorage.token并用Bearer；当前认证只返回user和Set-Cookie。Node fetch没有Cookie jar，后续受保护读取返回401。旧route还仅拦截固定8000，与现行同源/api代理不匹配（后者为静态线索）。",
+      "impact": "原脚本无法作为当前完整页面回归的通过证据；外部Cookie脚本已检测产品，不能自动修好原脚本。",
+      "reproduction": "提取原辅助函数原样执行登录→受保护读取，和同实例Cookie/CSRF客户端对照。旧脚本未完整运行，后续步骤不作动态结论。",
+      "latest_evidence": "f12f819原函数动态探针；最终确认两份tracked脚本与8569b72逐字节相同。",
+      "files": [
+        "frontend/tests/candidate.browser.mjs",
+        "frontend/tests/employer.browser.mjs"
+      ],
+      "post_fix_new_tests": [
+        "修复后完整执行两份原脚本，覆盖写操作CSRF、登出及角色隔离",
+        "随机测试API端口和已有8000端口服务同时存在时，核验所有业务请求仅到本轮隔离实例；禁止影响已有服务"
+      ]
+    }
+  ],
+  "historical_closed": [
+    "UI-01"
+  ],
+  "docker_excluded": [
+    "SE-01"
+  ],
+  "course_contract_failure": "SPEC-Q01: related employer resume access; ordinary unit failure preserved",
+  "original_test_integration_gaps": "BL-G01/G02 were addressed by a8f3d3a unit/component integration; this does not repair runtime bugs.",
+  "repairs": []
+}

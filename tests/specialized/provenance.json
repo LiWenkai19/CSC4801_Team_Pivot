@@ -1,0 +1,315 @@
+{
+  "historical_files": [
+    {
+      "original_stage": "interview-slots-20261122",
+      "original_file": "test_slots_additional_boundaries.py",
+      "original_sha256": "982647234302f64696aee3eca7ec30b44b9e6bba1bbe4c4f1a2b9af77f37d3cc",
+      "repository_path": "tests/specialized/test_slots_additional_boundaries.py",
+      "adaptations": "Unchanged test source",
+      "initial_port_sha256": "0bea3bb4c7ad12519f195b02de26c452daeaa6ca1e55977d5de18c0251b24ea4",
+      "ported_sha256": "e585a8ca4107c468e65c95d5ba07d992290b7fa4ba54dd429b47aca7988af81b",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "interview-slots-20261122",
+      "original_file": "test_slots_contract.py",
+      "original_sha256": "5b59313e833e5c1f125730b0b6d8506c8d2efb8504d34ec719d9d4991220d831",
+      "repository_path": "tests/specialized/test_slots_contract.py",
+      "adaptations": "Portable source paths/shared fixtures; old employer-list oracle migrated only where current SPEC retains booked records and adds is_booked.",
+      "initial_port_sha256": "ba7d0d8338cc55f55a52055308b3cfcc5577f5c6368bc1fd77307e654e62c1ce",
+      "ported_sha256": "90613daf32edd3798703b2ba7065efa1cfd31098aea8aad63eefa76aa856e798",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "interview-slots-20261122",
+      "original_file": "test_slots_date_boundary.py",
+      "original_sha256": "2b53d4637fa15a73e1875763d29de68413137189b3b2c0706ceac21e8244eaff",
+      "repository_path": "tests/specialized/test_slots_date_boundary.py",
+      "adaptations": "Portable source paths/shared fixtures; old employer-list oracle migrated only where current SPEC retains booked records and adds is_booked.",
+      "initial_port_sha256": "df5fc40711dc6863c5492feb4c1ac92b34f115735f5b45f3784c707359f3716b",
+      "ported_sha256": "0bc5e1fa4e6a87370784ca857c558d721e0ae6d3f75c84e1c395b9aec2c85926",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "interview-slots-20261122",
+      "original_file": "test_slots_date_paths.py",
+      "original_sha256": "41de4e95a51a505a138bcaa5dd8f40bf08fa4769fb21d7122a263be336491219",
+      "repository_path": "tests/specialized/test_slots_date_paths.py",
+      "adaptations": "Portable source paths/shared fixtures; old employer-list oracle migrated only where current SPEC retains booked records and adds is_booked.",
+      "initial_port_sha256": "174f297a3beb4bf5f4b410376aaf683cfbf13e13857b7159f7666d060dc5f87a",
+      "ported_sha256": "69c649e8fe1b9fdae0791b17492d9ea097f04777168fe9ee1206e229de21e3dd",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "interview-slots-20261122",
+      "original_file": "test_slots_interactions.py",
+      "original_sha256": "c0c68ada98793fc3b28699a9e679d30cb8036937424c2ec7be850bf125cbb7b2",
+      "repository_path": "tests/specialized/test_slots_interactions.py",
+      "adaptations": "Portable source paths/shared fixtures; old employer-list oracle migrated only where current SPEC retains booked records and adds is_booked.",
+      "initial_port_sha256": "b8a0f3af56449d4f4967dcc5cdab11bc29b34349c304ddf0cfe8f3d4540a9184",
+      "ported_sha256": "e8262c02384a5dc7de00b9cbe75ffc7233863457193553ed84288eaa84fb7122",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "interview-slots-20261122",
+      "original_file": "test_slots_races.py",
+      "original_sha256": "3cc9be9c6d44bd6a5eb470ba6e727427004072f2f331044852df06a2916a0c8d",
+      "repository_path": "tests/specialized/test_slots_races.py",
+      "adaptations": "Portable source paths/shared fixtures; old employer-list oracle migrated only where current SPEC retains booked records and adds is_booked.",
+      "initial_port_sha256": "66f9bb04d34d90d26df4444c30c97e9ec11f5eae7f8c39c23de3651e290e85db",
+      "ported_sha256": "bea152ecf1910629b8780b51df05ca808139250d88628f001847bba95ac8f318",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "booking-crossmodule-20261122",
+      "original_file": "test_booking_eligibility.py",
+      "original_sha256": "f022a7c8f61c626c576e43a98d41d813879c02b19ba7e29c62d81e2883b31170",
+      "repository_path": "tests/specialized/test_booking_eligibility.py",
+      "adaptations": "Unchanged test source",
+      "initial_port_sha256": "8c251f0ac404b4e89cb16a6dbffe8a721f057f01eb6671b0b15f643cbbb128e1",
+      "ported_sha256": "cbafbb5a5e9d78b3cb33fea34803407d26ee286e350f4f6451515aaca9142af9",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "booking-crossmodule-20261122",
+      "original_file": "test_booking_schedules.py",
+      "original_sha256": "e0691055149624b5f3260fd3b08261648e2e1f58979afa60c288cd2b46e7be5c",
+      "repository_path": "tests/specialized/test_booking_schedules.py",
+      "adaptations": "Portable source paths/shared fixtures; old employer-list oracle migrated only where current SPEC retains booked records and adds is_booked.",
+      "initial_port_sha256": "821a22f8313b685052973d229e57383ceaf2b64df71fc31688ff9ee187e208c1",
+      "ported_sha256": "a477ac2a958b1ab27ec367acff1b4ecb3cfd418cf065ca76e6e3e5f4137d60ec",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "booking-crossmodule-20261122",
+      "original_file": "test_booking_states.py",
+      "original_sha256": "42834a60f149f3ba79b4a1cf6b51c06da21326a68b86bac1498b98d8d0872f1a",
+      "repository_path": "tests/specialized/test_booking_states.py",
+      "adaptations": "Portable source paths/shared fixtures; old employer-list oracle migrated only where current SPEC retains booked records and adds is_booked.",
+      "initial_port_sha256": "f4f7ac8b9c7163fc296d3719773414ae9364cddd456970978070c30ddda81094",
+      "ported_sha256": "71acb649b0fed542114f272cc2eeeee24ee9404f33878552f0cdba92d8845ec6",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "booking-crossmodule-20261122",
+      "original_file": "test_booking_transactions.py",
+      "original_sha256": "66213555a1aaee507b5f875343caa6431eb14d1fecbcf78c2e9740d847fb61ed",
+      "repository_path": "tests/specialized/test_booking_transactions.py",
+      "adaptations": "Unchanged test source",
+      "initial_port_sha256": "1345bc0df15d8c7bd5a18609a68d9e4d1da795b009d63969d2e00c319a22d79b",
+      "ported_sha256": "9a15c06f40509591070bee3c516c8d4767e8c97ceff50f559f563b324fbc9a0a",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "matching-applications-jobs-20261122",
+      "original_file": "test_applications_jobs.py",
+      "original_sha256": "8d5d1a7dbbf48bccdf7a4112eaaf0af6cceb7a4ae5abddc237cbdb5b5b8ba724",
+      "repository_path": "tests/specialized/test_applications_jobs.py",
+      "adaptations": "Unchanged test source",
+      "initial_port_sha256": "ba2bee8b53797c7a73347be3149c2349a55b5f77d5aec6b63e23fdc079bf960a",
+      "ported_sha256": "b51c79e0f785dc6a8a19bf73a8cf9a6b10accf0ce5eae11def36b54fc58b007b",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "matching-applications-jobs-20261122",
+      "original_file": "test_failure_replays.py",
+      "original_sha256": "73a3124165b41bf2dd174f1f8466489c9f33c7e0e1d79a3460d72e287cc5ebb4",
+      "repository_path": "tests/specialized/test_failure_replays.py",
+      "adaptations": "Unchanged test source",
+      "initial_port_sha256": "60a1f64acc2a08a0cb7407357eaff80a0ef27e26ac9f660fa1a0a83a9bc8c9e9",
+      "ported_sha256": "4d4bc63a664d02fd5ef7228a33a4ec2b950a0541cd4d2e4023a99b7b19843fa0",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "matching-applications-jobs-20261122",
+      "original_file": "test_matching_oracles.py",
+      "original_sha256": "ce2a4ffb53d182f37ecae4a34f7b8fb86c353909ff65e647a0353459a3d96a5d",
+      "repository_path": "tests/specialized/test_matching_oracles.py",
+      "adaptations": "Unchanged test source",
+      "initial_port_sha256": "d4a136cd4a17374cf5ec112bc3792b3249018acf9339a26dc3395837b2810ce0",
+      "ported_sha256": "1ae95d1a0c5ca27a1b459e80ef1d9d16f3342c89fd711dacc979cbbb01922c6f",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "matching-applications-jobs-20261122",
+      "original_file": "test_matching_views.py",
+      "original_sha256": "c2752537f55af3cca75fd346208e4d9c6e147a41517fa46b2dc75648c357c5a3",
+      "repository_path": "tests/specialized/test_matching_views.py",
+      "adaptations": "Unchanged test source",
+      "initial_port_sha256": "47b65de546f11d545554d57971bfa2ff335511b9d8f928d13f220fb7932db53f",
+      "ported_sha256": "e09238fdea0c211b064369e5b45f56e607b52a6b29f249824f478ed997f50829",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "matching-applications-jobs-20261122",
+      "original_file": "test_replacement_and_text.py",
+      "original_sha256": "6c77e4a389b10deaec9341eb1b84dd59cb369baf06602123e37746342152e23e",
+      "repository_path": "tests/specialized/test_replacement_and_text.py",
+      "adaptations": "Unchanged test source",
+      "initial_port_sha256": "7e1673a808272057225750f93229e9ae4f0b600e7fbc3dcd17c1e31931274c3e",
+      "ported_sha256": "91adc1e211ad4bcf6be445ae0d270171093c98708ce1c1850df31a2f8ed4e208",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "auth-pages-delivery-20261122",
+      "original_file": "test_auth_contracts.py",
+      "original_sha256": "63c2767886b409441b417381bb53c5289af0dbe7bfbd0e9a0b23bbbad7705812",
+      "repository_path": "tests/specialized/test_auth_contracts.py",
+      "adaptations": "Unchanged test source",
+      "initial_port_sha256": "17e2c9f68fc7d3083f9f30a9d9e06b2886e1026879e704fc29649045ae49b174",
+      "ported_sha256": "52792eb2cfe92ba840eb23f241bb00e45cf3ea367840faa086deb314b07576a0",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "auth-pages-delivery-20261122",
+      "original_file": "test_auth_replays.py",
+      "original_sha256": "35f8ce41068145e66931b17b2d253ee2898fa12525841b3d0b79678401f5263e",
+      "repository_path": "tests/specialized/test_auth_replays.py",
+      "adaptations": "Unchanged test source",
+      "initial_port_sha256": "ba093f0a6f173cdaa840b7b52ddbb22ecce2d85794e2b5f56b8583303d4e1fd0",
+      "ported_sha256": "74f74d62d6838b14ba3701d5c8717c8ca76fe3e2cf48b6e8ff9678d905f62224",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "gap-completion-20261122",
+      "original_file": "test_mutation_oracles.py",
+      "original_sha256": "cfbd59b27ee5a6576b6bdeeaad5d705faf17c18f2a6710a1fa716b7a3d362220",
+      "repository_path": "tests/specialized/test_mutation_oracles.py",
+      "adaptations": "Unchanged test source",
+      "initial_port_sha256": "040215ff3afaae1542a80e36272b41043bf1dd27335751bd43d9e95f9ccb3aa1",
+      "ported_sha256": "ed314cac138ad6e35e2a730801041907d5b9e88d0c768373971b39eee0cce6f9",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "gap-completion-20261122",
+      "original_file": "test_performance.py",
+      "original_sha256": "53aa13e65730955902723d937274eaaf0d90e52aa096a5e28c1388714bbc7587",
+      "repository_path": "tests/specialized/test_performance.py",
+      "adaptations": "Unchanged test source",
+      "initial_port_sha256": "c9db9388aa5ea7dbc805f550fa4c628aeecf4c9c837208061de87b8bfeaa9e90",
+      "ported_sha256": "83f06e7a13384c8db64b2eee7650050b2ebec7a51fece5cba80bed6cc5b6f861",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "gap-completion-20261122",
+      "original_file": "test_targeted.py",
+      "original_sha256": "d817644c680a6ca657c0e15613dcfb6d20b90e9c69a8ec17dc182a79c55cdb65",
+      "repository_path": "tests/specialized/test_targeted.py",
+      "adaptations": "Unchanged test source",
+      "initial_port_sha256": "3a5e0c30703fc1585b3e637042f8ed9dde28a6ef4aa1e8b4436090d8658182e1",
+      "ported_sha256": "930b6dd067a56b6d68faaa6f27dea54cb775367bad44eb1df15dcb65744ca2d1",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "paths-install-seed-20261123",
+      "original_file": "test_remaining_paths.py",
+      "original_sha256": "c414ea47c096ccf6112af49fe76ef30a3e8968d7c88aee8cb0095c3746d220e2",
+      "repository_path": "tests/specialized/test_remaining_paths.py",
+      "adaptations": "Unchanged test source",
+      "initial_port_sha256": "87927eaf574014264c7b45fb00a99b4194df19ccdc9ad4675bb8c085099b3d8c",
+      "ported_sha256": "a057bf857e3bc6ed70c209b3bd40e07bdf05abdb5407b58094d6ffbf29e18d6f",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "auth-pages-delivery-20261122",
+      "original_file": "browser_checks.mjs",
+      "original_sha256": "e29d528ca9a03aab01637ce0e4281346ea35a0666e98b923acf9a5d8cad2a46e",
+      "repository_path": "frontend/tests/specialized/auth_browser_checks.mjs",
+      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved.",
+      "initial_port_sha256": "07bc567eb07d24fbaeea13b2579f9c7dc8bed6abbb0803625f3f7faa78719dbd",
+      "ported_sha256": "4d452f5d9409ae21ef12b36449decaae5eccaa5b4462db0aafbf2b6e74df3347",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "auth-pages-delivery-20261122",
+      "original_file": "browser_focused.mjs",
+      "original_sha256": "2dee11fcac763bba0ad0d1f729d1195e4da1bc67114e146477da2c3112ac345c",
+      "repository_path": "frontend/tests/specialized/auth_browser_focused.mjs",
+      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved.",
+      "initial_port_sha256": "cc0664b7ab0d35193aa8d90aae16597146effd7c49622dd41e5a6bbd2c03ddf7",
+      "ported_sha256": "941f13cfcb091789ad449ba97deb3d7dc4785bce2792cbc16ea3adbb9fdace9e",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "auth-pages-delivery-20261122",
+      "original_file": "probe_existing_helpers.mjs",
+      "original_sha256": "935833c1a3c8d9f017bf5154177f1122e862fb78a951e811c36f8c0766510f3c",
+      "repository_path": "frontend/tests/specialized/probe_existing_helpers.mjs",
+      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved.",
+      "initial_port_sha256": "2c23ad20d21b2569a77125be0650fe598da84a07784b6c1fe4a82ce8bc1aaffb",
+      "ported_sha256": "1924aa85a9ef571a9135a3ac3837482290d0d2ba03233158131ae8413e469fe7",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "auth-pages-delivery-20261122",
+      "original_file": "render_contracts.mjs",
+      "original_sha256": "f3459f4daba4fc0cd32b808b85013be94df7dd80d684de737132fd8a9a77b3dc",
+      "repository_path": "frontend/tests/specialized/render_contracts.mjs",
+      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved.",
+      "initial_port_sha256": "c032841a5f2dcc6b7cd02f591c37c021c4c44cb9d07c87661aba796a7d4e4512",
+      "ported_sha256": "ca3cd3c78a795b1a9174a2404516ef847b946557bb58b6b83caa6e3f9d9b4a43",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "gap-completion-20261122",
+      "original_file": "browser_checks.mjs",
+      "original_sha256": "1c8ddef6ba6b4bf84ae24867003a49c95f997cd2527f1b0ad72316a11df59027",
+      "repository_path": "frontend/tests/specialized/gap_browser_checks.mjs",
+      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved.",
+      "initial_port_sha256": "1e187b7f893a1f24a397f9ef7d8acc609c65fe79f43f2f5cbd6df23eb701985c",
+      "ported_sha256": "d918614d59732f47c0df8a4c67de90489d169d972a61009b66147e11be6902ef",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "gap-completion-20261122",
+      "original_file": "browser_followup.mjs",
+      "original_sha256": "36768a0582603469aeb33a6fdc3d9784890f3a33ce8ef792b674af0e04234759",
+      "repository_path": "frontend/tests/specialized/browser_followup.mjs",
+      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved.",
+      "initial_port_sha256": "969fb6f4e7603abfccac6c3fb506852afeb80f2afe06e7c1cff19652523bd1a8",
+      "ported_sha256": "9b49421ccf81a741cb701410578180981b1d9bc977a3961e7b75682382edf6ba",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "gap-completion-20261122",
+      "original_file": "browser_support.mjs",
+      "original_sha256": "6ab42e155e1a8f43a1bc694e11cbdea02c70598064bc8a89098ce91e3d181f94",
+      "repository_path": "frontend/tests/specialized/browser_support.mjs",
+      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved.",
+      "initial_port_sha256": "e342d9cef8b5d7c3ac11c980ee318da1eb7a3d9ca1ee1c9712650808fe44978d",
+      "ported_sha256": "6ab42e155e1a8f43a1bc694e11cbdea02c70598064bc8a89098ce91e3d181f94",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "gap-completion-20261122",
+      "original_file": "render_all.mjs",
+      "original_sha256": "3028799525a0ac7769ff31b0f69f513a1e3574a9a38e824a6d1aad78ec5e9a09",
+      "repository_path": "frontend/tests/specialized/render_all.mjs",
+      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved.",
+      "initial_port_sha256": "eec11cbece3597a8fd13316a31af1608234b2fa69cb7c5deda6aa403f8241526",
+      "ported_sha256": "31006b3e2a744f2e3896d52781d6ed109a53f3a5111a339c8da18e496e12cca4",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "paths-install-seed-20261123",
+      "original_file": "frontend_smoke.mjs",
+      "original_sha256": "e66c4c50574f7ebab488687401fc332a77640f9b78441615500bc094b7ad1d6b",
+      "repository_path": "frontend/tests/specialized/frontend_smoke.mjs",
+      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved.",
+      "initial_port_sha256": "e7f3b50da81b5a0ce82d928250fe0018191e8d1473fcae7dc2d5d4fc1db83d44",
+      "ported_sha256": "b2bc487d29e08d93abbd3f937dea5a6f9bf1fa7138efd8bc209cf54397d6b8b7",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    },
+    {
+      "original_stage": "paths-install-seed-20261123",
+      "original_file": "frontend_changed_pages.mjs",
+      "original_sha256": "94c540db639ab5f77b6bc5dd19464a2f9e0cf738b70b9db9766289f5e5e7cd6b",
+      "repository_path": "frontend/tests/specialized/frontend_changed_pages.mjs",
+      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved.",
+      "initial_port_sha256": "4630bb116833106199c1384f815c80182d3e431c3b444598e0592933dff74d52",
+      "ported_sha256": "058abefab20356406daf453c302a667fe068d279a333cd63b9f1120e10be48ec",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+    }
+  ],
+  "note": "Original logs retain original SHA. These ports run the current checkout; no product fixes. Source fixtures consolidated and infrastructure runners replaced by run.py."
+}

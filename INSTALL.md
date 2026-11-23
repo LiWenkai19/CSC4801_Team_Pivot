@@ -113,4 +113,33 @@ Do not use bare root-level `pytest` as the documented entry: automatic collectio
 also finds legacy API/PG tests with different setup requirements. Use the two
 explicit commands above so their evidence and environments remain distinct.
 
+## Specialized Tests and Browser Suites
+
+The independent historical regression tooling is described in
+[tests/specialized/README.md](tests/specialized/README.md). Install its optional
+instrumentation and locked browser-test package, in addition to the existing
+application dependencies:
+
+```sh
+python -m pip install -r tests/specialized/requirements.txt
+npm --prefix frontend/tests/specialized ci
+```
+
+Install Playwright's chromium/firefox/webkit binaries from that package directory
+as shown in the test README. Set PG_BIN to the PostgreSQL server tools directory,
+then run from the repository root:
+
+```sh
+python tests/specialized/run.py functional
+python tests/specialized/run.py browser
+python tests/specialized/run.py render
+```
+
+Other modes cover delivery/seed/migrations, mutation and a 360-second performance
+loop. Each creates its own loopback DB/service when needed and ignores existing
+application DB configuration. Output is always outside the checkout; use a new
+empty --out path to preserve logs. Never point a raw specialized fixture at a
+shared database. Known product failures return nonzero, as documented in
+[the report](docs/testing/REPORT.md); no xfail/skip turns them into passes.
+
 ## Troubleshooting

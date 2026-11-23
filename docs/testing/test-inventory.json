@@ -1,0 +1,534 @@
+{
+  "python_files": [
+    {
+      "path": "tests/specialized/test_applications_jobs.py",
+      "tests": [
+        {
+          "name": "test_invalid_job_inputs_are_rejected_without_partial_writes",
+          "line": 26
+        },
+        {
+          "name": "test_job_update_omission_clear_and_normalized_replacement",
+          "line": 47
+        },
+        {
+          "name": "test_job_delete_dependency_truth_table_preserves_full_state",
+          "line": 86
+        },
+        {
+          "name": "test_shared_unbound_slot_survives_deleting_independent_job",
+          "line": 124
+        },
+        {
+          "name": "test_duplicate_application_in_every_state_preserves_all_related_tables",
+          "line": 141
+        },
+        {
+          "name": "test_application_input_and_target_rejections_are_atomic",
+          "line": 174
+        },
+        {
+          "name": "test_job_owner_boundaries_preserve_data",
+          "line": 209
+        },
+        {
+          "name": "test_application_history_order_and_deleted_job_fields_are_preserved",
+          "line": 228
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_auth_contracts.py",
+      "tests": [
+        {
+          "name": "test_session_lifecycle_hashes_cookies_and_independent_logout",
+          "line": 29
+        },
+        {
+          "name": "test_expiry_exact_boundary",
+          "line": 89
+        },
+        {
+          "name": "test_profile_completion_recomputed_and_duplicate_identity_atomic",
+          "line": 108
+        },
+        {
+          "name": "test_missing_session_is_401_without_business_changes",
+          "line": 141
+        },
+        {
+          "name": "test_opposite_normal_role_is_403",
+          "line": 158
+        },
+        {
+          "name": "test_existing_csrf_guard_rejects_missing_header",
+          "line": 185
+        },
+        {
+          "name": "test_invalid_login_has_no_session_side_effects",
+          "line": 197
+        },
+        {
+          "name": "test_authenticated_missing_object_is_404",
+          "line": 221
+        },
+        {
+          "name": "test_concurrent_same_email_registration_returns_business_rejection",
+          "line": 230
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_auth_replays.py",
+      "tests": [
+        {
+          "name": "test_duplicate_registration_new_database_with_driver_evidence",
+          "line": 13
+        },
+        {
+          "name": "test_different_email_concurrent_registration_control",
+          "line": 74
+        },
+        {
+          "name": "test_sequential_same_email_different_role_control",
+          "line": 103
+        },
+        {
+          "name": "test_secure_cookie_configuration_contract",
+          "line": 111
+        },
+        {
+          "name": "test_revoking_all_sessions_preserves_account_and_profile",
+          "line": 119
+        },
+        {
+          "name": "test_deleting_incomplete_account_cascades_sessions",
+          "line": 138
+        },
+        {
+          "name": "test_ordinary_unicode_password_round_trip",
+          "line": 150
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_booking_eligibility.py",
+      "tests": [
+        {
+          "name": "test_full_booking_eligibility_decision_table",
+          "line": 33
+        },
+        {
+          "name": "test_booking_request_errors_have_no_partial_effects",
+          "line": 156
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_booking_schedules.py",
+      "tests": [
+        {
+          "name": "test_time_is_rechecked_after_database_lock_wait",
+          "line": 51
+        },
+        {
+          "name": "test_three_simultaneously_waiting_requests_have_exactly_one_booking",
+          "line": 125
+        },
+        {
+          "name": "test_job_delete_and_application_have_serializable_business_outcome",
+          "line": 204
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_booking_states.py",
+      "tests": [
+        {
+          "name": "test_complete_status_transition_relation_with_and_without_booking",
+          "line": 11
+        },
+        {
+          "name": "test_existing_booking_survives_live_profile_company_and_job_updates",
+          "line": 65
+        },
+        {
+          "name": "test_distinct_applications_of_same_candidate_can_have_independent_bookings",
+          "line": 131
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_booking_transactions.py",
+      "tests": [
+        {
+          "name": "test_flush_then_failed_commit_restores_all_related_records",
+          "line": 11
+        },
+        {
+          "name": "test_unrelated_integrity_error_is_not_misreported_as_already_booked",
+          "line": 52
+        },
+        {
+          "name": "test_real_database_booking_constraints_remain_effective",
+          "line": 85
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_failure_replays.py",
+      "tests": [
+        {
+          "name": "test_fresh_database_replacement_replay_and_overlap_neighbor",
+          "line": 42
+        },
+        {
+          "name": "test_sequential_replacement_control_has_no_union",
+          "line": 81
+        },
+        {
+          "name": "test_shared_nul_storage_boundary_with_normal_unicode_control",
+          "line": 117
+        },
+        {
+          "name": "test_capture_nul_driver_exception_without_changing_application",
+          "line": 161
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_matching_oracles.py",
+      "tests": [
+        {
+          "name": "test_exact_formula_normalization_and_unicode_contract",
+          "line": 31
+        },
+        {
+          "name": "test_seeded_structured_inputs_with_independent_and_metamorphic_oracles",
+          "line": 41
+        },
+        {
+          "name": "test_candidate_and_employer_share_the_scoring_implementation",
+          "line": 139
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_matching_views.py",
+      "tests": [
+        {
+          "name": "test_candidate_full_order_and_membership_are_independently_precomputed",
+          "line": 10
+        },
+        {
+          "name": "test_employer_applicant_order_uses_fixed_candidate_ids_and_reference_scores",
+          "line": 80
+        },
+        {
+          "name": "test_scores_recompute_after_skill_replacement_and_empty_requirements",
+          "line": 142
+        },
+        {
+          "name": "test_irrelevant_text_cannot_change_score_or_order",
+          "line": 193
+        },
+        {
+          "name": "test_normalized_unicode_and_punctuation_skills_persist_and_score_exactly",
+          "line": 226
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_mutation_oracles.py",
+      "tests": [
+        {
+          "name": "test_independent_score_witnesses",
+          "line": 14
+        },
+        {
+          "name": "test_slot_exact_cutoff_is_rejected",
+          "line": 20
+        },
+        {
+          "name": "test_created_slot_is_exactly_thirty_minutes",
+          "line": 31
+        },
+        {
+          "name": "test_candidate_role_guard_rejects_normal_employer",
+          "line": 44
+        },
+        {
+          "name": "test_candidate_guard_direct_contract_independent_of_service_guard",
+          "line": 51
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_performance.py",
+      "tests": [
+        {
+          "name": "test_listing_scaling_with_exact_rows_and_query_counts",
+          "line": 24
+        },
+        {
+          "name": "test_six_minute_bounded_business_soak",
+          "line": 85
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_remaining_paths.py",
+      "tests": [
+        {
+          "name": "test_unexported_handover_token_is_urlsafe_and_new",
+          "line": 13
+        },
+        {
+          "name": "test_actual_database_dependency_yields_and_releases_session",
+          "line": 21
+        },
+        {
+          "name": "test_direct_candidate_policy_rejects_normal_employer",
+          "line": 32
+        },
+        {
+          "name": "test_direct_employer_policy_rejects_normal_candidate",
+          "line": 43
+        },
+        {
+          "name": "test_unsupported_role_defensive_double_denied_without_database",
+          "line": 54
+        },
+        {
+          "name": "test_missing_company_normal_route_is_404",
+          "line": 63
+        },
+        {
+          "name": "test_direct_profile_route_translates_service_role_error",
+          "line": 74
+        },
+        {
+          "name": "test_login_value_error_translation_is_400",
+          "line": 99
+        },
+        {
+          "name": "test_candidate_error_subclass_walks_mro",
+          "line": 114
+        },
+        {
+          "name": "test_employer_error_subclass_and_unknown_error_are_distinct",
+          "line": 128
+        },
+        {
+          "name": "test_delete_job_commit_failure_rolls_back_real_update",
+          "line": 141
+        },
+        {
+          "name": "test_apply_integrity_error_classification_after_rollback",
+          "line": 158
+        },
+        {
+          "name": "test_booking_integrity_classification_with_valid_competitor_state",
+          "line": 210
+        },
+        {
+          "name": "test_defensive_missing_related_lookup_without_corrupting_real_database",
+          "line": 275
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_replacement_and_text.py",
+      "tests": [
+        {
+          "name": "test_concurrent_whole_list_replacements_cannot_merge_into_a_third_value",
+          "line": 80
+        },
+        {
+          "name": "test_unrepresentable_nul_text_is_validation_error_not_server_error",
+          "line": 141
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_slots_additional_boundaries.py",
+      "tests": [
+        {
+          "name": "test_microsecond_overlap_edges_use_exact_intervals",
+          "line": 13
+        },
+        {
+          "name": "test_existing_legacy_intervals_still_participate_in_overlap_rules",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_slots_contract.py",
+      "tests": [
+        {
+          "name": "test_create_has_exact_duration_utc_ownership_and_persistence",
+          "line": 11
+        },
+        {
+          "name": "test_future_boundary_is_strict_and_rejection_is_atomic",
+          "line": 38
+        },
+        {
+          "name": "test_invalid_create_is_422_without_any_business_write",
+          "line": 92
+        },
+        {
+          "name": "test_equivalent_timezone_representations_have_same_result",
+          "line": 111
+        },
+        {
+          "name": "test_overlap_matches_half_open_interval_oracle",
+          "line": 133
+        },
+        {
+          "name": "test_distinct_employers_can_use_same_time",
+          "line": 157
+        },
+        {
+          "name": "test_auth_role_contract_is_enforced_without_business_mutation",
+          "line": 172
+        },
+        {
+          "name": "test_csrf_rejection_preserves_all_business_rows",
+          "line": 192
+        },
+        {
+          "name": "test_create_without_employer_profile_is_404_and_atomic",
+          "line": 211
+        },
+        {
+          "name": "test_delete_rejections_are_distinct_and_atomic",
+          "line": 234
+        },
+        {
+          "name": "test_delete_success_removes_only_target_and_repeat_is_404",
+          "line": 254
+        },
+        {
+          "name": "test_accepted_representable_future_time_remains_readable",
+          "line": 270
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_slots_date_boundary.py",
+      "tests": [
+        {
+          "name": "test_minimal_create_then_list_boundary_replay",
+          "line": 19
+        },
+        {
+          "name": "test_driver_exception_and_utc_session_control",
+          "line": 45
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_slots_date_paths.py",
+      "tests": [
+        {
+          "name": "test_same_accepted_date_across_related_entrypoints",
+          "line": 20
+        },
+        {
+          "name": "test_minimal_witness_through_real_http_server",
+          "line": 64
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_slots_interactions.py",
+      "tests": [
+        {
+          "name": "test_listing_reference_filters_owner_clock_duration_booking_and_id_order",
+          "line": 20
+        },
+        {
+          "name": "test_unbooked_employer_shared_slot_is_visible_to_multiple_owned_jobs",
+          "line": 58
+        },
+        {
+          "name": "test_booking_removes_availability_and_blocks_delete_with_full_snapshot",
+          "line": 70
+        },
+        {
+          "name": "test_already_booked_slot_still_blocks_overlapping_create",
+          "line": 101
+        },
+        {
+          "name": "test_all_four_verified_status_changes_preserve_booking_and_unavailability",
+          "line": 114
+        },
+        {
+          "name": "test_each_ineligible_booking_preserves_complete_related_state",
+          "line": 168
+        },
+        {
+          "name": "test_existing_booking_rejection_preserves_second_slot_and_original_link",
+          "line": 200
+        },
+        {
+          "name": "test_flush_then_commit_failure_rolls_back_real_database_effects",
+          "line": 216
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_slots_races.py",
+      "tests": [
+        {
+          "name": "test_real_database_schedules_preserve_contract",
+          "line": 98
+        }
+      ]
+    },
+    {
+      "path": "tests/specialized/test_targeted.py",
+      "tests": [
+        {
+          "name": "test_booked_status_transitions_preserve_new_managed_flag",
+          "line": 17
+        },
+        {
+          "name": "test_new_managed_list_owner_time_flags_legacy_duration_and_sort",
+          "line": 59
+        },
+        {
+          "name": "test_ordinary_create_list_new_schema_round_trip",
+          "line": 94
+        },
+        {
+          "name": "test_concurrent_first_profile_create_has_one_success_one_conflict",
+          "line": 108
+        },
+        {
+          "name": "test_profile_failed_commit_rolls_back_real_flush",
+          "line": 147
+        },
+        {
+          "name": "test_service_role_precondition_independent_of_router",
+          "line": 183
+        }
+      ]
+    }
+  ],
+  "browser_modules": [
+    "auth_browser_checks.mjs",
+    "auth_browser_focused.mjs",
+    "browser_followup.mjs",
+    "browser_support.mjs",
+    "frontend_changed_pages.mjs",
+    "frontend_smoke.mjs",
+    "gap_browser_checks.mjs",
+    "probe_existing_helpers.mjs",
+    "render_all.mjs",
+    "render_contracts.mjs"
+  ],
+  "note": "Static source/function inventory, not a count of independent executed cases. Browser support module is a helper."
+}

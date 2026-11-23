@@ -1,0 +1,576 @@
+{
+  "records": [
+    {
+      "suite": "auth",
+      "case": "test_concurrent_same_email_registration_returns_business_rejection[candidate]",
+      "outcome": "failed",
+      "cause_id": "AUTH-01",
+      "actual_assertion": "tests\\specialized\\test_auth_contracts.py:153: in test_concurrent_same_email_registration_returns_business_rejection\n    assert codes in ([200,400],[200,409]), codes\nE   AssertionError: [200, 500]\nE   assert [200, 500] in ([200, 400], [200, 409])",
+      "expected_contract": "一个成功，另一个400/409明确重复身份拒绝，且只有一个用户/会话。",
+      "reason": "create_user先查询邮箱后提交INSERT；两个合法请求均通过预查后，数据库ix_user_email唯一约束拒绝后一提交。service未捕获并分类该冲突（请求Session退出时仍会回滚），router只捕获ValueError，导致500。",
+      "post_fix_new_test_plan": [
+        "三个正常注册请求竞争同一邮箱，确认恰一成功和两次明确业务拒绝",
+        "成功/冲突后同一连接池继续注册新邮箱并登录，确认事务恢复；不把已运行的双请求/不同邮箱对照算修后新增"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "auth",
+      "case": "test_concurrent_same_email_registration_returns_business_rejection[employer]",
+      "outcome": "failed",
+      "cause_id": "AUTH-01",
+      "actual_assertion": "tests\\specialized\\test_auth_contracts.py:153: in test_concurrent_same_email_registration_returns_business_rejection\n    assert codes in ([200,400],[200,409]), codes\nE   AssertionError: [200, 500]\nE   assert [200, 500] in ([200, 400], [200, 409])",
+      "expected_contract": "一个成功，另一个400/409明确重复身份拒绝，且只有一个用户/会话。",
+      "reason": "create_user先查询邮箱后提交INSERT；两个合法请求均通过预查后，数据库ix_user_email唯一约束拒绝后一提交。service未捕获并分类该冲突（请求Session退出时仍会回滚），router只捕获ValueError，导致500。",
+      "post_fix_new_test_plan": [
+        "三个正常注册请求竞争同一邮箱，确认恰一成功和两次明确业务拒绝",
+        "成功/冲突后同一连接池继续注册新邮箱并登录，确认事务恢复；不把已运行的双请求/不同邮箱对照算修后新增"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "auth",
+      "case": "test_duplicate_registration_new_database_with_driver_evidence[roles0]",
+      "outcome": "failed",
+      "cause_id": "AUTH-01",
+      "actual_assertion": "tests\\specialized\\test_auth_replays.py:30: in test_duplicate_registration_new_database_with_driver_evidence\n    assert codes in ([200,400],[200,409]),codes\nE   AssertionError: [200, 500]\nE   assert [200, 500] in ([200, 400], [200, 409])",
+      "expected_contract": "一个成功，另一个400/409明确重复身份拒绝，且只有一个用户/会话。",
+      "reason": "create_user先查询邮箱后提交INSERT；两个合法请求均通过预查后，数据库ix_user_email唯一约束拒绝后一提交。service未捕获并分类该冲突（请求Session退出时仍会回滚），router只捕获ValueError，导致500。",
+      "post_fix_new_test_plan": [
+        "三个正常注册请求竞争同一邮箱，确认恰一成功和两次明确业务拒绝",
+        "成功/冲突后同一连接池继续注册新邮箱并登录，确认事务恢复；不把已运行的双请求/不同邮箱对照算修后新增"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "auth",
+      "case": "test_duplicate_registration_new_database_with_driver_evidence[roles1]",
+      "outcome": "failed",
+      "cause_id": "AUTH-01",
+      "actual_assertion": "tests\\specialized\\test_auth_replays.py:30: in test_duplicate_registration_new_database_with_driver_evidence\n    assert codes in ([200,400],[200,409]),codes\nE   AssertionError: [200, 500]\nE   assert [200, 500] in ([200, 400], [200, 409])",
+      "expected_contract": "一个成功，另一个400/409明确重复身份拒绝，且只有一个用户/会话。",
+      "reason": "create_user先查询邮箱后提交INSERT；两个合法请求均通过预查后，数据库ix_user_email唯一约束拒绝后一提交。service未捕获并分类该冲突（请求Session退出时仍会回滚），router只捕获ValueError，导致500。",
+      "post_fix_new_test_plan": [
+        "三个正常注册请求竞争同一邮箱，确认恰一成功和两次明确业务拒绝",
+        "成功/冲突后同一连接池继续注册新邮箱并登录，确认事务恢复；不把已运行的双请求/不同邮箱对照算修后新增"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "matching",
+      "case": "test_fresh_database_replacement_replay_and_overlap_neighbor[False-candidate-skills]",
+      "outcome": "failed",
+      "cause_id": "REG-CAND-01",
+      "actual_assertion": "tests\\specialized\\test_failure_replays.py:32: in test_fresh_database_replacement_replay_and_overlap_neighbor\n    assert final in (sorted(first),sorted(second)),\"Final list is neither complete replacement: \"+str(final)\nE   AssertionError: Final list is neither complete replacement: ['python', 'sql']\nE   assert ['python', 'sql'] in (['python'], ['sql'])",
+      "expected_contract": "两个成功整体替换的最终集合等于其中一份完整请求，或明确拒绝冲突。",
+      "reason": "在 READ COMMITTED 下，先读父对象但不锁住它，再 DELETE 旧技能并 INSERT 新技能，不能实现并发整体替换。第二个 DELETE 在第一个事务提交前已取得语句快照；等锁释放后会略过已删除的旧行，却看不到第一个事务刚插入的新技能。互斥输入随后合并；交叉输入触发技能主键重复。",
+      "post_fix_new_test_plan": [
+        "初始技能为空、三个更新含清空的组合；技能与仅改简历请求交错，验证独立字段不丢失。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "matching",
+      "case": "test_fresh_database_replacement_replay_and_overlap_neighbor[False-job-skills]",
+      "outcome": "failed",
+      "cause_id": "REG-JOB-01",
+      "actual_assertion": "tests\\specialized\\test_failure_replays.py:32: in test_fresh_database_replacement_replay_and_overlap_neighbor\n    assert final in (sorted(first),sorted(second)),\"Final list is neither complete replacement: \"+str(final)\nE   AssertionError: Final list is neither complete replacement: ['python', 'sql']\nE   assert ['python', 'sql'] in (['python'], ['sql'])",
+      "expected_contract": "并发要求整体替换保持某个完整结果或明确业务拒绝。",
+      "reason": "在 READ COMMITTED 下，先读父对象但不锁住它，再 DELETE 旧技能并 INSERT 新技能，不能实现并发整体替换。第二个 DELETE 在第一个事务提交前已取得语句快照；等锁释放后会略过已删除的旧行，却看不到第一个事务刚插入的新技能。互斥输入随后合并；交叉输入触发技能主键重复。",
+      "post_fix_new_test_plan": [
+        "要求替换与title-only更新、初始无要求、三请求和清空组合；更新与允许删除/投递交错。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "matching",
+      "case": "test_fresh_database_replacement_replay_and_overlap_neighbor[True-candidate-skills]",
+      "outcome": "failed",
+      "cause_id": "REG-CAND-01",
+      "actual_assertion": "tests\\specialized\\test_failure_replays.py:31: in test_fresh_database_replacement_replay_and_overlap_neighbor\n    assert all(r.status_code in (200,409) for r in results),\"Normal concurrent replacements must not produce server error: \"+str([r.status_code for r in results])\nE   AssertionError: Normal concurrent replacements must not produce server error: [200, 500]\nE   assert False\nE    +  where False = all(<generator object test_fresh_database_replacement_replay_and_overlap_neighbor.<locals>.<genexpr> at 0x000001CFC8217100>)",
+      "expected_contract": "两个成功整体替换的最终集合等于其中一份完整请求，或明确拒绝冲突。",
+      "reason": "在 READ COMMITTED 下，先读父对象但不锁住它，再 DELETE 旧技能并 INSERT 新技能，不能实现并发整体替换。第二个 DELETE 在第一个事务提交前已取得语句快照；等锁释放后会略过已删除的旧行，却看不到第一个事务刚插入的新技能。互斥输入随后合并；交叉输入触发技能主键重复。",
+      "post_fix_new_test_plan": [
+        "初始技能为空、三个更新含清空的组合；技能与仅改简历请求交错，验证独立字段不丢失。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "matching",
+      "case": "test_fresh_database_replacement_replay_and_overlap_neighbor[True-job-skills]",
+      "outcome": "failed",
+      "cause_id": "REG-JOB-01",
+      "actual_assertion": "tests\\specialized\\test_failure_replays.py:31: in test_fresh_database_replacement_replay_and_overlap_neighbor\n    assert all(r.status_code in (200,409) for r in results),\"Normal concurrent replacements must not produce server error: \"+str([r.status_code for r in results])\nE   AssertionError: Normal concurrent replacements must not produce server error: [200, 500]\nE   assert False\nE    +  where False = all(<generator object test_fresh_database_replacement_replay_and_overlap_neighbor.<locals>.<genexpr> at 0x000001CFC81C2DC0>)",
+      "expected_contract": "并发要求整体替换保持某个完整结果或明确业务拒绝。",
+      "reason": "在 READ COMMITTED 下，先读父对象但不锁住它，再 DELETE 旧技能并 INSERT 新技能，不能实现并发整体替换。第二个 DELETE 在第一个事务提交前已取得语句快照；等锁释放后会略过已删除的旧行，却看不到第一个事务刚插入的新技能。互斥输入随后合并；交叉输入触发技能主键重复。",
+      "post_fix_new_test_plan": [
+        "要求替换与title-only更新、初始无要求、三请求和清空组合；更新与允许删除/投递交错。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "matching",
+      "case": "test_shared_nul_storage_boundary_with_normal_unicode_control[candidate-resume]",
+      "outcome": "failed",
+      "cause_id": "REG-TEXT-01",
+      "actual_assertion": "tests\\specialized\\test_failure_replays.py:66: in test_shared_nul_storage_boundary_with_normal_unicode_control\n    assert 400<=bad.status_code<500,\"Unsupported storage character returned \"+str(bad.status_code)\nE   AssertionError: Unsupported storage character returned 500\nE   assert 500 < 500\nE    +  where 500 = <Response [500 Internal Server Error]>.status_code",
+      "expected_contract": "无法由存储表示的输入应明确4xx拒绝，相关业务状态不变；普通Unicode仍支持。",
+      "reason": "JSON/schema 的 str/list[str] 校验接受实际 NUL 字符，但 PostgreSQL text/VARCHAR 不可表示 NUL。错误到写入/flush 才由驱动抛 DataError；事务回滚，但未转换成清晰的输入校验 4xx，最终返回 500。不是评分公式错误或 Unicode 普遍不支持。",
+      "post_fix_new_test_plan": [
+        "NUL首尾及列表中间位置；字面反斜线u0000与真实NUL对照；多行、tab与非BMP合法文本往返。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "matching",
+      "case": "test_shared_nul_storage_boundary_with_normal_unicode_control[candidate-skill]",
+      "outcome": "failed",
+      "cause_id": "REG-TEXT-01",
+      "actual_assertion": "tests\\specialized\\test_failure_replays.py:66: in test_shared_nul_storage_boundary_with_normal_unicode_control\n    assert 400<=bad.status_code<500,\"Unsupported storage character returned \"+str(bad.status_code)\nE   AssertionError: Unsupported storage character returned 500\nE   assert 500 < 500\nE    +  where 500 = <Response [500 Internal Server Error]>.status_code",
+      "expected_contract": "无法由存储表示的输入应明确4xx拒绝，相关业务状态不变；普通Unicode仍支持。",
+      "reason": "JSON/schema 的 str/list[str] 校验接受实际 NUL 字符，但 PostgreSQL text/VARCHAR 不可表示 NUL。错误到写入/flush 才由驱动抛 DataError；事务回滚，但未转换成清晰的输入校验 4xx，最终返回 500。不是评分公式错误或 Unicode 普遍不支持。",
+      "post_fix_new_test_plan": [
+        "NUL首尾及列表中间位置；字面反斜线u0000与真实NUL对照；多行、tab与非BMP合法文本往返。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "matching",
+      "case": "test_shared_nul_storage_boundary_with_normal_unicode_control[company-description]",
+      "outcome": "failed",
+      "cause_id": "REG-TEXT-01",
+      "actual_assertion": "tests\\specialized\\test_failure_replays.py:66: in test_shared_nul_storage_boundary_with_normal_unicode_control\n    assert 400<=bad.status_code<500,\"Unsupported storage character returned \"+str(bad.status_code)\nE   AssertionError: Unsupported storage character returned 500\nE   assert 500 < 500\nE    +  where 500 = <Response [500 Internal Server Error]>.status_code",
+      "expected_contract": "无法由存储表示的输入应明确4xx拒绝，相关业务状态不变；普通Unicode仍支持。",
+      "reason": "JSON/schema 的 str/list[str] 校验接受实际 NUL 字符，但 PostgreSQL text/VARCHAR 不可表示 NUL。错误到写入/flush 才由驱动抛 DataError；事务回滚，但未转换成清晰的输入校验 4xx，最终返回 500。不是评分公式错误或 Unicode 普遍不支持。",
+      "post_fix_new_test_plan": [
+        "NUL首尾及列表中间位置；字面反斜线u0000与真实NUL对照；多行、tab与非BMP合法文本往返。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "matching",
+      "case": "test_shared_nul_storage_boundary_with_normal_unicode_control[job-update-description]",
+      "outcome": "failed",
+      "cause_id": "REG-TEXT-01",
+      "actual_assertion": "tests\\specialized\\test_failure_replays.py:66: in test_shared_nul_storage_boundary_with_normal_unicode_control\n    assert 400<=bad.status_code<500,\"Unsupported storage character returned \"+str(bad.status_code)\nE   AssertionError: Unsupported storage character returned 500\nE   assert 500 < 500\nE    +  where 500 = <Response [500 Internal Server Error]>.status_code",
+      "expected_contract": "无法由存储表示的输入应明确4xx拒绝，相关业务状态不变；普通Unicode仍支持。",
+      "reason": "JSON/schema 的 str/list[str] 校验接受实际 NUL 字符，但 PostgreSQL text/VARCHAR 不可表示 NUL。错误到写入/flush 才由驱动抛 DataError；事务回滚，但未转换成清晰的输入校验 4xx，最终返回 500。不是评分公式错误或 Unicode 普遍不支持。",
+      "post_fix_new_test_plan": [
+        "NUL首尾及列表中间位置；字面反斜线u0000与真实NUL对照；多行、tab与非BMP合法文本往返。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "matching",
+      "case": "test_concurrent_whole_list_replacements_cannot_merge_into_a_third_value[candidate-skills]",
+      "outcome": "failed",
+      "cause_id": "REG-CAND-01",
+      "actual_assertion": "tests\\specialized\\test_replacement_and_text.py:61: in test_concurrent_whole_list_replacements_cannot_merge_into_a_third_value\n    assert final in ([\"python\"],[\"sql\"]),\"Whole-list replacement produced combined value: \"+str(final)\nE   AssertionError: Whole-list replacement produced combined value: ['python', 'sql']\nE   assert ['python', 'sql'] in (['python'], ['sql'])",
+      "expected_contract": "两个成功整体替换的最终集合等于其中一份完整请求，或明确拒绝冲突。",
+      "reason": "在 READ COMMITTED 下，先读父对象但不锁住它，再 DELETE 旧技能并 INSERT 新技能，不能实现并发整体替换。第二个 DELETE 在第一个事务提交前已取得语句快照；等锁释放后会略过已删除的旧行，却看不到第一个事务刚插入的新技能。互斥输入随后合并；交叉输入触发技能主键重复。",
+      "post_fix_new_test_plan": [
+        "初始技能为空、三个更新含清空的组合；技能与仅改简历请求交错，验证独立字段不丢失。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "matching",
+      "case": "test_concurrent_whole_list_replacements_cannot_merge_into_a_third_value[job-skills]",
+      "outcome": "failed",
+      "cause_id": "REG-JOB-01",
+      "actual_assertion": "tests\\specialized\\test_replacement_and_text.py:61: in test_concurrent_whole_list_replacements_cannot_merge_into_a_third_value\n    assert final in ([\"python\"],[\"sql\"]),\"Whole-list replacement produced combined value: \"+str(final)\nE   AssertionError: Whole-list replacement produced combined value: ['python', 'sql']\nE   assert ['python', 'sql'] in (['python'], ['sql'])",
+      "expected_contract": "并发要求整体替换保持某个完整结果或明确业务拒绝。",
+      "reason": "在 READ COMMITTED 下，先读父对象但不锁住它，再 DELETE 旧技能并 INSERT 新技能，不能实现并发整体替换。第二个 DELETE 在第一个事务提交前已取得语句快照；等锁释放后会略过已删除的旧行，却看不到第一个事务刚插入的新技能。互斥输入随后合并；交叉输入触发技能主键重复。",
+      "post_fix_new_test_plan": [
+        "要求替换与title-only更新、初始无要求、三请求和清空组合；更新与允许删除/投递交错。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "matching",
+      "case": "test_unrepresentable_nul_text_is_validation_error_not_server_error[title]",
+      "outcome": "failed",
+      "cause_id": "REG-TEXT-01",
+      "actual_assertion": "tests\\specialized\\test_replacement_and_text.py:74: in test_unrepresentable_nul_text_is_validation_error_not_server_error\n    assert 400<=response.status_code<500,\"Unsupported PostgreSQL text should be a validation rejection, got \"+str(response.status_code)\nE   AssertionError: Unsupported PostgreSQL text should be a validation rejection, got 500\nE   assert 500 < 500\nE    +  where 500 = <Response [500 Internal Server Error]>.status_code",
+      "expected_contract": "无法由存储表示的输入应明确4xx拒绝，相关业务状态不变；普通Unicode仍支持。",
+      "reason": "JSON/schema 的 str/list[str] 校验接受实际 NUL 字符，但 PostgreSQL text/VARCHAR 不可表示 NUL。错误到写入/flush 才由驱动抛 DataError；事务回滚，但未转换成清晰的输入校验 4xx，最终返回 500。不是评分公式错误或 Unicode 普遍不支持。",
+      "post_fix_new_test_plan": [
+        "NUL首尾及列表中间位置；字面反斜线u0000与真实NUL对照；多行、tab与非BMP合法文本往返。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "matching",
+      "case": "test_unrepresentable_nul_text_is_validation_error_not_server_error[description]",
+      "outcome": "failed",
+      "cause_id": "REG-TEXT-01",
+      "actual_assertion": "tests\\specialized\\test_replacement_and_text.py:74: in test_unrepresentable_nul_text_is_validation_error_not_server_error\n    assert 400<=response.status_code<500,\"Unsupported PostgreSQL text should be a validation rejection, got \"+str(response.status_code)\nE   AssertionError: Unsupported PostgreSQL text should be a validation rejection, got 500\nE   assert 500 < 500\nE    +  where 500 = <Response [500 Internal Server Error]>.status_code",
+      "expected_contract": "无法由存储表示的输入应明确4xx拒绝，相关业务状态不变；普通Unicode仍支持。",
+      "reason": "JSON/schema 的 str/list[str] 校验接受实际 NUL 字符，但 PostgreSQL text/VARCHAR 不可表示 NUL。错误到写入/flush 才由驱动抛 DataError；事务回滚，但未转换成清晰的输入校验 4xx，最终返回 500。不是评分公式错误或 Unicode 普遍不支持。",
+      "post_fix_new_test_plan": [
+        "NUL首尾及列表中间位置；字面反斜线u0000与真实NUL对照；多行、tab与非BMP合法文本往返。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "matching",
+      "case": "test_unrepresentable_nul_text_is_validation_error_not_server_error[required_skills]",
+      "outcome": "failed",
+      "cause_id": "REG-TEXT-01",
+      "actual_assertion": "tests\\specialized\\test_replacement_and_text.py:74: in test_unrepresentable_nul_text_is_validation_error_not_server_error\n    assert 400<=response.status_code<500,\"Unsupported PostgreSQL text should be a validation rejection, got \"+str(response.status_code)\nE   AssertionError: Unsupported PostgreSQL text should be a validation rejection, got 500\nE   assert 500 < 500\nE    +  where 500 = <Response [500 Internal Server Error]>.status_code",
+      "expected_contract": "无法由存储表示的输入应明确4xx拒绝，相关业务状态不变；普通Unicode仍支持。",
+      "reason": "JSON/schema 的 str/list[str] 校验接受实际 NUL 字符，但 PostgreSQL text/VARCHAR 不可表示 NUL。错误到写入/flush 才由驱动抛 DataError；事务回滚，但未转换成清晰的输入校验 4xx，最终返回 500。不是评分公式错误或 Unicode 普遍不支持。",
+      "post_fix_new_test_plan": [
+        "NUL首尾及列表中间位置；字面反斜线u0000与真实NUL对照；多行、tab与非BMP合法文本往返。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "slots",
+      "case": "test_accepted_representable_future_time_remains_readable[9999-12-31T16:00:00Z]",
+      "outcome": "failed",
+      "cause_id": "SLOT-01",
+      "actual_assertion": "tests\\specialized\\test_slots_contract.py:158: in test_accepted_representable_future_time_remains_readable\n    assert listed.status_code == 200, \"Accepted and persisted slot must remain listable: \" + listed.text\nE   AssertionError: Accepted and persisted slot must remain listable: Internal Server Error\nE   assert 500 == 200\nE    +  where 500 = <Response [500 Internal Server Error]>.status_code",
+      "expected_contract": "被接受并持久化的时段可读、可删除并正常参与预约；不支持的日期应在写入前清晰拒绝。",
+      "reason": "请求验证和结束时间计算只验证 UTC Python datetime 范围，未保证 timestamptz 在数据库返回时区下仍可被驱动解码；错误发生在 ORM 行读取时，早于响应 schema 的 UTC 归一化。",
+      "post_fix_new_test_plan": [
+        "原测试未覆盖的正/负数据库返回时区与各自范围边界",
+        "极端时间以等价 ISO 偏移表示，而非只用 Z 输入",
+        "两个雇主、普通和边界时段混合后的归属隔离与完整列表",
+        "边界时段经历完整状态变化与删除/预约竞争"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "slots",
+      "case": "test_minimal_create_then_list_boundary_replay[9999-12-31T15:30:00Z]",
+      "outcome": "failed",
+      "cause_id": "SLOT-01",
+      "actual_assertion": "tests\\specialized\\test_slots_date_boundary.py:23: in test_minimal_create_then_list_boundary_replay\n    assert listed.status_code==200,\"Successfully accepted slot must remain readable: \"+listed.text\nE   AssertionError: Successfully accepted slot must remain readable: Internal Server Error\nE   assert 500 == 200\nE    +  where 500 = <Response [500 Internal Server Error]>.status_code",
+      "expected_contract": "被接受并持久化的时段可读、可删除并正常参与预约；不支持的日期应在写入前清晰拒绝。",
+      "reason": "请求验证和结束时间计算只验证 UTC Python datetime 范围，未保证 timestamptz 在数据库返回时区下仍可被驱动解码；错误发生在 ORM 行读取时，早于响应 schema 的 UTC 归一化。",
+      "post_fix_new_test_plan": [
+        "原测试未覆盖的正/负数据库返回时区与各自范围边界",
+        "极端时间以等价 ISO 偏移表示，而非只用 Z 输入",
+        "两个雇主、普通和边界时段混合后的归属隔离与完整列表",
+        "边界时段经历完整状态变化与删除/预约竞争"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "slots",
+      "case": "test_minimal_create_then_list_boundary_replay[9999-12-31T16:00:00Z]",
+      "outcome": "failed",
+      "cause_id": "SLOT-01",
+      "actual_assertion": "tests\\specialized\\test_slots_date_boundary.py:23: in test_minimal_create_then_list_boundary_replay\n    assert listed.status_code==200,\"Successfully accepted slot must remain readable: \"+listed.text\nE   AssertionError: Successfully accepted slot must remain readable: Internal Server Error\nE   assert 500 == 200\nE    +  where 500 = <Response [500 Internal Server Error]>.status_code",
+      "expected_contract": "被接受并持久化的时段可读、可删除并正常参与预约；不支持的日期应在写入前清晰拒绝。",
+      "reason": "请求验证和结束时间计算只验证 UTC Python datetime 范围，未保证 timestamptz 在数据库返回时区下仍可被驱动解码；错误发生在 ORM 行读取时，早于响应 schema 的 UTC 归一化。",
+      "post_fix_new_test_plan": [
+        "原测试未覆盖的正/负数据库返回时区与各自范围边界",
+        "极端时间以等价 ISO 偏移表示，而非只用 Z 输入",
+        "两个雇主、普通和边界时段混合后的归属隔离与完整列表",
+        "边界时段经历完整状态变化与删除/预约竞争"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "slots",
+      "case": "test_same_accepted_date_across_related_entrypoints[delete-204]",
+      "outcome": "failed",
+      "cause_id": "SLOT-01",
+      "actual_assertion": "tests\\specialized\\test_slots_date_paths.py:32: in test_same_accepted_date_across_related_entrypoints\n    assert result.status_code==expected,result.text\nE   AssertionError: Internal Server Error\nE   assert 500 == 204\nE    +  where 500 = <Response [500 Internal Server Error]>.status_code",
+      "expected_contract": "被接受并持久化的时段可读、可删除并正常参与预约；不支持的日期应在写入前清晰拒绝。",
+      "reason": "请求验证和结束时间计算只验证 UTC Python datetime 范围，未保证 timestamptz 在数据库返回时区下仍可被驱动解码；错误发生在 ORM 行读取时，早于响应 schema 的 UTC 归一化。",
+      "post_fix_new_test_plan": [
+        "原测试未覆盖的正/负数据库返回时区与各自范围边界",
+        "极端时间以等价 ISO 偏移表示，而非只用 Z 输入",
+        "两个雇主、普通和边界时段混合后的归属隔离与完整列表",
+        "边界时段经历完整状态变化与删除/预约竞争"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "slots",
+      "case": "test_same_accepted_date_across_related_entrypoints[candidate-availability-200]",
+      "outcome": "failed",
+      "cause_id": "SLOT-01",
+      "actual_assertion": "tests\\specialized\\test_slots_date_paths.py:32: in test_same_accepted_date_across_related_entrypoints\n    assert result.status_code==expected,result.text\nE   AssertionError: Internal Server Error\nE   assert 500 == 200\nE    +  where 500 = <Response [500 Internal Server Error]>.status_code",
+      "expected_contract": "被接受并持久化的时段可读、可删除并正常参与预约；不支持的日期应在写入前清晰拒绝。",
+      "reason": "请求验证和结束时间计算只验证 UTC Python datetime 范围，未保证 timestamptz 在数据库返回时区下仍可被驱动解码；错误发生在 ORM 行读取时，早于响应 schema 的 UTC 归一化。",
+      "post_fix_new_test_plan": [
+        "原测试未覆盖的正/负数据库返回时区与各自范围边界",
+        "极端时间以等价 ISO 偏移表示，而非只用 Z 输入",
+        "两个雇主、普通和边界时段混合后的归属隔离与完整列表",
+        "边界时段经历完整状态变化与删除/预约竞争"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "slots",
+      "case": "test_same_accepted_date_across_related_entrypoints[candidate-booking-201]",
+      "outcome": "failed",
+      "cause_id": "SLOT-01",
+      "actual_assertion": "tests\\specialized\\test_slots_date_paths.py:32: in test_same_accepted_date_across_related_entrypoints\n    assert result.status_code==expected,result.text\nE   AssertionError: Internal Server Error\nE   assert 500 == 201\nE    +  where 500 = <Response [500 Internal Server Error]>.status_code",
+      "expected_contract": "被接受并持久化的时段可读、可删除并正常参与预约；不支持的日期应在写入前清晰拒绝。",
+      "reason": "请求验证和结束时间计算只验证 UTC Python datetime 范围，未保证 timestamptz 在数据库返回时区下仍可被驱动解码；错误发生在 ORM 行读取时，早于响应 schema 的 UTC 归一化。",
+      "post_fix_new_test_plan": [
+        "原测试未覆盖的正/负数据库返回时区与各自范围边界",
+        "极端时间以等价 ISO 偏移表示，而非只用 Z 输入",
+        "两个雇主、普通和边界时段混合后的归属隔离与完整列表",
+        "边界时段经历完整状态变化与删除/预约竞争"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "suite": "slots",
+      "case": "test_minimal_witness_through_real_http_server",
+      "outcome": "failed",
+      "cause_id": "SLOT-01",
+      "actual_assertion": "tests\\specialized\\test_slots_date_paths.py:64: in test_minimal_witness_through_real_http_server\n    assert listed.status_code==200,\"Real server reproduced create=201 then list=\"+str(listed.status_code)\nE   AssertionError: Real server reproduced create=201 then list=500\nE   assert 500 == 200\nE    +  where 500 = <Response [500 Internal Server Error]>.status_code",
+      "expected_contract": "被接受并持久化的时段可读、可删除并正常参与预约；不支持的日期应在写入前清晰拒绝。",
+      "reason": "请求验证和结束时间计算只验证 UTC Python datetime 范围，未保证 timestamptz 在数据库返回时区下仍可被驱动解码；错误发生在 ORM 行读取时，早于响应 schema 的 UTC 归一化。",
+      "post_fix_new_test_plan": [
+        "原测试未覆盖的正/负数据库返回时区与各自范围边界",
+        "极端时间以等价 ISO 偏移表示，而非只用 Z 输入",
+        "两个雇主、普通和边界时段混合后的归属隔离与完整列表",
+        "边界时段经历完整状态变化与删除/预约竞争"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "module": "auth_browser_focused-results.json",
+      "engine": "chrome",
+      "case": "FOCUS-EXPIRY-logout-navpage",
+      "outcome": "failed",
+      "cause_id": "UI-02",
+      "actual_assertion": "AssertionError [ERR_ASSERTION]: Expected expiry rejection should be handled without unhandled browser exception\n+ actual - expected\n\n+ [\n+   'Not authenticated'\n+ ]\n- []\n\n    at file:///<repo>/frontend/tests/specialized/auth_browser_focused.mjs:22:713\n    at async check (file:///<repo>/frontend/tests/specialized/auth_browser_focused.mjs:14:49)\n    at async file:///<repo>/frontend/tests/specialized/auth_browser_focused.mjs:22:36",
+      "expected_contract": "预期401注销后完成既定页面恢复，且无未处理浏览器异常。",
+      "reason": "AuthContext.logout在finally清空currentUser，但apiLogout返回401后的Promise仍拒绝；NavPage/CandidateDetailsPage直接把异步logout用作onClick而没有处理拒绝。",
+      "post_fix_new_test_plan": [
+        "分别模拟本地网络中断与503，核对按最终确认的交互契约恢复且无未处理拒绝",
+        "雇主首次资料页的退出入口在过期条件下检查相同共享Context调用方；本轮未执行该入口的过期场景"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "module": "auth_browser_focused-results.json",
+      "engine": "chrome",
+      "case": "FOCUS-EXPIRY-logout-details",
+      "outcome": "failed",
+      "cause_id": "UI-02",
+      "actual_assertion": "AssertionError [ERR_ASSERTION]: Expected expiry rejection should be handled without unhandled browser exception\n+ actual - expected\n\n+ [\n+   'Not authenticated'\n+ ]\n- []\n\n    at file:///<repo>/frontend/tests/specialized/auth_browser_focused.mjs:22:713\n    at async check (file:///<repo>/frontend/tests/specialized/auth_browser_focused.mjs:14:49)\n    at async file:///<repo>/frontend/tests/specialized/auth_browser_focused.mjs:22:36",
+      "expected_contract": "预期401注销后完成既定页面恢复，且无未处理浏览器异常。",
+      "reason": "AuthContext.logout在finally清空currentUser，但apiLogout返回401后的Promise仍拒绝；NavPage/CandidateDetailsPage直接把异步logout用作onClick而没有处理拒绝。",
+      "post_fix_new_test_plan": [
+        "分别模拟本地网络中断与503，核对按最终确认的交互契约恢复且无未处理拒绝",
+        "雇主首次资料页的退出入口在过期条件下检查相同共享Context调用方；本轮未执行该入口的过期场景"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "module": "probe_existing_helpers-existing-browser-probes-results.json",
+      "engine": "chrome",
+      "case": "DEL-LEGACY-candidate",
+      "outcome": "failed",
+      "cause_id": "DEL-01",
+      "actual_assertion": "GET /users/me: 401",
+      "expected_contract": "原脚本按当前Cookie/CSRF与代理合同维持会话并能验证真实页面流程。",
+      "reason": "两份tracked脚本取access_token或localStorage.token并用Bearer；当前认证只返回user和Set-Cookie。Node fetch没有Cookie jar，后续受保护读取返回401。旧route还仅拦截固定8000，与现行同源/api代理不匹配（后者为静态线索）。",
+      "post_fix_new_test_plan": [
+        "修复后完整执行两份原脚本，覆盖写操作CSRF、登出及角色隔离",
+        "随机测试API端口和已有8000端口服务同时存在时，核验所有业务请求仅到本轮隔离实例；禁止影响已有服务"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "module": "probe_existing_helpers-existing-browser-probes-results.json",
+      "engine": "chrome",
+      "case": "DEL-LEGACY-employer",
+      "outcome": "failed",
+      "cause_id": "DEL-01",
+      "actual_assertion": "protected read HTTP 401",
+      "expected_contract": "原脚本按当前Cookie/CSRF与代理合同维持会话并能验证真实页面流程。",
+      "reason": "两份tracked脚本取access_token或localStorage.token并用Bearer；当前认证只返回user和Set-Cookie。Node fetch没有Cookie jar，后续受保护读取返回401。旧route还仅拦截固定8000，与现行同源/api代理不匹配（后者为静态线索）。",
+      "post_fix_new_test_plan": [
+        "修复后完整执行两份原脚本，覆盖写操作CSRF、登出及角色隔离",
+        "随机测试API端口和已有8000端口服务同时存在时，核验所有业务请求仅到本轮隔离实例；禁止影响已有服务"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "module": "cross-browser-results.json",
+      "engine": "chrome",
+      "case": "AUTH-expired-logout-no-unhandled-error",
+      "outcome": "failed",
+      "cause_id": "UI-02",
+      "actual_assertion": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ [\n+   'Not authenticated'\n+ ]\n- []\n\n    at file:///<repo>/frontend/tests/specialized/gap_browser_checks.mjs:33:536\n    at async check (file:///<repo>/frontend/tests/specialized/gap_browser_checks.mjs:13:6)\n    at async file:///<repo>/frontend/tests/specialized/gap_browser_checks.mjs:33:2",
+      "expected_contract": "预期401注销后完成既定页面恢复，且无未处理浏览器异常。",
+      "reason": "AuthContext.logout在finally清空currentUser，但apiLogout返回401后的Promise仍拒绝；NavPage/CandidateDetailsPage直接把异步logout用作onClick而没有处理拒绝。",
+      "post_fix_new_test_plan": [
+        "分别模拟本地网络中断与503，核对按最终确认的交互契约恢复且无未处理拒绝",
+        "雇主首次资料页的退出入口在过期条件下检查相同共享Context调用方；本轮未执行该入口的过期场景"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "module": "cross-browser-results.json",
+      "engine": "firefox",
+      "case": "AUTH-expired-logout-no-unhandled-error",
+      "outcome": "failed",
+      "cause_id": "UI-02",
+      "actual_assertion": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ [\n+   'Not authenticated'\n+ ]\n- []\n\n    at file:///<repo>/frontend/tests/specialized/gap_browser_checks.mjs:33:536\n    at async check (file:///<repo>/frontend/tests/specialized/gap_browser_checks.mjs:13:6)\n    at async file:///<repo>/frontend/tests/specialized/gap_browser_checks.mjs:33:2",
+      "expected_contract": "预期401注销后完成既定页面恢复，且无未处理浏览器异常。",
+      "reason": "AuthContext.logout在finally清空currentUser，但apiLogout返回401后的Promise仍拒绝；NavPage/CandidateDetailsPage直接把异步logout用作onClick而没有处理拒绝。",
+      "post_fix_new_test_plan": [
+        "分别模拟本地网络中断与503，核对按最终确认的交互契约恢复且无未处理拒绝",
+        "雇主首次资料页的退出入口在过期条件下检查相同共享Context调用方；本轮未执行该入口的过期场景"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "module": "cross-browser-results.json",
+      "engine": "webkit",
+      "case": "AUTH-expired-logout-no-unhandled-error",
+      "outcome": "failed",
+      "cause_id": "UI-02",
+      "actual_assertion": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ [\n+   'ApiError: Not authenticated'\n+ ]\n- []\n\n    at file:///<repo>/frontend/tests/specialized/gap_browser_checks.mjs:33:536\n    at async check (file:///<repo>/frontend/tests/specialized/gap_browser_checks.mjs:13:6)\n    at async file:///<repo>/frontend/tests/specialized/gap_browser_checks.mjs:33:2",
+      "expected_contract": "预期401注销后完成既定页面恢复，且无未处理浏览器异常。",
+      "reason": "AuthContext.logout在finally清空currentUser，但apiLogout返回401后的Promise仍拒绝；NavPage/CandidateDetailsPage直接把异步logout用作onClick而没有处理拒绝。",
+      "post_fix_new_test_plan": [
+        "分别模拟本地网络中断与503，核对按最终确认的交互契约恢复且无未处理拒绝",
+        "雇主首次资料页的退出入口在过期条件下检查相同共享Context调用方；本轮未执行该入口的过期场景"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "module": "browser_followup-results.json",
+      "engine": "chrome",
+      "case": "DATE-accepted-slot-remains-readable-real-http",
+      "outcome": "failed",
+      "cause_id": "SLOT-01",
+      "actual_assertion": "AssertionError [ERR_ASSERTION]: An accepted slot must remain readable\n\n500 !== 200\n\n    at file:///<repo>/frontend/tests/specialized/browser_followup.mjs:20:426\n    at async check (file:///<repo>/frontend/tests/specialized/browser_followup.mjs:6:148)\n    at async file:///<repo>/frontend/tests/specialized/browser_followup.mjs:20:25",
+      "expected_contract": "被接受并持久化的时段可读、可删除并正常参与预约；不支持的日期应在写入前清晰拒绝。",
+      "reason": "请求验证和结束时间计算只验证 UTC Python datetime 范围，未保证 timestamptz 在数据库返回时区下仍可被驱动解码；错误发生在 ORM 行读取时，早于响应 schema 的 UTC 归一化。",
+      "post_fix_new_test_plan": [
+        "原测试未覆盖的正/负数据库返回时区与各自范围边界",
+        "极端时间以等价 ISO 偏移表示，而非只用 Z 输入",
+        "两个雇主、普通和边界时段混合后的归属隔离与完整列表",
+        "边界时段经历完整状态变化与删除/预约竞争"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "id": "INSTALL-non-docker-instructions",
+      "outcome": "failed",
+      "expected": "Six non-Docker operational sections contain executable configuration/setup/start/seed/test instructions",
+      "cause_id": "SE-02",
+      "reason": "运行前提和配置迁移已变化，安装文档/根示例仍未补齐；不能用测试工具额外推导出的步骤代替文档。",
+      "actual_observation": "{\"empty_sections\": [\"Environment Variables\", \"Database Setup and Migrations\", \"Demo Data and Reset Command\", \"Local Development\", \"Troubleshooting\"]}",
+      "expected_contract": "普通干净环境只按文档与示例完成配置、迁移、seed、启动和实质测试。",
+      "post_fix_new_test_plan": [
+        "文档修复后，在带空格及中文路径的新目录中，使用普通新shell按文档逐条执行完整非Docker安装/初始化/启动/测试流程。",
+        "新增配置省略、占位符未替换及frontend/backend工作目录切换场景，核对说明能定位错误且不依赖测试harness额外变量。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "id": "INSTALL-no-env-import",
+      "outcome": "failed",
+      "expected": "Following the documented install/example configuration permits application import",
+      "cause_id": "SE-02",
+      "reason": "运行前提和配置迁移已变化，安装文档/根示例仍未补齐；不能用测试工具额外推导出的步骤代替文档。",
+      "actual_observation": "{\"exit_code\": 1, \"log\": \"E:\\\\26-27term1\\\\CSC4801\\\\tmp\\\\historical-test-port-20261123\\\\delivery-1\\\\logs\\\\config-no-env.txt\"}",
+      "expected_contract": "普通干净环境只按文档与示例完成配置、迁移、seed、启动和实质测试。",
+      "post_fix_new_test_plan": [
+        "文档修复后，在带空格及中文路径的新目录中，使用普通新shell按文档逐条执行完整非Docker安装/初始化/启动/测试流程。",
+        "新增配置省略、占位符未替换及frontend/backend工作目录切换场景，核对说明能定位错误且不依赖测试harness额外变量。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "id": "INSTALL-example-env-import",
+      "outcome": "failed",
+      "expected": "Following the documented install/example configuration permits application import",
+      "cause_id": "SE-02",
+      "reason": "运行前提和配置迁移已变化，安装文档/根示例仍未补齐；不能用测试工具额外推导出的步骤代替文档。",
+      "actual_observation": "{\"exit_code\": 1, \"log\": \"E:\\\\26-27term1\\\\CSC4801\\\\tmp\\\\historical-test-port-20261123\\\\delivery-1\\\\logs\\\\config-example-env.txt\"}",
+      "expected_contract": "普通干净环境只按文档与示例完成配置、迁移、seed、启动和实质测试。",
+      "post_fix_new_test_plan": [
+        "文档修复后，在带空格及中文路径的新目录中，使用普通新shell按文档逐条执行完整非Docker安装/初始化/启动/测试流程。",
+        "新增配置省略、占位符未替换及frontend/backend工作目录切换场景，核对说明能定位错误且不依赖测试harness额外变量。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "id": "MIGRATION-model-default-type-consistency",
+      "outcome": "failed",
+      "expected": "Model and all migrated schemas agree including server defaults/types",
+      "cause_id": "SE-06",
+      "reason": "模型增加或声明了server_default，迁移列定义未体现；默认alembic check不比较该项。",
+      "actual_observation": "{\"differences\": {\"slots_test\": [[[\"modify_default\", null, \"application\", \"status\", {\"existing_nullable\": false, \"existing_type\": \"VARCHAR(12)\", \"existing_comment\": null}, null, \"DefaultClause('Pending', for_update=False)\"]]], \"audit_empty\": [[[\"modify_default\", null, \"application\", \"status\", {\"existing_nullable\": false, \"existing_type\": \"VARCHAR(12)\", \"existing_comment\": null}, null, \"DefaultClause('Pending', for_update=False)\"]]], \"audit_upgrade\": [[[\"modify_default\", null, \"application\", \"status\", {\"existing_nullable\": false, \"existing_type\": \"VARCHAR(12)\", \"existing_comment\": null}, null, \"DefaultClause('Pending', for_update=False)\"]]]}}",
+      "expected_contract": "主迁移链创建的实际模式包含模型声明的server_default。",
+      "post_fix_new_test_plan": [
+        "迁移修复后新增显式NULL仍应拒绝、显式Accepted不得被默认覆盖的对照，区分省略字段与显式赋值。",
+        "新增已有四种状态数据的旧库升级，检查状态保存、默认值生效且重复升级不改业务数据。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "id": "SEED-two-candidate-common-availability",
+      "outcome": "failed",
+      "expected": "Two Interviewing candidates can select the same future unbooked 30-minute seed slot",
+      "cause_id": "SE-05",
+      "reason": "演示数据时长为60分钟，与候选准入的严格30分钟规则不一致。",
+      "actual_observation": "{\"common_slots\": [], \"eligible_pairs\": [], \"stored_slots\": [{\"id\": \"9c4bb0a7-211b-5246-b6af-f72e99a72027\", \"starts_at\": \"2026-12-01 18:00:00+08:00\", \"ends_at\": \"2026-12-01 19:00:00+08:00\", \"minutes\": \"60.0000000000000000\", \"future\": true}]}",
+      "expected_contract": "重置后两个Interviewing候选可选择同一未来空闲30分钟时段并演示竞争。",
+      "post_fix_new_test_plan": [
+        "修复seed后新增固定时钟跨日期边界的资格验证，区别时间已过与时长错误，不把本轮普通双候选复现算新增。",
+        "新增已有登录会话、预约及职位改动后再次reset，检查数据/会话/关联都回到所声明演示状态；多雇主时段不得串用。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "id": "SEED-original-booking-alice",
+      "outcome": "failed",
+      "expected": "Documented seed supports actual eligible booking",
+      "cause_id": "SE-05",
+      "reason": "演示数据时长为60分钟，与候选准入的严格30分钟规则不一致。",
+      "actual_observation": "{\"status\": 409, \"body\": {\"detail\": \"Slot must last 30 minutes\"}, \"business_state_unchanged\": true}",
+      "expected_contract": "重置后两个Interviewing候选可选择同一未来空闲30分钟时段并演示竞争。",
+      "post_fix_new_test_plan": [
+        "修复seed后新增固定时钟跨日期边界的资格验证，区别时间已过与时长错误，不把本轮普通双候选复现算新增。",
+        "新增已有登录会话、预约及职位改动后再次reset，检查数据/会话/关联都回到所声明演示状态；多雇主时段不得串用。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "id": "SEED-original-booking-bob",
+      "outcome": "failed",
+      "expected": "Documented seed supports actual eligible booking",
+      "cause_id": "SE-05",
+      "reason": "演示数据时长为60分钟，与候选准入的严格30分钟规则不一致。",
+      "actual_observation": "{\"status\": 409, \"body\": {\"detail\": \"Slot must last 30 minutes\"}, \"business_state_unchanged\": true}",
+      "expected_contract": "重置后两个Interviewing候选可选择同一未来空闲30分钟时段并演示竞争。",
+      "post_fix_new_test_plan": [
+        "修复seed后新增固定时钟跨日期边界的资格验证，区别时间已过与时长错误，不把本轮普通双候选复现算新增。",
+        "新增已有登录会话、预约及职位改动后再次reset，检查数据/会话/关联都回到所声明演示状态；多雇主时段不得串用。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    },
+    {
+      "id": "MIGRATION-default-raw-insert-vs-ORM",
+      "outcome": "failed",
+      "expected": "Database default promised by model applies when status omitted; ordinary ORM still defaults Pending",
+      "cause_id": "SE-06",
+      "reason": "模型增加或声明了server_default，迁移列定义未体现；默认alembic check不比较该项。",
+      "actual_observation": "{\"raw_insert_error\": {\"type\": \"IntegrityError\", \"driver_type\": \"NotNullViolation\", \"column\": \"status\"}, \"orm_status\": \"Pending\"}",
+      "expected_contract": "主迁移链创建的实际模式包含模型声明的server_default。",
+      "post_fix_new_test_plan": [
+        "迁移修复后新增显式NULL仍应拒绝、显式Accepted不得被默认覆盖的对照，区分省略字段与显式赋值。",
+        "新增已有四种状态数据的旧库升级，检查状态保存、默认值生效且重复升级不改业务数据。"
+      ],
+      "post_fix_tests_status": "Plan only; no business fix or post-fix execution performed"
+    }
+  ],
+  "note": "24 functional + 8 browser + 8 delivery failures; repeated evidence is grouped by root cause, not 40 bugs. Raw logs may contain synthetic credentials and stay outside Git."
+}

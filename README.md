@@ -51,6 +51,26 @@ instance; see INSTALL. It runs the complete existing `backend/tests` suite,
 including in-memory SQLite account tests. Both commands belong to the regression
 evidence; integration/browser demonstrations do not replace required unit tests.
 
+## Specialized Regression and Test Reports
+
+The previously local exploratory suites and their portable tools are now in
+[tests/specialized](tests/specialized/README.md); historical/browser/SSR evidence
+and current migration results are in [docs/testing/REPORT.md](docs/testing/REPORT.md).
+There are 21 specialized Python files and 10 browser/SSR modules, separate from
+course unit tests. Use their managed entry, which creates a new loopback PG
+cluster and keeps artifacts outside the repository:
+
+```sh
+python tests/specialized/run.py functional
+python tests/specialized/run.py browser
+python tests/specialized/run.py render
+```
+
+Install the separate test dependencies and PostgreSQL server tools as documented
+there. Known business failures remain red: these commands do not fix application
+code or force a successful status. The performance mode preserves its explicit
+360-second budget; Docker remains excluded.
+
 ## Requirement–Test Mapping
 
 Paths are repository-relative and test names identify actual assertions. The
@@ -120,6 +140,9 @@ plus the test/documentation changes described here (2026-11-23).
 - [Business unit tests](tests/unit/)
 - [Component rendering unit tests](frontend/tests/rendering.unit.mjs)
 - [Existing API/database regression](backend/tests/)
+- [Specialized test suites and runners](tests/specialized/README.md)
+- [Consolidated and historical test reports](docs/testing/REPORT.md)
 
-The comprehensive multi-stage test reports remain local evidence outside this
-repository; no report or business fix is pushed by this change.
+The consolidated report and rewritten historical report copies are committed in
+`docs/testing`. Raw logs, database directories, screenshots, dependency installations
+and synthetic session values remain local artifacts. No business fix is included.

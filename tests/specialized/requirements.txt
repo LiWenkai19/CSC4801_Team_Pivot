@@ -1,0 +1,3 @@
+# Additional local test instrumentation only; application locks are unchanged.
+coverage==7.17.4
+psutil==7.2.2

@@ -1,0 +1,8 @@
+{
+  "name": "csc4801-specialized-browser-tests",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "playwright": "1.65.1"
+  }
+}
