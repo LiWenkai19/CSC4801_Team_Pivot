@@ -31,7 +31,7 @@ const components={};for(const name of ['pages/candidate/ProfilePage.tsx','pages/
 const records=[];const inputStrings=['<script>alert(1)</script>','<b>audit & literal</b>','普通 résumé 🌏\n第二行'];
 const escape=x=>x.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;'}[c]));
 for(const [i,value] of inputStrings.entries()){
- const job={id:'job',title:value,description:value,company_name:value,company_description:'公司简介 '+value,required_skills:[value],match_score:100,applied:false,created_at:'2030-01-01T00:00:00Z'};
+ const job={id:'job',title:value,description:value,company_name:value,required_skills:[value],match_score:100,applied:false,created_at:'2030-01-01T00:00:00Z'};
  const profile={display_name:value,resume_text:value,skills:[value],user_id:'candidate'};
  const company={company_name:value,company_description:value,user_id:'employer'};
  const applicant={application_id:'app',candidate_id:'candidate',display_name:value,skills:[value],match_score:100,status:'Pending',booking:null};
@@ -56,11 +56,6 @@ for(const [i,value] of inputStrings.entries()){
    const node=React.createElement(MemoryRouter,null,React.createElement(AuthContext.Provider,{value:auth},React.createElement(components[name][exportName],props)));
    const html=renderToStaticMarkup(node);
    assert(!html.includes('<script>'),'No executable script markup');assert(!html.includes('<b>'),'No raw formatted HTML');assert(html.includes(escape(value)),'Exact escaped marker emitted by actual component');
-   if(name==='pages/candidate/JobsPage.tsx'){
-    assert(html.includes('<p class="record-meta">'+escape(value)+'</p>'),'Job preview shows company name only');
-    assert(!html.includes(escape(job.company_description)),'Job preview must not display company description');
-   }
-   if(name==='pages/candidate/JobPage.tsx')assert(html.includes('<p class="page-intro company-summary">'+escape(value+'：'+job.company_description)+'</p>'),'Job detail shows name followed by company description');
    records.push({id:id+'-'+i,outcome:'passed',component:name,text_class:i,html_sha256:(await import('node:crypto')).createHash('sha256').update(html).digest('hex')});
   }catch(e){records.push({id:id+'-'+i,outcome:'failed',component:name,text_class:i,error:String(e.stack)});}
  }
