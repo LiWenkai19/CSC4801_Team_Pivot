@@ -1,9 +1,24 @@
+# Build context kept intentionally small; everything the image needs is copied
+# explicitly by the Dockerfile.
 .git
+.github
+.gitignore
+.claude
+.kilo
 .venv
 venv
 __pycache__
 **/__pycache__
+*.pyc
 .pytest_cache
+.ruff_cache
 data
 .env
+.env.*
+!.env.example
 *.sqlite3
+frontend/node_modules
+frontend/dist
+docs
+tests/specialized
+start.bat
