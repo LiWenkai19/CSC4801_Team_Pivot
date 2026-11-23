@@ -92,9 +92,10 @@ def test_candidate_profile_create_ignores_client_supplied_owner():
 
 def test_profile_update_distinguishes_omission_from_clearing():
     """未传字段不更新，显式空内容用于清空可选字段。"""
-    assert ProfileUpdate().model_dump(exclude_unset=True) == {}
+    assert ProfileUpdate(version=1).model_dump(exclude_unset=True) == {"version": 1}
     assert CompanyUpdate().model_dump(exclude_unset=True) == {}
-    assert ProfileUpdate(resume_text="", skills=[]).model_dump(exclude_unset=True) == {
+    assert ProfileUpdate(version=1, resume_text="", skills=[]).model_dump(exclude_unset=True) == {
+        "version": 1,
         "resume_text": "",
         "skills": [],
     }
@@ -116,7 +117,7 @@ def test_profile_update_distinguishes_omission_from_clearing():
 def test_profile_update_rejects_explicit_null(schema, field):
     """显式 null 不能写入数据库非空资料字段。"""
     with pytest.raises(ValidationError):
-        schema.model_validate({field: None})
+        schema.model_validate({field: None, **({"version": 1} if schema is ProfileUpdate else {})})
 
 
 def test_auth_response_excludes_password_hash_and_private_profile():
@@ -141,6 +142,7 @@ def test_auth_response_excludes_password_hash_and_private_profile():
 def test_owner_profile_response_preserves_resume_text():
     """本人资料响应保留简历原文与空技能列表。"""
     profile = CandidateProfilePublic(
+        version=1,
         user_id=uuid.uuid4(),
         display_name="Alice",
         resume_text=" Line 1\nLine 2 ",

@@ -26,7 +26,7 @@ def test_candidate_full_order_and_membership_are_independently_precomputed(
         client.patch(
             "/candidate/profile",
             headers=candidate["headers"],
-            json={"skills": ["python", "sql"]},
+            json={"version": 1, "skills": ["python", "sql"]},
         ).status_code
         == 200
     )
@@ -158,12 +158,12 @@ def test_scores_recompute_after_skill_replacement_and_empty_requirements(
         ([], ["python", "sql"], 0),
         ([], [], 100),
     ]
-    for skills, required, expected in stages:
+    for version, (skills, required, expected) in enumerate(stages, start=1):
         assert (
             client.patch(
                 "/candidate/profile",
                 headers=candidate["headers"],
-                json={"skills": skills},
+                json={"version": version, "skills": skills},
             ).status_code
             == 200
         )
@@ -171,7 +171,7 @@ def test_scores_recompute_after_skill_replacement_and_empty_requirements(
             client.patch(
                 f"/employer/jobs/{posting['id']}",
                 headers=owner["headers"],
-                json={"required_skills": required},
+                json={"version": version, "required_skills": required},
             ).status_code
             == 200
         )
@@ -215,6 +215,8 @@ def test_irrelevant_text_cannot_change_score_or_order(client, account, job, fiel
                 "company_description": "Rust SQL Python Go and unrelated company description"
             },
         )
+    if field != "company-description":
+        payload["version"] = 1
     changed = client.patch(path, headers=headers, json=payload)
     assert changed.status_code == 200, changed.text
     after = client.get("/candidate/jobs", headers=candidate["headers"]).json()
@@ -230,7 +232,7 @@ def test_normalized_unicode_and_punctuation_skills_persist_and_score_exactly(
     skills = [" C++ ", "SQL", "sql", "机器学习", "ß", "  "]
     required = ["c++", " SQL ", "机器学习", "SS"]
     patched = client.patch(
-        "/candidate/profile", headers=candidate["headers"], json={"skills": skills}
+        "/candidate/profile", headers=candidate["headers"], json={"version": 1, "skills": skills}
     )
     assert patched.status_code == 200, patched.text
     assert patched.json()["skills"] == sorted({"c++", "sql", "机器学习", "ß"})

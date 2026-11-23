@@ -1,4 +1,7 @@
 const zhCN = {
+    'edit.conflict': "内容已在其他页面更新，本页修改尚未保存。",
+    'edit.reloadLatest': "重新加载最新内容",
+    'edit.discardConfirm': "重新加载将丢弃本页尚未保存的修改，是否继续？",
     'common.switchLanguage': "切换到英语",
     'common.brandDescription': "职聘匹配平台",
     'common.pageTitle': "SkillMatch 职聘匹配平台",

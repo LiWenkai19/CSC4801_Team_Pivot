@@ -2,7 +2,6 @@
 
 import argparse
 import hashlib
-import json
 import os
 from pathlib import Path
 import shutil
@@ -31,6 +30,7 @@ GROUPS = {
     "performance": ["test_performance.py"],
 }
 BROWSER_SCRIPTS = [
+    "version_conflicts",
     "auth_browser_checks",
     "auth_browser_focused",
     "probe_existing_helpers",

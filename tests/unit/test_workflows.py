@@ -34,22 +34,24 @@ def test_fp_can_1_profile_read_and_partial_replace(db, actors, result):
     db.exec.return_value = result(rows=["python"])
     initial = candidate.get_my_profile(db, actors[0])
     assert initial.resume_text == "Old resume" and initial.skills == ["python"]
+    db.exec.side_effect = [result(first=profile), result(rows=["python"])]
     changed = candidate.update_my_profile(
-        db, actors[0], ProfileUpdate(resume_text="New\nRésumé 中文")
+        db, actors[0], ProfileUpdate(version=1, resume_text="New\nRésumé 中文")
     )
     assert (
         changed.resume_text == "New\nRésumé 中文" and changed.display_name == "Original"
     )
     assert changed.skills == ["python"]
+    assert initial.version == 1 and changed.version == 2
     db.commit.assert_called_once()
 
 
 def test_fp_can_1_skill_replace_normalizes_input(db, actors, result):
     profile = CandidateProfile(user_id=actors[0].id, display_name="Original")
     db.get.return_value = profile
-    db.exec.return_value = result(rows=["python", "sql"])
+    db.exec.side_effect = [result(first=profile), result(rows=["python", "sql"])]
     candidate.update_my_profile(
-        db, actors[0], ProfileUpdate(skills=[" SQL ", "python", "PYTHON", ""])
+        db, actors[0], ProfileUpdate(version=1, skills=[" SQL ", "python", "PYTHON", ""])
     )
     added = [call.args[0] for call in db.add.call_args_list]
     assert sorted(row.name for row in added if hasattr(row, "name")) == [
@@ -70,7 +72,7 @@ def test_fp_can_1_skill_replace_normalizes_input(db, actors, result):
 )
 def test_fp_can_1_invalid_profile_update(payload):
     with pytest.raises(ValidationError):
-        ProfileUpdate(**payload)
+        ProfileUpdate(version=1, **payload)
 
 
 def test_fp_sec_1_other_candidate_cannot_read_resume(db, actors):
@@ -210,12 +212,15 @@ def test_fp_emp_2_job_create_read_and_replace(db, actors, result):
     job = jobs[0]
     db.get.side_effect = lambda model, ident: job if model is Job else profile
     db.reset_mock()
+    db.exec.side_effect = [result(first=job), result(rows=[])]
     changed = employer.update_job(
-        db, actors[1], job.id, JobUpdate(title="Updated", required_skills=[])
+        db, actors[1], job.id, JobUpdate(version=1, title="Updated", required_skills=[])
     )
     assert changed.title == "Updated" and changed.description == "Details"
     assert not any(isinstance(c.args[0], JobSkill) for c in db.add.call_args_list)
     assert db.execute.call_args.args[0].table.name == "job_skill"
+    assert saved.version == 1 and changed.version == 2
+    db.exec.side_effect = None
     assert employer.get_my_job(db, actors[1], job.id).id == job.id
 
 
@@ -260,7 +265,7 @@ def test_fp_sec_1_foreign_employer_cannot_manage_job(db, actors, result, operati
     action = {
         "get": lambda: employer.get_my_job(db, actors[1], job.id),
         "update": lambda: employer.update_job(
-            db, actors[1], job.id, JobUpdate(title="Changed")
+            db, actors[1], job.id, JobUpdate(version=1, title="Changed")
         ),
         "delete": lambda: employer.delete_job(db, actors[1], job.id),
         "applicants": lambda: employer.list_job_applicants(db, actors[1], job.id),

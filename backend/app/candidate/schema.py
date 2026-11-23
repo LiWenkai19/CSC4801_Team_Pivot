@@ -9,7 +9,7 @@ from sqlmodel import SQLModel
 
 from app.employer.model import ApplicationStatus
 from app.employer.schema import BookingPublic as EmployerBookingPublic, JobPublic
-from app.users.schema import NonBlankName
+from app.users.schema import NonBlankName, ResourceVersion
 
 
 def _as_utc(value: datetime) -> datetime:
@@ -36,6 +36,7 @@ class RequestSchema(SQLModel):
 class ProfileUpdate(RequestSchema):
     """省略保留，文本和技能可以清空，显式 null 不合法。"""
 
+    version: ResourceVersion
     display_name: NonBlankName | None = None
     resume_text: str | None = None
     skills: list[str] | None = None

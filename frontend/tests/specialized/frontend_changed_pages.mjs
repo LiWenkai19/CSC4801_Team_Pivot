@@ -3,7 +3,7 @@ import path from 'node:path';
 import {chromium,firefox,webkit} from 'playwright';
 import {base,server,api,identity,posting,save} from './browser_support.mjs';
 
-const sha='8569b72ac1d965c252a741f3e62ed71b01f630e7', results=[], versions=[];
+const sha=process.env.GAP_SHA, results=[], versions=[];
 async function check(engine,id,fn){try{const detail=await fn();results.push({engine,id,outcome:'passed',detail});}catch(error){results.push({engine,id,outcome:'failed',error:String(error.stack)});}await save('frontend-final-results.json',{sha,versions,results});}
 const shanghai=value=>new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',dateStyle:'medium',timeStyle:'short',hour12:false}).format(new Date(value));
 try{
@@ -11,8 +11,8 @@ try{
   const browser=await type.launch({headless:true,...options});versions.push({engine,version:browser.version()});
   try{
    const employer=await identity(browser,'employer'), candidate=await identity(browser), other=await identity(browser);
-   await api(candidate,'PATCH','/candidate/profile',{display_name:'Revision Candidate A'});
-   await api(other,'PATCH','/candidate/profile',{display_name:'Revision Candidate B'});
+   await api(candidate,'PATCH','/candidate/profile',{version:1,display_name:'Revision Candidate A'});
+   await api(other,'PATCH','/candidate/profile',{version:1,display_name:'Revision Candidate B'});
    const job=await posting(employer,`Revision Job ${engine}`);
    const first=await api(candidate,'POST',`/candidate/jobs/${job.id}/applications`,{});
    const second=await api(other,'POST',`/candidate/jobs/${job.id}/applications`,{});

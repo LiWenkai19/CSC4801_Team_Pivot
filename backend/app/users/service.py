@@ -267,6 +267,14 @@ def create_candidate_profile(
         session.add(new_skill)
 
     try:
+        session.flush()
+        response = CandidateProfilePublic(
+            user_id=new_profile.user_id,
+            display_name=new_profile.display_name,
+            resume_text=new_profile.resume_text,
+            skills=skills,
+            version=new_profile.version,
+        )
         session.commit()
     except IntegrityError as error:
         session.rollback()
@@ -277,13 +285,7 @@ def create_candidate_profile(
         session.rollback()
         raise
 
-    session.refresh(new_profile)
-    return CandidateProfilePublic(
-        user_id=new_profile.user_id,
-        display_name=new_profile.display_name,
-        resume_text=new_profile.resume_text,
-        skills=skills,
-    )
+    return response
 
 
     

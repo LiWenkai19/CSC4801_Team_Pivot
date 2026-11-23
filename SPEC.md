@@ -8,6 +8,36 @@
 
 ## Authentication and Authorization
 
+Candidate resumes are readable only by their owning candidate. All employers,
+including those with application relationships, and all other candidates receive
+403 from the profile-ID route. This is the policy implemented by teammate commit
+`5143f1e` and remains unchanged by edit version protection.
+
+### Candidate profile and job edit versions (2026-11-23)
+
+`candidate_profile.version` and `job.version` are positive, non-null integers with
+Python/database default 1, added through migration `7b2c9d4e6f10`. Existing data is
+preserved. Creation assigns version 1 and rejects a client-supplied version.
+Profile, job and derived recommended-job responses include version.
+
+`PATCH /candidate/profile` and `PATCH /employer/jobs/{id}` require a strict positive
+integer `version`; missing/null/bool/string/non-positive values return 422. Existing
+authentication, ownership and missing-resource errors precede stale-version checks.
+The service locks and refreshes the parent row, compares version, then updates
+fields/skill rows and increments version in one transaction. A stale edit returns
+409 with `{"detail":"Resource version conflict"}` and makes no changes. A version-only
+request checks freshness but changes neither revision nor update timestamp; any
+request containing an editable field increments version once even for equal values.
+Failed transactions roll back content and version. Response DTOs are captured
+inside the transaction and returned only after commit succeeds.
+
+Editors retain the loaded version and all draft values when rejected. Save stays
+disabled until the user confirms discarding the draft and a fresh GET succeeds.
+Cancel or load failure preserves the draft and conflict state. There is no automatic
+merge, force-save, retry, WebSocket or BroadcastChannel synchronization. HTTP JSON
+fetch and Cookie/CSRF authentication are retained; clients without versions must
+upgrade rather than use an unprotected fallback.
+
 ## API Routes or Server Actions
 
 ## User Interface and Workflows
@@ -69,12 +99,9 @@ module. Booking locks the application before the slot; the existing two unique
 constraints enforce one booking per application and slot. Responses use UTC,
 and candidate pages display Asia/Shanghai. State changes preserve existing bookings.
 
-The user-approved profile policy allows an employer to read a candidate's resume
-only after that candidate applies to one of the employer's jobs; editing remains
-candidate-only. This intentionally differs from the original course privacy text
-and must be reconciled by the team before final submission. The employer UI is not
-changed to consume this endpoint.
+The original relationship-based resume exception was superseded by the user's
+owner-only policy and teammate commit `5143f1e`. Employers cannot read raw resumes.
 
 API contracts, test commands and known integration boundaries are documented in
-[CANDIDATE_REBUILD.md](docs/CANDIDATE_REBUILD.md). No old candidate database or API
+[CANDIDATE_REBUILD.md](docs/completed/CANDIDATE_REBUILD.md). No old candidate database or API
 compatibility layer is included. Employer slot management remains outside this change.

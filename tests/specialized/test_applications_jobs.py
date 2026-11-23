@@ -38,7 +38,7 @@ def test_invalid_job_inputs_are_rejected_without_partial_writes(
         result = client.post("/employer/jobs", headers=owner["headers"], json=body)
     else:
         result = client.patch(
-            f"/employer/jobs/{posting['id']}", headers=owner["headers"], json=fields
+            f"/employer/jobs/{posting['id']}", headers=owner["headers"], json={"version": posting["version"], **fields}
         )
     assert result.status_code == 422, result.text
     assert snapshot() == before
@@ -62,7 +62,7 @@ def test_job_update_omission_clear_and_normalized_replacement(
     changed = client.patch(
         f"/employer/jobs/{posting['id']}",
         headers=owner["headers"],
-        json={"title": "Renamed"},
+        json={"version": posting["version"], "title": "Renamed"},
     )
     assert (
         changed.status_code == 200
@@ -72,7 +72,7 @@ def test_job_update_omission_clear_and_normalized_replacement(
     cleared = client.patch(
         f"/employer/jobs/{posting['id']}",
         headers=owner["headers"],
-        json={"required_skills": []},
+        json={"version": changed.json()["version"], "required_skills": []},
     )
     assert cleared.status_code == 200 and cleared.json()["required_skills"] == []
     assert snapshot()["job_skill"] == []
@@ -215,7 +215,7 @@ def test_job_owner_boundaries_preserve_data(client, account, job, snapshot, acti
         result = client.get(path, headers=other["headers"])
     elif action == "edit":
         result = client.patch(
-            path, headers=other["headers"], json={"title": "Other employer edit"}
+            path, headers=other["headers"], json={"version": posting["version"], "title": "Other employer edit"}
         )
     elif action == "delete":
         result = client.delete(path, headers=other["headers"])

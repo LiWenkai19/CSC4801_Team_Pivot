@@ -1,0 +1,677 @@
+{
+  "date": "2026-11-23 Asia/Shanghai",
+  "base_sha": "5143f1e944cac5b9e19e484320e2684b883b5ab4",
+  "version_note": "Current uncommitted edit-version patch plus the later times-sign removal button; no clean-commit execution, commit or push claimed",
+  "business_source_changes_during_retest": [],
+  "business_file_hashes_raw": {
+    "backend/app/main.py": "aab725f10ebc76c4e9aafdcaeaf9c465a944d9b32a747009f57ed0d500b3b1d7",
+    "backend/app/candidate/router.py": "73331f003bd8dd25163caad3f07c4eab3e19b466b95463e13eb3d140288c827b",
+    "backend/app/candidate/schema.py": "f1bf01cd003e656feb8339a73b06486da020393bb9842dcb1e8f1fac9456f3d8",
+    "backend/app/candidate/service.py": "596cece60873f4493a9f61b5040765cb667310076c5c61a44557bec774b302da",
+    "backend/app/candidate/__init__.py": "5d6d9d3b8e4b2ce38d427bc8049ff07d60df09c34d28f5ffcaace39d248a1fa1",
+    "backend/app/core/config.py": "a2ee7f2e097cdfbf1002db878e3e00399fc41990a01dc55ca74a795e176c8d87",
+    "backend/app/db/session.py": "3d6a8d41324f107860552ce4f740f69bcc2dfb5138ca9f9abaf125619a54ae62",
+    "backend/app/employer/matching.py": "b26bc499be12185ef46b92b6a69b9928ffd8361f81a8dce160e2baccf952694c",
+    "backend/app/employer/model.py": "7cbf09d9325a0d1f869a4fe05ebea655196fbf758b06f2d3e30a7ce78afcda80",
+    "backend/app/employer/router.py": "6fc4ee7876b013571a647fb3d4b613bb2bbdbef4ad9dd1d714a036698d82100f",
+    "backend/app/employer/schema.py": "c7a0b1b993d5e1ab7c03a92ce5a18be1b9d170c50c9e3573fd145651c51ff175",
+    "backend/app/employer/service.py": "52f986577fba30d290e4162ee68669608525406859a9f972e7d0ba96398072d3",
+    "backend/app/employer/__init__.py": "6ddf2312b060cf3795245bdac6ecd3932902bacd81e97d145661653ae3cc0776",
+    "backend/app/interview/router.py": "abc583ea4f9df8ddca9b8ef0f8d7bd39d09b677749845b9d034f6d8f1450f19d",
+    "backend/app/interview/schema.py": "72541fc08814058522121dd215f1241192bbcd8b337c9be52965467a6757b116",
+    "backend/app/interview/service.py": "a43375477dd129681dd019ba06f928231703ee4fff0ee6e6f0def55112e1d5c5",
+    "backend/app/interview/__init__.py": "ab864b716dd93ef39e3f2483d43e1cc4d638ad54803d39211ed5e11063ccae57",
+    "backend/app/users/model.py": "3d51aec6da50d484e9b3467d1a6d9dbbbce79ee3d4b48617aa26e5aa5e5269c5",
+    "backend/app/users/router.py": "fd73cd85ce6e6e79339f2eb3772db85d27928edf9c01432baf0a19ff172df3e0",
+    "backend/app/users/schema.py": "55319830235f696f97e18cee4b189e1fe50607e0954a10d81846591857d7193c",
+    "backend/app/users/security.py": "0c04e7381d512b9a3984da6ad2c0d2cbb6baf9273d663f9de328629b2e2c1975",
+    "backend/app/users/service.py": "00a5f78923cd86ede5e2450de2725cc4db8b4683d4ea45cfee66f28d1cd321a0",
+    "frontend/src/App.css": "c2571ce7245629994b8adc84f6c48e1920f047a4e7e29c89a4aeb51eeb1b5433",
+    "frontend/src/App.tsx": "666acbcea43d491575ead4b459a8ea795c37dc172c6ddcffa268a17e827b2183",
+    "frontend/src/index.css": "50ca4066e96321e873b95f3fd3681b43ea43e11f25cf217c11bf470f64ea5353",
+    "frontend/src/main.tsx": "3bf52dd75c0d91b18db264933babdd6ca43c09f1717c881c6c9247f85fef8827",
+    "frontend/src/types.ts": "64d304ada1ee8918830b99cdb0766ed3f6fce01ffdb16b0d95e7f4d79be72f3a",
+    "frontend/src/api/candidate_api.ts": "bab24c2c4be35bc3d6929bc354cd0dae2ff7fd8822edf2cd922972a1035cafcc",
+    "frontend/src/api/common_api.ts": "6ca381a41d1cb27a8822bddf4037aa5ff40463c9755c34585ac27e8b5199499a",
+    "frontend/src/api/employer_api.ts": "4298bc2df2609f019d46ced76308526cb27af2620c66d99d9116bfcd4c2bdd5b",
+    "frontend/src/components/Brand.tsx": "1b728557e3f4dc5b0ff94bc1259db4d7beee86756f0e27e2e3b295baabba9a31",
+    "frontend/src/components/LanguageSwitcher.tsx": "963390b5d591f268bd45673b47d02c2fb8f3ac2ed3b012aa76b7e0c3f0b57a6c",
+    "frontend/src/components/RequireAuth.tsx": "b624f0eca36edd30b16ca8a8088e02005f7f4cc0f96fc6a51a6b0b416cbd4c7c",
+    "frontend/src/contexts/AuthContext.tsx": "dbf2b91156a811781e6ac640cdceb776cea093ab0e79a0043d8291c3333f6f91",
+    "frontend/src/i18n/apiFeedback.ts": "006072d44fb824eb1343f812b726781bfd1f6695393899751999bb7ee7ef9508",
+    "frontend/src/i18n/dates.ts": "75416980aaa2b334f5e8788687304c5c878a8f2172675e808a0ccdc6d4dad1da",
+    "frontend/src/i18n/en-US.ts": "0b4288d42e22e69b0eecdc6643d9bf97aa4aff9d754d8c889320dcd946a8d68a",
+    "frontend/src/i18n/LanguageContext.ts": "4a14062ff58d0bcfeacf7051904e310513caf301e2dc4cf0fbd1be59d946ac55",
+    "frontend/src/i18n/LanguageProvider.tsx": "e75861d0120487e9a53f1195d4b7de9e62bef1b221891be6c3ab3ddf3ff9850d",
+    "frontend/src/i18n/zh-CN.ts": "4cfcb5f530a064f23715bd69e1d261ff77855557a9cde9f19cc6a4dbcebf5585",
+    "frontend/src/pages/NavPage.tsx": "4ec6a89c6fc7d27d36ec241b5842d92c02edd62be7a44d4399a3a3b9a52d2276",
+    "frontend/src/components/candidate/ApplyButton.tsx": "6fbd509824dfd83a7e655c5f194ff9e46e0500681fd7b6f48542799c7f4180ae",
+    "frontend/src/components/skills/CandidateSkillPicker.tsx": "90cbb54c5bd3ced0010a0d19d61b150c9d1570b90c0c2baee938b546b7ca1c1f",
+    "frontend/src/components/skills/EmployerSkillPicker.tsx": "7a8c292f61f19c349794cdaec828dbe9d08922cb99e6c1bbc48a79cbe2b20c7e",
+    "frontend/src/components/skills/skillCatalog.ts": "7f6f20e372af3dd8b3844f0dd5fbdd11bf86264aed4d168a099ca5349ba59beb",
+    "frontend/src/components/skills/SkillTagPicker.css": "5da7239efb0090fe405902fa7d5c2667aa1da2fe8ef7344c4e2645f2eb4a9e58",
+    "frontend/src/components/skills/SkillTagPicker.tsx": "e7345b9a97305f3d755bc7b6ea0e90e5cf8e195f57cf288103e60c744bb10519",
+    "frontend/src/pages/candidate/ApplicationsPage.tsx": "0f73d4927ae82d58bf11828b8f2076b4bff2c2f14aadaa5e862ce785f258f401",
+    "frontend/src/pages/candidate/candidate.css": "2bf0c00839a62577851812c522879b2db9e771383286231b243dae925d7985ac",
+    "frontend/src/pages/candidate/CandidateLayout.tsx": "ba6500ad93f42d17f0841027a6069c0b8b219932c1f6f53ce5d169d8002a6871",
+    "frontend/src/pages/candidate/JobPage.tsx": "3fb1952f8e344640e1ecb67ed73af16f0416a48becb4e990bb8dc2fb5199a022",
+    "frontend/src/pages/candidate/JobsPage.tsx": "ab3ad94d02f6c47786b4fc0ea2ccbd77394a4414c84d9aa13671585c8a6350ba",
+    "frontend/src/pages/candidate/ProfilePage.tsx": "ad84afebc324a472b6aadb6c8d22235f419fa3aeb6334aad230329706921d0a2",
+    "frontend/src/pages/employer/CompanyPage.tsx": "97c4c36c51f613af7a7e9472a028f3bcb305c44fd66b4312fa0334ee53fa88fe",
+    "frontend/src/pages/employer/InterviewSlotsPage.tsx": "9edd358440fbb937fe3b284f5f451e1e81453028b9facc8c574b048fee9d0a72",
+    "frontend/src/pages/employer/JobDetailPage.tsx": "b02a22518cf8de4b0c67c556b9e61077ed0e555d4de2792b8855fb87d6d53e2f",
+    "frontend/src/pages/employer/JobFormPage.tsx": "1e68e448b25672a4882f1868b2cbc5fb2c9f5d840291e1e42e4990ceadc26efa",
+    "frontend/src/pages/employer/JobListPage.tsx": "50d6752479cb28890e275439120f35f5db528b05fb4254352c340daaab3aedc7",
+    "frontend/src/pages/employer/REQUIREMENTS.md": "12082fed8c45f71f611a6defbdfc88cb47ff4f922c46476cf7ed174de0b3a135",
+    "frontend/src/pages/users/CandidateDetailsPage.tsx": "70a925985ea0c4deb91d1c30e4ada803c69f880f068aaead1131c0dfa92b5949",
+    "frontend/src/pages/users/CandidateForm.tsx": "c07220674040e00a39db9a743a4a4bd1b1a3ab3c4e47ba695fc527a355591fe8",
+    "frontend/src/pages/users/EmployerDetailsPage.tsx": "510ec19fa0a299cf8ffa8a19649fc62ce9f78e851c466238d64817b7db7fa454",
+    "frontend/src/pages/users/EmployerForm.tsx": "c863f34e6befbe8d91ba439326c2e8544172cca8103e737e946539ed740aa8eb",
+    "frontend/src/pages/users/LoginForm.tsx": "a0ea904e53d46770ad52d52c66565d5b3b2f764c992a09eefa6ec26e2a0ae4db",
+    "frontend/src/pages/users/LoginPage.tsx": "1fb6febbdb5a36616b56ca35a697947f441704fcec0686129243417b52bd1316",
+    "frontend/src/pages/users/RegisterPage.tsx": "bfb31dc502694af03afec4bc88398ed999da59cd30361b7add57646ea5530a04"
+  },
+  "differences_from_initial_version_report": [
+    "frontend/src/components/skills/SkillTagPicker.tsx"
+  ],
+  "browser": {
+    "counts": {
+      "total": 169,
+      "passed": 161,
+      "failed": 8
+    },
+    "selected_suites": [
+      {
+        "name": "version_conflicts",
+        "artifact": "browser-initial/version-conflicts.json",
+        "total": 12,
+        "passed": 12,
+        "failed": 0
+      },
+      {
+        "name": "auth_browser_checks",
+        "artifact": "browser-auth-final/auth_browser_checks-results.json",
+        "total": 37,
+        "passed": 37,
+        "failed": 0
+      },
+      {
+        "name": "auth_browser_focused",
+        "artifact": "browser-initial/auth_browser_focused-results.json",
+        "total": 7,
+        "passed": 5,
+        "failed": 2
+      },
+      {
+        "name": "probe_existing_helpers",
+        "artifact": "browser-initial/probe_existing_helpers-existing-browser-probes-results.json",
+        "total": 2,
+        "passed": 0,
+        "failed": 2
+      },
+      {
+        "name": "gap_browser_checks",
+        "artifact": "browser-gap-recheck/cross-browser-results.json",
+        "total": 78,
+        "passed": 75,
+        "failed": 3
+      },
+      {
+        "name": "browser_followup",
+        "artifact": "browser-initial/browser_followup-results.json",
+        "total": 9,
+        "passed": 8,
+        "failed": 1
+      },
+      {
+        "name": "frontend_smoke",
+        "artifact": "browser-skills-recheck/frontend-results.json",
+        "total": 6,
+        "passed": 6,
+        "failed": 0
+      },
+      {
+        "name": "frontend_changed_pages",
+        "artifact": "browser-changed-final/frontend-final-results.json",
+        "total": 18,
+        "passed": 18,
+        "failed": 0
+      }
+    ],
+    "initial_attempt_counts": {
+      "total": 169,
+      "passed": 138,
+      "failed": 31
+    },
+    "raw_executions": {
+      "total": 345,
+      "passed": 310,
+      "failed": 35
+    },
+    "selection_note": "Final auth/gap/skills/changed-page module reruns replace their initial attempts; duplicate attempts are not added to acceptance totals; version-conflict 12 cases are included in 169"
+  },
+  "rendering": {
+    "passed": 36,
+    "failed": 0,
+    "selected_artifacts": [
+      {
+        "artifact": "render-final/render-contract-results.json",
+        "passed": 6,
+        "failed": 0
+      },
+      {
+        "artifact": "render-final/all-render-results.json",
+        "passed": 30,
+        "failed": 0
+      }
+    ],
+    "initial_attempt": {
+      "passed": 0,
+      "failed": 36
+    },
+    "intermediate_recheck": {
+      "passed": 35,
+      "failed": 1
+    }
+  },
+  "performance": {
+    "passed": 4,
+    "failed": 0,
+    "scales": [
+      {
+        "rows": 10,
+        "queries_per_request": 4,
+        "p95_ms": 15.999999828636646
+      },
+      {
+        "rows": 100,
+        "queries_per_request": 4,
+        "p95_ms": 15.999999828636646
+      },
+      {
+        "rows": 1000,
+        "queries_per_request": 4,
+        "p95_ms": 61.99999991804361
+      }
+    ],
+    "soak": {
+      "budget_seconds": 360,
+      "actual_seconds": 360.08,
+      "cycles": 1080,
+      "write_delete_pairs": 108,
+      "active_jobs": 1,
+      "soft_deleted_jobs": 108,
+      "read_statuses": {
+        "200": 4320
+      },
+      "read_latency": {
+        "count": 4320,
+        "min_ms": 0.0,
+        "median_ms": 30.999999959021807,
+        "p95_ms": 47.00000025331974,
+        "max_ms": 140.00000013038516
+      },
+      "samples": [
+        {
+          "elapsed_seconds": 0.05,
+          "rss_bytes": 107646976,
+          "handles_or_fds": 341,
+          "pool_checked_out": 0,
+          "cycles": 1
+        },
+        {
+          "elapsed_seconds": 30.08,
+          "rss_bytes": 107683840,
+          "handles_or_fds": 341,
+          "pool_checked_out": 0,
+          "cycles": 92
+        },
+        {
+          "elapsed_seconds": 60.11,
+          "rss_bytes": 106561536,
+          "handles_or_fds": 336,
+          "pool_checked_out": 0,
+          "cycles": 183
+        },
+        {
+          "elapsed_seconds": 90.27,
+          "rss_bytes": 106565632,
+          "handles_or_fds": 336,
+          "pool_checked_out": 0,
+          "cycles": 273
+        },
+        {
+          "elapsed_seconds": 120.3,
+          "rss_bytes": 106553344,
+          "handles_or_fds": 332,
+          "pool_checked_out": 0,
+          "cycles": 362
+        },
+        {
+          "elapsed_seconds": 150.55,
+          "rss_bytes": 105009152,
+          "handles_or_fds": 328,
+          "pool_checked_out": 0,
+          "cycles": 451
+        },
+        {
+          "elapsed_seconds": 180.69,
+          "rss_bytes": 105029632,
+          "handles_or_fds": 328,
+          "pool_checked_out": 0,
+          "cycles": 540
+        },
+        {
+          "elapsed_seconds": 210.91,
+          "rss_bytes": 105029632,
+          "handles_or_fds": 328,
+          "pool_checked_out": 0,
+          "cycles": 631
+        },
+        {
+          "elapsed_seconds": 241.17,
+          "rss_bytes": 105037824,
+          "handles_or_fds": 328,
+          "pool_checked_out": 0,
+          "cycles": 723
+        },
+        {
+          "elapsed_seconds": 271.3,
+          "rss_bytes": 105037824,
+          "handles_or_fds": 328,
+          "pool_checked_out": 0,
+          "cycles": 813
+        },
+        {
+          "elapsed_seconds": 301.44,
+          "rss_bytes": 105230336,
+          "handles_or_fds": 327,
+          "pool_checked_out": 0,
+          "cycles": 903
+        },
+        {
+          "elapsed_seconds": 331.52,
+          "rss_bytes": 105263104,
+          "handles_or_fds": 327,
+          "pool_checked_out": 0,
+          "cycles": 994
+        }
+      ],
+      "final_pool_checked_out": 0,
+      "note": "Bounded local TestClient/real PostgreSQL exercise; not production long-term stability, throughput or capacity proof; memory/latency observational without SLA"
+    },
+    "limit": "Bounded local read/create/delete workload; no same-resource edit throughput SLA or multi-day production claim"
+  },
+  "mutation": {
+    "baseline": {
+      "cases": 8,
+      "passed": 8
+    },
+    "killed": 7,
+    "survived": 0,
+    "equivalent": 1,
+    "invalid": 0,
+    "source_restored": true,
+    "scope": "Original eight hand-selected samples; no new version-check/lock/increment mutant set"
+  },
+  "delivery": {
+    "counts": {
+      "passed": 13,
+      "failed": 8
+    },
+    "cases": [
+      {
+        "id": "INSTALL-non-docker-instructions",
+        "outcome": "failed",
+        "expected": "Six non-Docker operational sections contain executable configuration/setup/start/seed/test instructions",
+        "cause_id": "SE-02",
+        "reason": "INSTALL仍缺非Docker运行必需配置与命令，不能仅凭源码推导的测试harness代替安装说明。"
+      },
+      {
+        "id": "INSTALL-no-env-import",
+        "outcome": "failed",
+        "expected": "Following the documented install/example configuration permits application import",
+        "cause_id": "SE-02",
+        "reason": "文档未给出APP_NAME/DATABASE_URL配置；根.env.example仍为旧SQLite示例，Settings读取当前目录.env后仍缺必填项。"
+      },
+      {
+        "id": "INSTALL-example-env-import",
+        "outcome": "failed",
+        "expected": "Following the documented install/example configuration permits application import",
+        "cause_id": "SE-02",
+        "reason": "文档未给出APP_NAME/DATABASE_URL配置；根.env.example仍为旧SQLite示例，Settings读取当前目录.env后仍缺必填项。"
+      },
+      {
+        "id": "INSTALL-explicit-isolated-env-control",
+        "outcome": "passed",
+        "expected": "Actual mandatory settings supplied by test harness allow import",
+        "cause_id": null,
+        "reason": null
+      },
+      {
+        "id": "INSTALL-lock-versions",
+        "outcome": "passed",
+        "expected": "All applicable pinned versions match",
+        "cause_id": null,
+        "reason": null
+      },
+      {
+        "id": "MIGRATION-empty-old-and-repeat",
+        "outcome": "passed",
+        "expected": "Fresh initialization, initial-revision upgrade, repeated upgrade all succeed",
+        "cause_id": null,
+        "reason": null
+      },
+      {
+        "id": "MIGRATION-preserves-existing-user",
+        "outcome": "passed",
+        "expected": "Existing valid user survives full revision-chain upgrade",
+        "cause_id": null,
+        "reason": null
+      },
+      {
+        "id": "MIGRATION-default-alembic-check",
+        "outcome": "passed",
+        "expected": "Default Alembic check runs without new schema operations",
+        "cause_id": null,
+        "reason": null
+      },
+      {
+        "id": "MIGRATION-model-default-type-consistency",
+        "outcome": "failed",
+        "expected": "Model and all migrated schemas agree including server defaults/types",
+        "cause_id": "SE-06",
+        "reason": "Application.status模型声明server_default Pending，但主迁移未创建该数据库默认值；默认alembic check未启用server-default比较，因此会通过。"
+      },
+      {
+        "id": "MIGRATION-empty-vs-upgrade-schema",
+        "outcome": "passed",
+        "expected": "Empty and old-version upgrade paths produce identical schemas",
+        "cause_id": null,
+        "reason": null
+      },
+      {
+        "id": "SEED-command-and-repeat-determinism",
+        "outcome": "passed",
+        "expected": "Two actual reset/seed commands succeed and yield equal business snapshots",
+        "cause_id": null,
+        "reason": null
+      },
+      {
+        "id": "SEED-roles-jobs-statuses",
+        "outcome": "passed",
+        "expected": "Required role/job counts and all four statuses exist",
+        "cause_id": null,
+        "reason": null
+      },
+      {
+        "id": "SEED-score-alice-100",
+        "outcome": "passed",
+        "expected": "Actual seeded API score equals 100",
+        "cause_id": null,
+        "reason": null
+      },
+      {
+        "id": "SEED-score-bob-50",
+        "outcome": "passed",
+        "expected": "Actual seeded API score equals 50",
+        "cause_id": null,
+        "reason": null
+      },
+      {
+        "id": "SEED-score-carol-0",
+        "outcome": "passed",
+        "expected": "Actual seeded API score equals 0",
+        "cause_id": null,
+        "reason": null
+      },
+      {
+        "id": "SEED-score-carol-100",
+        "outcome": "passed",
+        "expected": "Actual seeded API score equals 100",
+        "cause_id": null,
+        "reason": null
+      },
+      {
+        "id": "SEED-two-candidate-common-availability",
+        "outcome": "failed",
+        "expected": "Two Interviewing candidates can select the same future unbooked 30-minute seed slot",
+        "cause_id": "SE-05",
+        "reason": "唯一seed时段仍为60分钟，不满足预约严格30分钟要求；当前时段仍未来，失败不是过期或接口故障。"
+      },
+      {
+        "id": "SEED-original-booking-alice",
+        "outcome": "failed",
+        "expected": "Documented seed supports actual eligible booking",
+        "cause_id": "SE-05",
+        "reason": "原seed数据的60分钟时段被业务规则正确拒绝；拒绝后业务快照保持，不能据此声称预约模块本身坏了。"
+      },
+      {
+        "id": "SEED-original-booking-bob",
+        "outcome": "failed",
+        "expected": "Documented seed supports actual eligible booking",
+        "cause_id": "SE-05",
+        "reason": "原seed数据的60分钟时段被业务规则正确拒绝；拒绝后业务快照保持，不能据此声称预约模块本身坏了。"
+      },
+      {
+        "id": "SEED-separate-valid-slot-control",
+        "outcome": "passed",
+        "expected": "A separately created valid fixture is visible to both eligible candidates",
+        "cause_id": null,
+        "reason": null
+      },
+      {
+        "id": "MIGRATION-default-raw-insert-vs-ORM",
+        "outcome": "failed",
+        "expected": "Database default promised by model applies when status omitted; ordinary ORM still defaults Pending",
+        "cause_id": "SE-06",
+        "reason": "数据库未提供模型声明的默认值，省略status的直接写入违反非空；ORM自身赋Pending仍成功，影响范围分别记录。"
+      }
+    ]
+  },
+  "failed_cases": [
+    {
+      "suite": "auth_browser_focused",
+      "engine": "chromium",
+      "id": "FOCUS-EXPIRY-logout-navpage",
+      "outcome": "failed",
+      "cause_id": "UI-02",
+      "artifact": "browser-initial/auth_browser_focused-results.json"
+    },
+    {
+      "suite": "auth_browser_focused",
+      "engine": "chromium",
+      "id": "FOCUS-EXPIRY-logout-details",
+      "outcome": "failed",
+      "cause_id": "UI-02",
+      "artifact": "browser-initial/auth_browser_focused-results.json"
+    },
+    {
+      "suite": "probe_existing_helpers",
+      "engine": "node-helper",
+      "id": "DEL-LEGACY-candidate",
+      "outcome": "failed",
+      "cause_id": "DEL-01",
+      "artifact": "browser-initial/probe_existing_helpers-existing-browser-probes-results.json"
+    },
+    {
+      "suite": "probe_existing_helpers",
+      "engine": "node-helper",
+      "id": "DEL-LEGACY-employer",
+      "outcome": "failed",
+      "cause_id": "DEL-01",
+      "artifact": "browser-initial/probe_existing_helpers-existing-browser-probes-results.json"
+    },
+    {
+      "suite": "gap_browser_checks",
+      "engine": "chrome",
+      "id": "AUTH-expired-logout-no-unhandled-error",
+      "outcome": "failed",
+      "cause_id": "UI-02",
+      "artifact": "browser-gap-recheck/cross-browser-results.json"
+    },
+    {
+      "suite": "gap_browser_checks",
+      "engine": "firefox",
+      "id": "AUTH-expired-logout-no-unhandled-error",
+      "outcome": "failed",
+      "cause_id": "UI-02",
+      "artifact": "browser-gap-recheck/cross-browser-results.json"
+    },
+    {
+      "suite": "gap_browser_checks",
+      "engine": "webkit",
+      "id": "AUTH-expired-logout-no-unhandled-error",
+      "outcome": "failed",
+      "cause_id": "UI-02",
+      "artifact": "browser-gap-recheck/cross-browser-results.json"
+    },
+    {
+      "suite": "browser_followup",
+      "engine": "chrome",
+      "id": "DATE-accepted-slot-remains-readable-real-http",
+      "outcome": "failed",
+      "cause_id": "SLOT-01",
+      "artifact": "browser-initial/browser_followup-results.json"
+    },
+    {
+      "suite": "delivery",
+      "id": "INSTALL-non-docker-instructions",
+      "outcome": "failed",
+      "cause_id": "SE-02",
+      "artifact": "delivery/delivery-results.json"
+    },
+    {
+      "suite": "delivery",
+      "id": "INSTALL-no-env-import",
+      "outcome": "failed",
+      "cause_id": "SE-02",
+      "artifact": "delivery/delivery-results.json"
+    },
+    {
+      "suite": "delivery",
+      "id": "INSTALL-example-env-import",
+      "outcome": "failed",
+      "cause_id": "SE-02",
+      "artifact": "delivery/delivery-results.json"
+    },
+    {
+      "suite": "delivery",
+      "id": "MIGRATION-model-default-type-consistency",
+      "outcome": "failed",
+      "cause_id": "SE-06",
+      "artifact": "delivery/delivery-results.json"
+    },
+    {
+      "suite": "delivery",
+      "id": "SEED-two-candidate-common-availability",
+      "outcome": "failed",
+      "cause_id": "SE-05",
+      "artifact": "delivery/delivery-results.json"
+    },
+    {
+      "suite": "delivery",
+      "id": "SEED-original-booking-alice",
+      "outcome": "failed",
+      "cause_id": "SE-05",
+      "artifact": "delivery/delivery-results.json"
+    },
+    {
+      "suite": "delivery",
+      "id": "SEED-original-booking-bob",
+      "outcome": "failed",
+      "cause_id": "SE-05",
+      "artifact": "delivery/delivery-results.json"
+    },
+    {
+      "suite": "delivery",
+      "id": "MIGRATION-default-raw-insert-vs-ORM",
+      "outcome": "failed",
+      "cause_id": "SE-06",
+      "artifact": "delivery/delivery-results.json"
+    }
+  ],
+  "cause_index": {
+    "SE-02": {
+      "title": "INSTALL与示例配置不足，无法按文档独立启动",
+      "reason": "运行前提和配置迁移已变化，安装文档/根示例仍未补齐；不能用测试工具额外推导出的步骤代替文档。",
+      "post_fix_new_tests": [
+        "文档修复后，在带空格及中文路径的新目录中，使用普通新shell按文档逐条执行完整非Docker安装/初始化/启动/测试流程。",
+        "新增配置省略、占位符未替换及frontend/backend工作目录切换场景，核对说明能定位错误且不依赖测试harness额外变量。"
+      ]
+    },
+    "SE-05": {
+      "title": "seed唯一60分钟时段不满足30分钟预约资格",
+      "reason": "演示数据时长为60分钟，与候选准入的严格30分钟规则不一致。",
+      "post_fix_new_tests": [
+        "修复seed后新增固定时钟跨日期边界的资格验证，区别时间已过与时长错误，不把本轮普通双候选复现算新增。",
+        "新增已有登录会话、预约及职位改动后再次reset，检查数据/会话/关联都回到所声明演示状态；多雇主时段不得串用。"
+      ]
+    },
+    "SE-06": {
+      "title": "Application.status的数据库默认Pending未进入迁移",
+      "reason": "模型增加或声明了server_default，迁移列定义未体现；默认alembic check不比较该项。",
+      "post_fix_new_tests": [
+        "迁移修复后新增显式NULL仍应拒绝、显式Accepted不得被默认覆盖的对照，区分省略字段与显式赋值。",
+        "新增已有四种状态数据的旧库升级，检查状态保存、默认值生效且重复升级不改业务数据。"
+      ]
+    },
+    "SLOT-01": {
+      "title": "已接受的极端日期在数据库返回时区下无法读回",
+      "reason": "请求验证和结束时间计算只验证 UTC Python datetime 范围，未保证 timestamptz 在数据库返回时区下仍可被驱动解码；错误发生在 ORM 行读取时，早于响应 schema 的 UTC 归一化。",
+      "post_fix_new_tests": [
+        "原测试未覆盖的正/负数据库返回时区与各自范围边界",
+        "极端时间以等价 ISO 偏移表示，而非只用 Z 输入",
+        "两个雇主、普通和边界时段混合后的归属隔离与完整列表",
+        "边界时段经历完整状态变化与删除/预约竞争"
+      ]
+    },
+    "UI-02": {
+      "title": "过期会话注销留下未处理Promise拒绝",
+      "reason": "AuthContext.logout在finally清空currentUser，但apiLogout返回401后的Promise仍拒绝；NavPage/CandidateDetailsPage直接把异步logout用作onClick而没有处理拒绝。",
+      "post_fix_new_tests": [
+        "分别模拟本地网络中断与503，核对按最终确认的交互契约恢复且无未处理拒绝",
+        "雇主首次资料页的退出入口在过期条件下检查相同共享Context调用方；本轮未执行该入口的过期场景"
+      ]
+    },
+    "DEL-01": {
+      "title": "仓库原浏览器脚本仍依赖旧Bearer/access_token",
+      "reason": "两份tracked脚本取access_token或localStorage.token并用Bearer；当前认证只返回user和Set-Cookie。Node fetch没有Cookie jar，后续受保护读取返回401。旧route还仅拦截固定8000，与现行同源/api代理不匹配（后者为静态线索）。",
+      "post_fix_new_tests": [
+        "修复后完整执行两份原脚本，覆盖写操作CSRF、登出及角色隔离",
+        "随机测试API端口和已有8000端口服务同时存在时，核验所有业务请求仅到本轮隔离实例；禁止影响已有服务"
+      ]
+    }
+  },
+  "dictionary": {
+    "entries": 1260,
+    "unique_normalized": 1260,
+    "duplicates": []
+  },
+  "test_only_adaptations": [
+    "frontend/tests/specialized/auth_browser_checks.mjs",
+    "frontend/tests/specialized/render_contracts.mjs",
+    "frontend/tests/specialized/gap_browser_checks.mjs",
+    "frontend/tests/specialized/render_all.mjs",
+    "frontend/tests/specialized/frontend_smoke.mjs",
+    "frontend/tests/specialized/frontend_changed_pages.mjs"
+  ],
+  "all_temporary_instances_stopped": true,
+  "new_version_regressions_observed": 0,
+  "docker_excluded": true,
+  "remaining_limits": [
+    "Real devices/Safari",
+    "Production/multi-day stability",
+    "Docker",
+    "New edit-version-specific mutation samples and edit-contention throughput benchmarks",
+    "No fresh whole-program coverage percentage"
+  ],
+  "evidence_directory": "workspace tmp/version-retest-20261123 (outside Git checkout)",
+  "quality_checks": {
+    "frontend_lint_exit_code": 0,
+    "preexisting_lint_warnings": 4,
+    "modified_js_syntax_checks": 6,
+    "git_diff_check_exit_code": 0,
+    "business_sources_rechecked_after_report": true
+  }
+}

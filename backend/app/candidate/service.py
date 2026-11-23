@@ -53,9 +53,19 @@ def _require_candidate(user: User) -> None:
         raise CandidateRoleRequiredError("Candidate role required")
 
 
-def _profile(session: Session, candidate_id: uuid.UUID) -> CandidateProfile:
+def _profile(
+    session: Session, candidate_id: uuid.UUID, lock: bool = False
+) -> CandidateProfile:
     """资料存在才可访问；身份范围由调用方预先验证。"""
-    profile = session.get(CandidateProfile, candidate_id)
+    if lock:
+        profile = session.exec(
+            select(CandidateProfile)
+            .where(CandidateProfile.user_id == candidate_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        ).first()
+    else:
+        profile = session.get(CandidateProfile, candidate_id)
     if profile is None:
         raise NotFoundError("Candidate profile not found")
     return profile
@@ -75,6 +85,7 @@ def _profile_public(
         display_name=profile.display_name,
         resume_text=profile.resume_text,
         skills=sorted(skills),
+        version=profile.version,
     )
 
 
@@ -105,11 +116,14 @@ def read_profile(
 def update_my_profile(
     session: Session, user: User, changes: ProfileUpdate
 ) -> CandidateProfilePublic:
-    """资料与技能一次提交；更新不改变账户或资料归属。"""
+    """持有父记录锁检查版本，再在一次事务中更新资料与技能。"""
     _require_candidate(user)
-    profile = _profile(session, user.id)
-    fields = changes.model_dump(exclude_unset=True)
     try:
+        profile = _profile(session, user.id, lock=True)
+        if profile.version != changes.version:
+            raise ConflictError("Resource version conflict")
+        fields = changes.model_dump(exclude_unset=True, exclude={"version"})
+        changed = bool(fields)
         if "skills" in fields:
             session.execute(
                 delete(CandidateSkill).where(CandidateSkill.candidate_id == user.id)
@@ -118,13 +132,16 @@ def update_my_profile(
                 session.add(CandidateSkill(candidate_id=user.id, name=name))
         for name, value in fields.items():
             setattr(profile, name, value)
-        session.add(profile)
+        if changed:
+            profile.version += 1
+            session.add(profile)
+            session.flush()
+        response = _profile_public(session, profile)
         session.commit()
-    except SQLAlchemyError:
+    except (ConflictError, NotFoundError, SQLAlchemyError):
         session.rollback()
         raise
-    session.refresh(profile)
-    return _profile_public(session, profile)
+    return response
 
 
 def _active_job(session: Session, job_id: uuid.UUID, lock: bool = False) -> Job:
@@ -184,6 +201,7 @@ def _recommended_jobs(
             required_skills=sorted(skills[job.id]),
             created_at=job.created_at,
             updated_at=job.updated_at,
+            version=job.version,
             match_score=match_score(candidate_skills, skills[job.id]),
             applied=has_applied,
         )

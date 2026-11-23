@@ -8,7 +8,7 @@ from sqlalchemy import event, text
 
 
 def overlapping_replacements(
-    engine, path, headers, field, table, first_values, second_values, evidence
+    engine, path, headers, field, table, first_values, second_values, evidence, version
 ):
     from app.main import app
 
@@ -28,7 +28,7 @@ def overlapping_replacements(
     def change(actor, values):
         with TestClient(app, raise_server_exceptions=False) as client:
             return client.patch(
-                path, headers={**headers, "X-Audit-Actor": actor}, json={field: values}
+                path, headers={**headers, "X-Audit-Actor": actor}, json={"version": version, field: values}
             )
 
     event.listen(engine, "after_cursor_execute", observe)
@@ -54,7 +54,7 @@ def overlapping_replacements(
                         break
                     time.sleep(0.02)
                 assert waits and waits[0]["blockers"], (
-                    "Second DELETE did not actually wait in PostgreSQL"
+                    "Second replacement did not actually wait in PostgreSQL"
                 )
             finally:
                 release.set()
@@ -67,6 +67,7 @@ def overlapping_replacements(
         {
             "path": path,
             "field": field,
+            "shared_version": version,
             "first_values": first_values,
             "second_values": second_values,
             "waits": waits,
@@ -92,7 +93,7 @@ def test_concurrent_whole_list_replacements_cannot_merge_into_a_third_value(
             client.patch(
                 "/candidate/profile",
                 headers=candidate["headers"],
-                json={"skills": ["legacy"]},
+                json={"version": 1, "skills": ["legacy"]},
             ).status_code
             == 200
         )
@@ -109,8 +110,9 @@ def test_concurrent_whole_list_replacements_cannot_merge_into_a_third_value(
             "required_skills",
             "job_skill",
         )
+    version = client.get(path, headers=headers).json()["version"]
     results = overlapping_replacements(
-        engine, path, headers, field, table, ["python"], ["sql"], evidence
+        engine, path, headers, field, table, ["python"], ["sql"], evidence, version
     )
     readback = client.get(
         "/candidate/profile" if target == "candidate-skills" else path, headers=headers
@@ -131,7 +133,8 @@ def test_concurrent_whole_list_replacements_cannot_merge_into_a_third_value(
             "state": snapshot(),
         },
     )
-    assert all(r.status_code == 200 for r in results), [r.text for r in results]
+    assert sorted(r.status_code for r in results) == [200, 409], [r.text for r in results]
+    assert readback.json()["version"] == version + 1
     assert final in (["python"], ["sql"]), (
         "Whole-list replacement produced combined value: " + str(final)
     )

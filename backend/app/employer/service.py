@@ -56,6 +56,10 @@ class JobHasDependentsError(ValueError):
     """职位仍有申请或面试时段，不能删除。"""
 
 
+class JobVersionConflictError(ValueError):
+    """请求基于旧版本，不能覆盖较新的职位修改。"""
+
+
 class ApplicationNotFoundError(ValueError):
     """申请不存在。"""
 
@@ -120,6 +124,7 @@ def _job_public(session: Session, job: Job) -> JobPublic:
         required_skills=sorted(skills),
         created_at=job.created_at,
         updated_at=job.updated_at,
+        version=job.version,
     )
 
 
@@ -138,13 +143,15 @@ def create_job(session: Session, user: User, data: JobCreate) -> JobPublic:
     for name in normalize_skills(data.required_skills):
         session.add(JobSkill(job_id=job.id, name=name))
     try:
+        session.flush()
+        session.refresh(job)
+        response = _job_public(session, job)
         session.commit()
     except SQLAlchemyError:
         session.rollback()
         raise
 
-    session.refresh(job)
-    return _job_public(session, job)
+    return response
 
 
 def list_my_jobs(session: Session, user: User) -> list[JobPublic]:
@@ -169,7 +176,10 @@ def _load_owned_job(
     """读取未删除职位并检查负责雇主；lock=True 时锁住该行。"""
     if lock:
         job = session.exec(
-            select(Job).where(Job.id == job_id).with_for_update()
+            select(Job)
+            .where(Job.id == job_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
         ).first()
     else:
         job = session.get(Job, job_id)
@@ -192,11 +202,14 @@ def update_job(
     job_id: uuid.UUID,
     changes: JobUpdate,
 ) -> JobPublic:
-    """修改职位；required_skills 传入即整体替换，空列表表示清空。"""
+    """持有父记录锁检查版本；required_skills 整体替换，空列表清空。"""
     _require_employer(user)
-    job = _load_owned_job(session, user, job_id)
-    fields = changes.model_dump(exclude_unset=True)
     try:
+        job = _load_owned_job(session, user, job_id, lock=True)
+        if job.version != changes.version:
+            raise JobVersionConflictError("Resource version conflict")
+        fields = changes.model_dump(exclude_unset=True, exclude={"version"})
+        changed = bool(fields)
         if "required_skills" in fields:
             session.execute(
                 delete(JobSkill).where(JobSkill.job_id == job.id)  # type: ignore[reportArgumentType]
@@ -205,16 +218,19 @@ def update_job(
                 session.add(JobSkill(job_id=job.id, name=name))
         for name, value in fields.items():
             setattr(job, name, value)
-        job.updated_at = utc_now()
-        session.add(job)
+        if changed:
+            job.updated_at = utc_now()
+            job.version += 1
+            session.add(job)
+            session.flush()
+            session.refresh(job)
+        response = _job_public(session, job)
         session.commit()
-    except SQLAlchemyError:
+    except (JobVersionConflictError, JobNotFoundError, JobForbiddenError, SQLAlchemyError):
         session.rollback()
         raise
 
-    session.refresh(job)
-    session.expire(job, ["skills"])
-    return _job_public(session, job)
+    return response
 
 
 def delete_job(session: Session, user: User, job_id: uuid.UUID) -> None:

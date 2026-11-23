@@ -3,7 +3,7 @@ import uuid
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import CheckConstraint, Column, DateTime
+from sqlalchemy import CheckConstraint, Column, DateTime, Integer, text
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -54,10 +54,17 @@ class CandidateProfile(SQLModel, table=True):
     """候选人资料；简历仅允许所属候选人读取和替换。"""
 
     __tablename__ = "candidate_profile"  # type: ignore
+    __table_args__ = (
+        CheckConstraint("version > 0", name="ck_candidate_profile_version"),
+    )
 
     user_id: uuid.UUID = Field(foreign_key="user.id", primary_key=True)
     display_name: str = Field(nullable=False)
     resume_text: str = Field(default="", nullable=False)
+    version: int = Field(
+        default=1,
+        sa_column=Column(Integer, nullable=False, server_default=text("1")),
+    )
 
     user: User = Relationship(back_populates="candidate_profile")
     skills: list["CandidateSkill"] = Relationship(back_populates="candidate")

@@ -85,10 +85,11 @@
       "original_file": "test_booking_states.py",
       "original_sha256": "42834a60f149f3ba79b4a1cf6b51c06da21326a68b86bac1498b98d8d0872f1a",
       "repository_path": "tests/specialized/test_booking_states.py",
-      "adaptations": "Portable source paths/shared fixtures; old employer-list oracle migrated only where current SPEC retains booked records and adds is_booked.",
+      "adaptations": "Portable source paths/shared fixtures; old employer-list oracle migrated only where current SPEC retains booked records and adds is_booked. Version-protection contract migration (2026-11-23): explicit expected versions; concurrent replacements share a pre-read version and require one 200/one 409 with one revision increment; unrelated failure assertions retained.",
       "initial_port_sha256": "f4f7ac8b9c7163fc296d3719773414ae9364cddd456970978070c30ddda81094",
-      "ported_sha256": "71acb649b0fed542114f272cc2eeeee24ee9404f33878552f0cdba92d8845ec6",
-      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+      "ported_sha256": "56373c15778fbac9667d325217f3cb340ba5ca75e6284b28667670dd61f82fff",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms",
+      "pre_version_patch_ported_sha256": "71acb649b0fed542114f272cc2eeeee24ee9404f33878552f0cdba92d8845ec6"
     },
     {
       "original_stage": "booking-crossmodule-20261122",
@@ -105,20 +106,22 @@
       "original_file": "test_applications_jobs.py",
       "original_sha256": "8d5d1a7dbbf48bccdf7a4112eaaf0af6cceb7a4ae5abddc237cbdb5b5b8ba724",
       "repository_path": "tests/specialized/test_applications_jobs.py",
-      "adaptations": "Unchanged test source",
+      "adaptations": "Unchanged test source Version-protection contract migration (2026-11-23): explicit expected versions; concurrent replacements share a pre-read version and require one 200/one 409 with one revision increment; unrelated failure assertions retained.",
       "initial_port_sha256": "ba2bee8b53797c7a73347be3149c2349a55b5f77d5aec6b63e23fdc079bf960a",
-      "ported_sha256": "b51c79e0f785dc6a8a19bf73a8cf9a6b10accf0ce5eae11def36b54fc58b007b",
-      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+      "ported_sha256": "d9e443f3a260f72916574db0f34dbfa8c774fa61eb9c5e7fd593e13bf552823b",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms",
+      "pre_version_patch_ported_sha256": "b51c79e0f785dc6a8a19bf73a8cf9a6b10accf0ce5eae11def36b54fc58b007b"
     },
     {
       "original_stage": "matching-applications-jobs-20261122",
       "original_file": "test_failure_replays.py",
       "original_sha256": "73a3124165b41bf2dd174f1f8466489c9f33c7e0e1d79a3460d72e287cc5ebb4",
       "repository_path": "tests/specialized/test_failure_replays.py",
-      "adaptations": "Unchanged test source",
+      "adaptations": "Unchanged test source Version-protection contract migration (2026-11-23): explicit expected versions; concurrent replacements share a pre-read version and require one 200/one 409 with one revision increment; unrelated failure assertions retained.",
       "initial_port_sha256": "60a1f64acc2a08a0cb7407357eaff80a0ef27e26ac9f660fa1a0a83a9bc8c9e9",
-      "ported_sha256": "4d4bc63a664d02fd5ef7228a33a4ec2b950a0541cd4d2e4023a99b7b19843fa0",
-      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+      "ported_sha256": "009f0548cd568b0b9e35e4d002427210160a99b2499ff842e2b0dee5d911ee8c",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms",
+      "pre_version_patch_ported_sha256": "4d4bc63a664d02fd5ef7228a33a4ec2b950a0541cd4d2e4023a99b7b19843fa0"
     },
     {
       "original_stage": "matching-applications-jobs-20261122",
@@ -135,20 +138,22 @@
       "original_file": "test_matching_views.py",
       "original_sha256": "c2752537f55af3cca75fd346208e4d9c6e147a41517fa46b2dc75648c357c5a3",
       "repository_path": "tests/specialized/test_matching_views.py",
-      "adaptations": "Unchanged test source",
+      "adaptations": "Unchanged test source Version-protection contract migration (2026-11-23): explicit expected versions; concurrent replacements share a pre-read version and require one 200/one 409 with one revision increment; unrelated failure assertions retained.",
       "initial_port_sha256": "47b65de546f11d545554d57971bfa2ff335511b9d8f928d13f220fb7932db53f",
-      "ported_sha256": "e09238fdea0c211b064369e5b45f56e607b52a6b29f249824f478ed997f50829",
-      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+      "ported_sha256": "0e4c170a181b1b120f0a7246746aae7f351ad4bfe113f04b2b86574b8a78b0b9",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms",
+      "pre_version_patch_ported_sha256": "e09238fdea0c211b064369e5b45f56e607b52a6b29f249824f478ed997f50829"
     },
     {
       "original_stage": "matching-applications-jobs-20261122",
       "original_file": "test_replacement_and_text.py",
       "original_sha256": "6c77e4a389b10deaec9341eb1b84dd59cb369baf06602123e37746342152e23e",
       "repository_path": "tests/specialized/test_replacement_and_text.py",
-      "adaptations": "Unchanged test source",
+      "adaptations": "Unchanged test source Version-protection contract migration (2026-11-23): explicit expected versions; concurrent replacements share a pre-read version and require one 200/one 409 with one revision increment; unrelated failure assertions retained.",
       "initial_port_sha256": "7e1673a808272057225750f93229e9ae4f0b600e7fbc3dcd17c1e31931274c3e",
-      "ported_sha256": "91adc1e211ad4bcf6be445ae0d270171093c98708ce1c1850df31a2f8ed4e208",
-      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+      "ported_sha256": "7cdf249cfc7a3cf199201e38faf8aa482cbd06a1235a9d69df7b90d5dca4ecc6",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms",
+      "pre_version_patch_ported_sha256": "91adc1e211ad4bcf6be445ae0d270171093c98708ce1c1850df31a2f8ed4e208"
     },
     {
       "original_stage": "auth-pages-delivery-20261122",
@@ -215,10 +220,11 @@
       "original_file": "browser_checks.mjs",
       "original_sha256": "e29d528ca9a03aab01637ce0e4281346ea35a0666e98b923acf9a5d8cad2a46e",
       "repository_path": "frontend/tests/specialized/auth_browser_checks.mjs",
-      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved.",
+      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved. Follow-up retest: real LanguageProvider/required props/initial hook state, explicit version fixtures, current localized feedback and chip interactions with preserved aria labels; actual catalogue path with non-empty guard; current SHA metadata. Rendering expressions and failure assertions remain unchanged.",
       "initial_port_sha256": "07bc567eb07d24fbaeea13b2579f9c7dc8bed6abbb0803625f3f7faa78719dbd",
-      "ported_sha256": "4d452f5d9409ae21ef12b36449decaae5eccaa5b4462db0aafbf2b6e74df3347",
-      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+      "ported_sha256": "af633c04c1506167c0c7be5f264ab93cbda698990ebcf3f9271fc0f322de661c",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms",
+      "pre_version_retest_ported_sha256": "4d452f5d9409ae21ef12b36449decaae5eccaa5b4462db0aafbf2b6e74df3347"
     },
     {
       "original_stage": "auth-pages-delivery-20261122",
@@ -245,20 +251,22 @@
       "original_file": "render_contracts.mjs",
       "original_sha256": "f3459f4daba4fc0cd32b808b85013be94df7dd80d684de737132fd8a9a77b3dc",
       "repository_path": "frontend/tests/specialized/render_contracts.mjs",
-      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved.",
+      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved. Follow-up retest: real LanguageProvider/required props/initial hook state, explicit version fixtures, current localized feedback and chip interactions with preserved aria labels; actual catalogue path with non-empty guard; current SHA metadata. Rendering expressions and failure assertions remain unchanged.",
       "initial_port_sha256": "c032841a5f2dcc6b7cd02f591c37c021c4c44cb9d07c87661aba796a7d4e4512",
-      "ported_sha256": "ca3cd3c78a795b1a9174a2404516ef847b946557bb58b6b83caa6e3f9d9b4a43",
-      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+      "ported_sha256": "dbcd7a8a1f69a4890f1c8f448c007038590711ab0952ee4606f2253b567911e7",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms",
+      "pre_version_retest_ported_sha256": "ca3cd3c78a795b1a9174a2404516ef847b946557bb58b6b83caa6e3f9d9b4a43"
     },
     {
       "original_stage": "gap-completion-20261122",
       "original_file": "browser_checks.mjs",
       "original_sha256": "1c8ddef6ba6b4bf84ae24867003a49c95f997cd2527f1b0ad72316a11df59027",
       "repository_path": "frontend/tests/specialized/gap_browser_checks.mjs",
-      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved.",
+      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved. Follow-up retest: real LanguageProvider/required props/initial hook state, explicit version fixtures, current localized feedback and chip interactions with preserved aria labels; actual catalogue path with non-empty guard; current SHA metadata. Rendering expressions and failure assertions remain unchanged.",
       "initial_port_sha256": "1e187b7f893a1f24a397f9ef7d8acc609c65fe79f43f2f5cbd6df23eb701985c",
-      "ported_sha256": "d918614d59732f47c0df8a4c67de90489d169d972a61009b66147e11be6902ef",
-      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+      "ported_sha256": "cd6bc7b502514facc4103c26f2a1888c1d3dd06a940efe677ed2f9736d770881",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms",
+      "pre_version_retest_ported_sha256": "d918614d59732f47c0df8a4c67de90489d169d972a61009b66147e11be6902ef"
     },
     {
       "original_stage": "gap-completion-20261122",
@@ -285,31 +293,54 @@
       "original_file": "render_all.mjs",
       "original_sha256": "3028799525a0ac7769ff31b0f69f513a1e3574a9a38e824a6d1aad78ec5e9a09",
       "repository_path": "frontend/tests/specialized/render_all.mjs",
-      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved.",
+      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved. Follow-up retest: real LanguageProvider/required props/initial hook state, explicit version fixtures, current localized feedback and chip interactions with preserved aria labels; actual catalogue path with non-empty guard; current SHA metadata. Rendering expressions and failure assertions remain unchanged.",
       "initial_port_sha256": "eec11cbece3597a8fd13316a31af1608234b2fa69cb7c5deda6aa403f8241526",
-      "ported_sha256": "31006b3e2a744f2e3896d52781d6ed109a53f3a5111a339c8da18e496e12cca4",
-      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+      "ported_sha256": "37af40028bdc68e8e88c92832356af83bf597023bcdb92ea0a906db0f3eefbbd",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms",
+      "pre_version_retest_ported_sha256": "31006b3e2a744f2e3896d52781d6ed109a53f3a5111a339c8da18e496e12cca4"
     },
     {
       "original_stage": "paths-install-seed-20261123",
       "original_file": "frontend_smoke.mjs",
       "original_sha256": "e66c4c50574f7ebab488687401fc332a77640f9b78441615500bc094b7ad1d6b",
       "repository_path": "frontend/tests/specialized/frontend_smoke.mjs",
-      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved.",
+      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved. Follow-up retest: real LanguageProvider/required props/initial hook state, explicit version fixtures, current localized feedback and chip interactions with preserved aria labels; actual catalogue path with non-empty guard; current SHA metadata. Rendering expressions and failure assertions remain unchanged.",
       "initial_port_sha256": "e7f3b50da81b5a0ce82d928250fe0018191e8d1473fcae7dc2d5d4fc1db83d44",
-      "ported_sha256": "b2bc487d29e08d93abbd3f937dea5a6f9bf1fa7138efd8bc209cf54397d6b8b7",
-      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+      "ported_sha256": "9bbcf79f87745d015a84e1b0e54efe1df868804300fc74de4ba2a273c9555fc0",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms",
+      "pre_version_retest_ported_sha256": "b2bc487d29e08d93abbd3f937dea5a6f9bf1fa7138efd8bc209cf54397d6b8b7"
     },
     {
       "original_stage": "paths-install-seed-20261123",
       "original_file": "frontend_changed_pages.mjs",
       "original_sha256": "94c540db639ab5f77b6bc5dd19464a2f9e0cf738b70b9db9766289f5e5e7cd6b",
       "repository_path": "frontend/tests/specialized/frontend_changed_pages.mjs",
-      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved.",
+      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved. Version-protection contract migration (2026-11-23): explicit expected versions; concurrent replacements share a pre-read version and require one 200/one 409 with one revision increment; unrelated failure assertions retained. Follow-up retest: real LanguageProvider/required props/initial hook state, explicit version fixtures, current localized feedback and chip interactions with preserved aria labels; actual catalogue path with non-empty guard; current SHA metadata. Rendering expressions and failure assertions remain unchanged.",
       "initial_port_sha256": "4630bb116833106199c1384f815c80182d3e431c3b444598e0592933dff74d52",
-      "ported_sha256": "058abefab20356406daf453c302a667fe068d279a333cd63b9f1120e10be48ec",
-      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms"
+      "ported_sha256": "492ab63d08d03775d01e3dc9809eb6e11f57e23cdb232b94a0ae2e4b46990f53",
+      "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms",
+      "pre_version_patch_ported_sha256": "058abefab20356406daf453c302a667fe068d279a333cd63b9f1120e10be48ec",
+      "pre_version_retest_ported_sha256": "8faa30ef230a9985cd58cd4783ce65a9849084044faf56c954915dfde2e7ca6f"
     }
   ],
-  "note": "Original logs retain original SHA. These ports run the current checkout; no product fixes. Source fixtures consolidated and infrastructure runners replaced by run.py."
+  "note": "Historical source hashes and original execution versions are preserved. The explicitly authorized version-protection repair and contract adaptations are reported in docs/testing/VERSION_PROTECTION.md. Runners never repair production code.",
+  "version_protection_new_tests": [
+    {
+      "path": "tests/unit/test_versions.py",
+      "sha256_lf": "21df0b340a7437b89584b16139e31386fc4e1d1c9c9ce8c9b90196cc69bffd43"
+    },
+    {
+      "path": "backend/tests/candidate/test_versions.py",
+      "sha256_lf": "e606bae3eae32c0d21b631a504431f4d587345a42829be0d4928a7a24da0c156"
+    },
+    {
+      "path": "backend/tests/candidate/test_version_migration.py",
+      "sha256_lf": "af42fdd8e843b526c95597d65dfc67394eefd35a219ed74dd439a35e6698392a"
+    },
+    {
+      "path": "frontend/tests/specialized/version_conflicts.mjs",
+      "sha256_lf": "7677483d2d814c5f245cfcba8a576affd918d854a545f5d7811e1af4b07fc674"
+    }
+  ],
+  "version_retest_report": "docs/testing/VERSION_RETEST.md"
 }

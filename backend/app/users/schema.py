@@ -1,13 +1,14 @@
 import uuid
 from typing import Annotated, Any
 
-from pydantic import EmailStr, StringConstraints, model_validator
+from pydantic import EmailStr, StrictInt, StringConstraints, model_validator
 from sqlmodel import Field, SQLModel
 
 from app.users.model import Role
 
 
 NonBlankName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+ResourceVersion = Annotated[StrictInt, Field(gt=0)]
 
 
 class UserCreate(SQLModel):
@@ -49,6 +50,14 @@ class CandidateProfileCreate(SQLModel):
     display_name: NonBlankName
     resume_text: str = ""
     skills: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_client_version(cls, values: Any) -> Any:
+        """首次创建的版本由服务器分配，保留既有其他额外字段的处理方式。"""
+        if isinstance(values, dict) and "version" in values:
+            raise ValueError("Version is assigned by the server")
+        return values
 
 
 class EmployerProfileCreate(SQLModel):
@@ -103,6 +112,7 @@ class CandidateProfilePublic(SQLModel):
     display_name: str
     resume_text: str
     skills: list[str]
+    version: int
 
 
 class EmployerProfilePublic(SQLModel):

@@ -121,7 +121,7 @@ def test_fp_emp_2_update_job_replaces_skills_and_updated_at(
 
     replaced = client.patch(
         f"/employer/jobs/{job['id']}",
-        json={"title": "Data Engineer", "required_skills": [" Go ", "go", "Rust"]},
+        json={"version": original["version"], "title": "Data Engineer", "required_skills": [" Go ", "go", "Rust"]},
         headers=headers,
     )
     assert replaced.status_code == 200
@@ -130,15 +130,17 @@ def test_fp_emp_2_update_job_replaces_skills_and_updated_at(
     assert body["description"] == original["description"]
     assert body["required_skills"] == ["go", "rust"]
     assert body["updated_at"] > original["updated_at"]
+    assert body["version"] == original["version"] + 1
 
     cleared = client.patch(
         f"/employer/jobs/{job['id']}",
-        json={"required_skills": []},
+        json={"version": body["version"], "required_skills": []},
         headers=headers,
     )
     assert cleared.status_code == 200
     assert cleared.json()["required_skills"] == []
     assert cleared.json()["title"] == "Data Engineer"
+    assert cleared.json()["version"] == body["version"] + 1
 
     db.expire_all()
     saved = db.get(Job, uuid.UUID(job["id"]))
@@ -159,7 +161,7 @@ def test_fp_emp_2_other_employer_cannot_edit_or_delete(
     job = make_job(owner, title="Protected")
 
     patched = client.patch(
-        f"/employer/jobs/{job['id']}", json={"title": "Hijacked"}, headers=other
+        f"/employer/jobs/{job['id']}", json={"version": job["version"], "title": "Hijacked"}, headers=other
     )
     assert patched.status_code == 403
     assert patched.json()["detail"] == "Not the owner of this job"

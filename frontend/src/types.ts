@@ -47,6 +47,7 @@ export interface EmployerProfileCreate {
 
 /** 候选人本人资料响应，包含后端规范化后的技能。 */
 export interface CandidateProfilePublic {
+  version: number
   user_id: string
   display_name: string
   resume_text: string
@@ -77,12 +78,14 @@ export interface JobCreate {
 
 /** 技能传入时整体替换，空数组表示清空。 */
 export interface JobUpdate {
+  version: number
   title?: string
   description?: string
   required_skills?: string[]
 }
 
 export interface JobPublic {
+  version: number
   id: string
   company_name: string
   employer_id: string
@@ -127,6 +130,7 @@ export interface ApplicationStatusPublic {
 
 /** 省略字段保留原值；空字符串或空数组清空，不接受 null。 */
 export interface CandidateProfileUpdate {
+  version: number
   display_name?: string
   resume_text?: string
   skills?: string[]

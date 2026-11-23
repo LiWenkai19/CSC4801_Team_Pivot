@@ -2,6 +2,7 @@ import { ApiError } from '../api/common_api'
 import type { MessageKey } from './zh-CN'
 
 const knownDetails = new Map<string, MessageKey>([
+    ['Resource version conflict', 'edit.conflict'],
     ['Invalid credentials', 'auth.invalidCredentials'],
     ['User already exists', 'auth.accountExists'],
     ['Company not found', 'api.companyMissing'],
@@ -20,6 +21,11 @@ const knownDetails = new Map<string, MessageKey>([
     ['Slot end time is out of range', 'api.slotOutOfRange'],
     ['Slot overlaps an existing slot', 'slots.overlap'],
 ])
+
+/** 仅将编辑版本冲突交给草稿恢复流程，其他409仍使用原有业务处理。 */
+export function isVersionConflict(reason: unknown): boolean {
+    return reason instanceof ApiError && reason.status === 409 && reason.message === 'Resource version conflict'
+}
 
 /** 在界面选择错误文案，保留原请求封装与页面已有的业务分支。 */
 export function apiFeedback(reason: unknown, fallback: MessageKey): MessageKey {

@@ -1,6 +1,9 @@
 import type { MessageKey } from './zh-CN'
 
 const enUS = {
+    'edit.conflict': "This content was updated on another page. Your changes have not been saved.",
+    'edit.reloadLatest': "Reload latest content",
+    'edit.discardConfirm': "Reloading will discard your unsaved changes on this page. Continue?",
     'common.switchLanguage': "Switch to Simplified Chinese",
     'common.brandDescription': "Recruitment platform",
     'common.pageTitle': "SkillMatch Recruitment Platform",

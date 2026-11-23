@@ -24,7 +24,7 @@ def test_profile_failed_commit_rolls_back_text_and_skills(
     monkeypatch.setattr(db, "commit", fail_commit)
     with pytest.raises(SQLAlchemyError):
         service.update_my_profile(
-            db, user, ProfileUpdate(resume_text="unsaved", skills=["sql"])
+            db, user, ProfileUpdate(version=before["version"], resume_text="unsaved", skills=["sql"])
         )
     assert client.get("/candidate/profile", headers=candidate).json() == before
 
@@ -35,10 +35,10 @@ def test_profile_patch_persists_and_preserves_omitted_fields(client, account):
     assert initial["skills"] == ["python"]
     text = "  中文\n<script>alert(1)</script>\n' ; DROP TABLE job; --  "
     updated = client.patch(
-        "/candidate/profile", headers=candidate, json={"resume_text": text}
+        "/candidate/profile", headers=candidate, json={"version": initial["version"], "resume_text": text}
     )
     assert updated.status_code == 200
-    assert updated.json() == initial | {"resume_text": text}
+    assert updated.json() == initial | {"resume_text": text, "version": 2}
     assert (
         client.get("/candidate/profile", headers=candidate).json()["resume_text"]
         == text
@@ -46,17 +46,18 @@ def test_profile_patch_persists_and_preserves_omitted_fields(client, account):
     changed = client.patch(
         "/candidate/profile",
         headers=candidate,
-        json={"display_name": " Alice ", "skills": [" SQL ", "sql", "PYTHON", ""]},
+        json={"version": updated.json()["version"], "display_name": " Alice ", "skills": [" SQL ", "sql", "PYTHON", ""]},
     )
     assert changed.json()["skills"] == ["python", "sql"]
     assert changed.json()["display_name"] == "Alice"
     assert changed.json()["resume_text"] == text
+    assert changed.json()["version"] == 3
     empty = client.patch(
-        "/candidate/profile", headers=candidate, json={"resume_text": "", "skills": []}
+        "/candidate/profile", headers=candidate, json={"version": changed.json()["version"], "resume_text": "", "skills": []}
     )
     assert empty.json()["resume_text"] == "" and empty.json()["skills"] == []
     assert (
-        client.patch("/candidate/profile", headers=candidate, json={}).json()
+        client.patch("/candidate/profile", headers=candidate, json={"version": empty.json()["version"]}).json()
         == empty.json()
     )
 
@@ -79,7 +80,7 @@ def test_profile_invalid_patch_is_atomic(client, account, payload):
     candidate, _ = account()
     initial = client.get("/candidate/profile", headers=candidate).json()
     assert (
-        client.patch("/candidate/profile", headers=candidate, json=payload).status_code
+        client.patch("/candidate/profile", headers=candidate, json={"version": initial["version"], **payload}).status_code
         == 422
     )
     assert client.get("/candidate/profile", headers=candidate).json() == initial
@@ -115,7 +116,7 @@ def test_profile_permission_matrix(client, account, job):
     assert client.get(path, headers=outsider).status_code == 403
     assert (
         client.patch(
-            "/candidate/profile", headers=employer, json={"resume_text": "stolen"}
+            "/candidate/profile", headers=employer, json={"version": 1, "resume_text": "stolen"}
         ).status_code
         == 403
     )

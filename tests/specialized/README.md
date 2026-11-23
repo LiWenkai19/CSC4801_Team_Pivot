@@ -1,5 +1,20 @@
 # Specialized local test suites
 
+The user-authorized edit-version repair changes both profile/job PATCH contracts:
+explicitly supply the version from the editor's prior GET. Sequential controls
+advance their saved version; concurrent cases share one version captured before
+starting either request and require exactly one 200 and one 409. Test helpers never
+silently refresh an outdated request. Historical reproduction evidence is retained
+in the reports; unrelated failing cases remain ordinary failures.
+
+The new real-browser regression covers candidate/job editors in Chinese/English
+on Chromium, Firefox and WebKit, including retained drafts, cancel, failed reload
+and confirmed reload followed by another save:
+
+```sh
+python tests/specialized/run.py browser --browser-script version_conflicts
+```
+
 These are the historical exploratory/regression tests, now runnable from this
 checkout. They supplement the course unit command `python tests/run_tests.py`.
 They intentionally keep assertions that currently expose business bugs. A nonzero
@@ -103,13 +118,23 @@ not a new whole-system coverage claim. No exclusions hide known failures.
 - The model/migration tool resets only its freshly created DB and checks default
   comparisons explicitly. It does not repair seed or migrations.
 
-Latest accepted local evidence: functional369 pass/24 fail, browser149 pass/8 fail,
-SSR36 pass, delivery13 pass/8 fail. Failures match known causes; unit tests still
-have the separate course privacy-contract failure. See
+Historical port-baseline evidence: functional369 pass/24 fail, browser149 pass/8 fail,
+SSR36 pass, delivery13 pass/8 fail. These original counts and the then-failing
+privacy-contract test belong to that baseline, not the current repaired checkout. See
 [the consolidated report](../../docs/testing/REPORT.md),
 [failure causes and post-fix plans](../../docs/testing/failed-cases.json), and
 [source provenance](provenance.json). These results are for the recorded baseline
 plus the test-only migration, not an assurance about future main commits.
+
+Current edit-version follow-up: browser169 (161 passed/8 known failures), SSR36
+passed, performance4 passed including the complete 360-second budget, original
+non-equivalent mutation samples7/7 detected, non-Docker delivery13 passed/8 known
+failures. The browser total includes the 12 version-conflict scenarios. See
+[VERSION_RETEST.md](../../docs/testing/VERSION_RETEST.md) for exactly which rerun
+replaces each first attempt; repeated executions are not added to accepted totals.
+SSR uses the real LanguageProvider and required props, browser selectors follow
+the current accessible names, and catalogue inventory must be nonempty. None of
+these adaptations suppresses product exceptions or changes rendering expressions.
 
 ## Historical adaptation
 

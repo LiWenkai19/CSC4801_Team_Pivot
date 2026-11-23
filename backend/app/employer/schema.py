@@ -8,7 +8,7 @@ from pydantic import AfterValidator, ConfigDict, field_validator
 from sqlmodel import Field, SQLModel
 
 from app.employer.model import ApplicationStatus
-from app.users.schema import NonBlankName
+from app.users.schema import NonBlankName, ResourceVersion
 
 
 def _require_non_blank(value: str) -> str:
@@ -67,6 +67,7 @@ class JobCreate(RequestSchema):
 class JobUpdate(PartialUpdateSchema):
     """只修改本次显式提交的职位字段；技能整体替换。"""
 
+    version: ResourceVersion
     title: NonBlankName | None = None
     description: NonBlankText | None = None
     required_skills: list[str] | None = None
@@ -83,6 +84,7 @@ class JobPublic(SQLModel):
     required_skills: list[str]
     created_at: datetime
     updated_at: datetime
+    version: int
 
 
 class BookingPublic(SQLModel):

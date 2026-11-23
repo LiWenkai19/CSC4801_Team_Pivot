@@ -477,6 +477,7 @@ def test_candidate_profile_saves_normalized_skills_and_private_resume(
         "display_name": "Alice",
         "resume_text": payload.get("resume_text", ""),
         "skills": expected_skills,
+        "version": 1,
     }
     with Session(client.app.state.test_engine) as session:
         saved = session.get(CandidateProfile, uuid.UUID(auth["user"]["id"]))

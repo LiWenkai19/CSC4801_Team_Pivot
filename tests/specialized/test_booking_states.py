@@ -77,7 +77,7 @@ def test_existing_booking_survives_live_profile_company_and_job_updates(
         (
             "/candidate/profile",
             data["candidate"]["headers"],
-            {"display_name": "Updated candidate", "skills": ["sql"]},
+            {"version": 1, "display_name": "Updated candidate", "skills": ["sql"]},
         ),
         (
             "/employer/company",
@@ -89,6 +89,7 @@ def test_existing_booking_survives_live_profile_company_and_job_updates(
             data["owner"]["headers"],
             {
                 "title": "Updated job",
+                "version": 1,
                 "description": "Updated description",
                 "required_skills": ["sql"],
             },

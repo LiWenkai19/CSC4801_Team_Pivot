@@ -6,7 +6,7 @@ import EmployerSkillPicker from '../../components/skills/EmployerSkillPicker'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLanguage } from '../../i18n/LanguageContext'
 import type { MessageKey } from '../../i18n/zh-CN'
-import { apiFeedback } from '../../i18n/apiFeedback'
+import { apiFeedback, isVersionConflict } from '../../i18n/apiFeedback'
 
 /** 新建和编辑共用表单；路由变化后重新加载，避免沿用上一职位输入。 */
 function JobFormPage() {
@@ -23,6 +23,9 @@ function JobForm({ jobId }: { jobId: string | undefined }) {
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
     const [skills, setSkills] = useState<string[]>([])
+    const [version, setVersion] = useState<number | null>(null)
+    const [conflict, setConflict] = useState(false)
+    const [reloading, setReloading] = useState(false)
     const [loading, setLoading] = useState(Boolean(jobId))
     const [loadError, setLoadError] = useState<MessageKey | ''>('')
     const [submitError, setSubmitError] = useState<MessageKey | ''>('')
@@ -39,6 +42,7 @@ function JobForm({ jobId }: { jobId: string | undefined }) {
                 setTitle(job.title)
                 setDescription(job.description)
                 setSkills(job.required_skills)
+                setVersion(job.version)
             }).catch(reason => { if (active) setLoadError(apiFeedback(reason, 'common.loadFailed')) })
                 .finally(() => { if (active) setLoading(false) })
         }
@@ -54,7 +58,7 @@ function JobForm({ jobId }: { jobId: string | undefined }) {
     /** 技能由选择器维护为数组，空数组表示该职位不限制技能。 */
     async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
-        if (pending.current || loading || loadError) return
+        if (pending.current || loading || loadError || conflict || (jobId && version === null)) return
         setSubmitError('')
         if (!title.trim() || !description.trim()) {
             setSubmitError('jobs.requiredFields')
@@ -68,15 +72,36 @@ function JobForm({ jobId }: { jobId: string | undefined }) {
         pending.current = true
         setSubmitting(true)
         try {
-            if (jobId) await updateJob(jobId, data)
+            if (jobId && version !== null) {
+                const saved = await updateJob(jobId, { ...data, version })
+                setVersion(saved.version)
+            }
             else await createJob(data)
             navigate('/employer/jobs')
         } catch (reason) {
-            setSubmitError(apiFeedback(reason, 'common.saveFailed'))
+            if (isVersionConflict(reason)) setConflict(true)
+            else setSubmitError(apiFeedback(reason, 'common.saveFailed'))
         } finally {
             pending.current = false
             setSubmitting(false)
         }
+    }
+
+    async function reloadLatest() {
+        if (!jobId || pending.current || !window.confirm(t('edit.discardConfirm'))) return
+        pending.current = true
+        setReloading(true)
+        try {
+            const latest = await getMyJob(jobId)
+            setTitle(latest.title)
+            setDescription(latest.description)
+            setSkills(latest.required_skills)
+            setVersion(latest.version)
+            setConflict(false)
+            setSubmitError('')
+        } catch (reason) {
+            setSubmitError(apiFeedback(reason, 'common.loadFailed'))
+        } finally { pending.current = false; setReloading(false) }
     }
 
     if (!isEmployer) return <main className="work-page"><p className="feedback" role="alert">{t('auth.employerOnly')}</p><Link to="/navpage">{t('common.home')}</Link></main>
@@ -85,8 +110,8 @@ function JobForm({ jobId }: { jobId: string | undefined }) {
         <h1>{jobId ? t('jobs.edit') : t('jobs.new')}</h1>
         {loading && <p className="feedback" role="status">{t('jobs.loading')}</p>}
         {loadError && <div className="page-section"><p className="feedback" role="alert">{t(loadError)}</p><button type="button" onClick={retryLoad}>{t('common.reload')}</button></div>}
-        {!loading && !loadError && <form className="form-panel" onSubmit={handleSubmit} aria-busy={submitting}>
-            <fieldset disabled={submitting}>
+        {!loading && !loadError && <form className="form-panel" onSubmit={handleSubmit} aria-busy={submitting || reloading}>
+            <fieldset disabled={submitting || reloading}>
                 <legend>{t('jobs.info')}</legend>
                 <div className="field">
                     <label htmlFor="job-title">{t('jobs.titleField')}</label>
@@ -97,7 +122,8 @@ function JobForm({ jobId }: { jobId: string | undefined }) {
                     <textarea id="job-description" value={description} required rows={6} onChange={event => setDescription(event.target.value)} />
                 </div>
                 <EmployerSkillPicker value={skills} onChange={setSkills} />
-                <button type="submit">{submitting ? t('common.saving') : t('jobs.save')}</button>
+                {conflict && <div className="feedback" role="alert"><p>{t('edit.conflict')}</p><button type="button" onClick={reloadLatest}>{t('edit.reloadLatest')}</button></div>}
+                <button type="submit" disabled={conflict}>{submitting ? t('common.saving') : t('jobs.save')}</button>
             </fieldset>
         </form>}
         {submitError && <p className="feedback" role="alert">{t(submitError)}</p>}

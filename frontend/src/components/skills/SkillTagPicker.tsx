@@ -73,7 +73,7 @@ function SkillTagPicker({
     return <fieldset className="skill-picker">
         <legend>{legend}</legend>
         <ul aria-label={selectedLabel}>
-            {value.map(skill => <li key={skill}>{displaySkillName(skill)} <button type="button" aria-label={t('skills.removeOne', { skill: displaySkillName(skill) })} onClick={() => remove(skill)}>{t('skills.remove')}</button></li>)}
+            {value.map(skill => <li key={skill}>{displaySkillName(skill)} <button type="button" aria-label={t('skills.removeOne', { skill: displaySkillName(skill) })} onClick={() => remove(skill)}><span aria-hidden="true">×</span></button></li>)}
         </ul>
         <label htmlFor={id}>{inputLabel}</label>
         <div className="skill-input">

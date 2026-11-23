@@ -4,7 +4,9 @@ import uuid
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import CheckConstraint, Column, DateTime, Text, UniqueConstraint
+from sqlalchemy import (
+    CheckConstraint, Column, DateTime, Integer, Text, UniqueConstraint, text,
+)
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -32,6 +34,7 @@ class Job(SQLModel, table=True):
     __table_args__ = (
         CheckConstraint("length(trim(title)) > 0", name="ck_job_title"),
         CheckConstraint("length(trim(description)) > 0", name="ck_job_description"),
+        CheckConstraint("version > 0", name="ck_job_version"),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -39,6 +42,10 @@ class Job(SQLModel, table=True):
     title: str = Field(nullable=False)
     description: str = Field(sa_column=Column(Text(), nullable=False))
     is_deleted: bool = Field(default=False, nullable=False)
+    version: int = Field(
+        default=1,
+        sa_column=Column(Integer, nullable=False, server_default=text("1")),
+    )
     created_at: datetime = Field(default_factory=utc_now, sa_column=timestamp_column())
     updated_at: datetime = Field(default_factory=utc_now, sa_column=timestamp_column())
 

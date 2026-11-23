@@ -18,7 +18,7 @@ def prepare(client, account, job, target):
         result = client.patch(
             "/candidate/profile",
             headers=candidate["headers"],
-            json={"skills": ["legacy"]},
+            json={"version": 1, "skills": ["legacy"]},
         )
         assert result.status_code == 200
         path, headers, field, table = (
@@ -48,8 +48,9 @@ def test_fresh_database_replacement_replay_and_overlap_neighbor(
     first, second = (
         (["python", "sql"], ["sql", "rust"]) if sets_overlap else (["python"], ["sql"])
     )
+    version = client.get(path, headers=headers).json()["version"]
     results = overlapping_replacements(
-        engine, path, headers, field, table, first, second, evidence
+        engine, path, headers, field, table, first, second, evidence, version
     )
     got = client.get(
         "/candidate/profile" if target == "candidate-skills" else path, headers=headers
@@ -68,13 +69,14 @@ def test_fresh_database_replacement_replay_and_overlap_neighbor(
             "state": snapshot(),
         },
     )
-    assert all(r.status_code in (200, 409) for r in results), (
+    assert sorted(r.status_code for r in results) == [200, 409], (
         "Normal concurrent replacements must not produce server error: "
         + str([r.status_code for r in results])
     )
     assert final in (sorted(first), sorted(second)), (
         "Final list is neither complete replacement: " + str(final)
     )
+    assert got.json()["version"] == version + 1
 
 
 @pytest.mark.parametrize("target", ["candidate-skills", "job-skills"])
@@ -84,11 +86,14 @@ def test_sequential_replacement_control_has_no_union(
     candidate, posting, path, headers, field, table = prepare(
         client, account, job, target
     )
+    version = client.get(path, headers=headers).json()["version"]
     for value in (["python"], ["sql"]):
-        response = client.patch(path, headers=headers, json={field: value})
+        response = client.patch(path, headers=headers, json={"version": version, field: value})
         assert response.status_code == 200 and response.json()[field] == value, (
             response.text
         )
+        assert response.json()["version"] == version + 1
+        version += 1
     response = client.get(
         "/candidate/profile" if target == "candidate-skills" else path, headers=headers
     )
@@ -136,11 +141,13 @@ def test_shared_nul_storage_boundary_with_normal_unicode_control(
             "description",
         )
     ordinary = ["c++", "sql"] if field == "skills" else "普通文本 Résumé 🙂 C++"
-    normal = client.patch(path, headers=headers, json={field: ordinary})
+    protected = {} if target == "company-description" else {"version": 1}
+    normal = client.patch(path, headers=headers, json={**protected, field: ordinary})
     assert normal.status_code == 200, normal.text
     before = snapshot()
     value = ["py\x00thon"] if field == "skills" else "ordinary\x00text"
-    bad = client.patch(path, headers=headers, json={field: value})
+    protected = {} if target == "company-description" else {"version": normal.json()["version"]}
+    bad = client.patch(path, headers=headers, json={**protected, field: value})
     after = snapshot()
     evidence(
         "nul-neighbor",

@@ -1,6 +1,6 @@
 {
   "historical_final_business_sha": "8569b72ac1d965c252a741f3e62ed71b01f630e7",
-  "open_non_docker_tracking_entries": 12,
+  "open_non_docker_tracking_entries": 10,
   "findings": [
     {
       "id": "SE-02",
@@ -20,7 +20,13 @@
       "post_fix_new_tests": [
         "文档修复后，在带空格及中文路径的新目录中，使用普通新shell按文档逐条执行完整非Docker安装/初始化/启动/测试流程。",
         "新增配置省略、占位符未替换及frontend/backend工作目录切换场景，核对说明能定位错误且不依赖测试harness额外变量。"
-      ]
+      ],
+      "latest_retest": {
+        "date": "2026-11-23 Asia/Shanghai",
+        "status": "still_reproduced_without_business_changes",
+        "report": "VERSION_RETEST.md",
+        "failure_instances": 3
+      }
     },
     {
       "id": "SE-03",
@@ -79,7 +85,13 @@
       "post_fix_new_tests": [
         "修复seed后新增固定时钟跨日期边界的资格验证，区别时间已过与时长错误，不把本轮普通双候选复现算新增。",
         "新增已有登录会话、预约及职位改动后再次reset，检查数据/会话/关联都回到所声明演示状态；多雇主时段不得串用。"
-      ]
+      ],
+      "latest_retest": {
+        "date": "2026-11-23 Asia/Shanghai",
+        "status": "still_reproduced_without_business_changes",
+        "report": "VERSION_RETEST.md",
+        "failure_instances": 3
+      }
     },
     {
       "id": "SE-06",
@@ -99,7 +111,13 @@
       "post_fix_new_tests": [
         "迁移修复后新增显式NULL仍应拒绝、显式Accepted不得被默认覆盖的对照，区分省略字段与显式赋值。",
         "新增已有四种状态数据的旧库升级，检查状态保存、默认值生效且重复升级不改业务数据。"
-      ]
+      ],
+      "latest_retest": {
+        "date": "2026-11-23 Asia/Shanghai",
+        "status": "still_reproduced_without_business_changes",
+        "report": "VERSION_RETEST.md",
+        "failure_instances": 2
+      }
     },
     {
       "id": "SLOT-01",
@@ -122,7 +140,13 @@
         "极端时间以等价 ISO 偏移表示，而非只用 Z 输入",
         "两个雇主、普通和边界时段混合后的归属隔离与完整列表",
         "边界时段经历完整状态变化与删除/预约竞争"
-      ]
+      ],
+      "latest_retest": {
+        "date": "2026-11-23 Asia/Shanghai",
+        "status": "still_reproduced_without_business_changes",
+        "report": "VERSION_RETEST.md",
+        "failure_instances": 1
+      }
     },
     {
       "id": "REG-CAND-01",
@@ -140,7 +164,9 @@
       ],
       "post_fix_new_tests": [
         "初始技能为空、三个更新含清空的组合；技能与仅改简历请求交错，验证独立字段不丢失。"
-      ]
+      ],
+      "status": "fixed_and_verified_in_local_working_tree",
+      "repair_report": "VERSION_PROTECTION.md"
     },
     {
       "id": "REG-JOB-01",
@@ -158,7 +184,9 @@
       ],
       "post_fix_new_tests": [
         "要求替换与title-only更新、初始无要求、三请求和清空组合；更新与允许删除/投递交错。"
-      ]
+      ],
+      "status": "fixed_and_verified_in_local_working_tree",
+      "repair_report": "VERSION_PROTECTION.md"
     },
     {
       "id": "REG-TEXT-01",
@@ -219,7 +247,13 @@
       "post_fix_new_tests": [
         "分别模拟本地网络中断与503，核对按最终确认的交互契约恢复且无未处理拒绝",
         "雇主首次资料页的退出入口在过期条件下检查相同共享Context调用方；本轮未执行该入口的过期场景"
-      ]
+      ],
+      "latest_retest": {
+        "date": "2026-11-23 Asia/Shanghai",
+        "status": "still_reproduced_without_business_changes",
+        "report": "VERSION_RETEST.md",
+        "failure_instances": 5
+      }
     },
     {
       "id": "DEL-01",
@@ -239,7 +273,13 @@
       "post_fix_new_tests": [
         "修复后完整执行两份原脚本，覆盖写操作CSRF、登出及角色隔离",
         "随机测试API端口和已有8000端口服务同时存在时，核验所有业务请求仅到本轮隔离实例；禁止影响已有服务"
-      ]
+      ],
+      "latest_retest": {
+        "date": "2026-11-23 Asia/Shanghai",
+        "status": "still_reproduced_without_business_changes",
+        "report": "VERSION_RETEST.md",
+        "failure_instances": 2
+      }
     }
   ],
   "historical_closed": [
@@ -248,7 +288,24 @@
   "docker_excluded": [
     "SE-01"
   ],
-  "course_contract_failure": "SPEC-Q01: related employer resume access; ordinary unit failure preserved",
+  "course_contract_failure": "SPEC-Q01 direct profile access was repaired by teammate commit 5143f1e; the original privacy test remains passing. Residual UI wording is recorded separately in VERSION_PROTECTION.md.",
   "original_test_integration_gaps": "BL-G01/G02 were addressed by a8f3d3a unit/component integration; this does not repair runtime bugs.",
-  "repairs": []
+  "repairs": [
+    {
+      "id": "REG-CAND-01",
+      "status": "fixed_and_verified_in_local_working_tree",
+      "base_sha": "5143f1e944cac5b9e19e484320e2684b883b5ab4",
+      "remedy": "Parent-row lock with fresh state, mandatory expected version, transactional revision/content update, preserved draft on conflict",
+      "report": "VERSION_PROTECTION.md"
+    },
+    {
+      "id": "REG-JOB-01",
+      "status": "fixed_and_verified_in_local_working_tree",
+      "base_sha": "5143f1e944cac5b9e19e484320e2684b883b5ab4",
+      "remedy": "Parent-row lock with fresh state, mandatory expected version, transactional revision/content update, preserved draft on conflict",
+      "report": "VERSION_PROTECTION.md"
+    }
+  ],
+  "historical_open_non_docker_tracking_entries": 12,
+  "count_note": "Historical tracking count 12 minus REG-CAND-01 and REG-JOB-01 verified here; other historical entries were not reclassified as fixed by this patch."
 }
