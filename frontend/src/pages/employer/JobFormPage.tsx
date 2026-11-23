@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { createJob, getMyJob, updateJob } from '../../api/employer_api'
+import EmployerSkillPicker from '../../components/skills/EmployerSkillPicker'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLanguage } from '../../i18n/LanguageContext'
 import type { MessageKey } from '../../i18n/zh-CN'
@@ -21,7 +22,7 @@ function JobForm({ jobId }: { jobId: string | undefined }) {
     const isEmployer = currentUser?.role === 'employer'
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
-    const [skills, setSkills] = useState('')
+    const [skills, setSkills] = useState<string[]>([])
     const [loading, setLoading] = useState(Boolean(jobId))
     const [loadError, setLoadError] = useState<MessageKey | ''>('')
     const [submitError, setSubmitError] = useState<MessageKey | ''>('')
@@ -37,7 +38,7 @@ function JobForm({ jobId }: { jobId: string | undefined }) {
                 if (!active) return
                 setTitle(job.title)
                 setDescription(job.description)
-                setSkills(job.required_skills.join(', '))
+                setSkills(job.required_skills)
             }).catch(reason => { if (active) setLoadError(apiFeedback(reason, 'common.loadFailed')) })
                 .finally(() => { if (active) setLoading(false) })
         }
@@ -50,7 +51,7 @@ function JobForm({ jobId }: { jobId: string | undefined }) {
         setAttempt(previous => previous + 1)
     }
 
-    /** 空技能输入明确提交 []，使编辑可以清空技能要求。 */
+    /** 技能由选择器维护为数组，空数组表示该职位不限制技能。 */
     async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         if (pending.current || loading || loadError) return
@@ -62,7 +63,7 @@ function JobForm({ jobId }: { jobId: string | undefined }) {
         const data = {
             title: title.trim(),
             description,
-            required_skills: skills.split(/[,，]/).map(skill => skill.trim()).filter(Boolean),
+            required_skills: skills,
         }
         pending.current = true
         setSubmitting(true)
@@ -95,10 +96,7 @@ function JobForm({ jobId }: { jobId: string | undefined }) {
                     <label htmlFor="job-description">{t('jobs.descriptionField')}</label>
                     <textarea id="job-description" value={description} required rows={6} onChange={event => setDescription(event.target.value)} />
                 </div>
-                <div className="field">
-                    <label htmlFor="job-skills">{t('jobs.skillsField')}</label>
-                    <input id="job-skills" value={skills} onChange={event => setSkills(event.target.value)} />
-                </div>
+                <EmployerSkillPicker value={skills} onChange={setSkills} />
                 <button type="submit">{submitting ? t('common.saving') : t('jobs.save')}</button>
             </fieldset>
         </form>}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listJobs } from '../../api/candidate_api'
+import { displaySkillName } from '../../components/skills/skillCatalog'
 import ApplyButton from '../../components/candidate/ApplyButton'
 import type { RecommendedJob } from '../../types'
 import { useLanguage } from '../../i18n/LanguageContext'
@@ -43,7 +44,7 @@ function JobsPage() {
                     <div className="skill-tags">
                         <span className="job-cell-label">{t('jobs.requiredSkills')}</span>
                         {job.required_skills.length
-                            ? job.required_skills.map(skill => <span className="skill-tag" key={skill}>{skill}</span>)
+                            ? job.required_skills.map(skill => <span className="skill-tag" key={skill}>{displaySkillName(skill)}</span>)
                             : <span className="record-meta">{t('jobs.noRequiredSkills')}</span>}
                     </div>
                     <div className="job-score">

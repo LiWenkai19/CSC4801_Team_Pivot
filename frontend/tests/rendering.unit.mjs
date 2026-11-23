@@ -33,12 +33,12 @@ function loadSource(file) {
     return sourceModule.exports;
 }
 
-const SkillTagPicker = loadSource(path.join(src, 'components/skills/SkillTagPicker.tsx')).default;
+const CandidateSkillPicker = loadSource(path.join(src, 'components/skills/CandidateSkillPicker.tsx')).default;
 const LanguageProvider = loadSource(path.join(src, 'i18n/LanguageProvider.tsx')).default;
 const render = value => renderToStaticMarkup(React.createElement(
     LanguageProvider,
     null,
-    React.createElement(SkillTagPicker, {value, onChange() {}}),
+    React.createElement(CandidateSkillPicker, {value, onChange() {}}),
 ));
 
 test('FP-SEC-3 actual component renders the required script string as text', () => {
@@ -50,9 +50,9 @@ test('FP-SEC-3 actual component renders the required script string as text', () 
 
 test('FP-SEC-3 ordinary Unicode and quotes survive text rendering', () => {
     const html = render(['中文 Résumé 🙂', 'C++ & "SQL"']);
-    assert(html.includes('中文 Résumé 🙂'));
-    assert(html.includes('C++ &amp; &quot;SQL&quot;'));
-    assert(html.includes('aria-label="移除 C++ &amp; &quot;SQL&quot;"'));
+    assert(html.includes('中文 résumé 🙂'));
+    assert(html.includes('c++ &amp; &quot;sql&quot;'));
+    assert(html.includes('aria-label="移除 c++ &amp; &quot;sql&quot;"'));
 });
 
 test('skill picker label points to the actual input', () => {
@@ -60,5 +60,5 @@ test('skill picker label points to the actual input', () => {
     const labelId = html.match(/<label for="([^"]+)"/)[1];
     assert(html.includes(`id="${labelId}"`));
     assert(html.includes('aria-label="已选技能"'));
-    assert(html.includes('aria-label="移除 python"'));
+    assert(html.includes('aria-label="移除 Python"'));
 });

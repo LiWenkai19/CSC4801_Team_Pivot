@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { changeApplicationStatus, getMyJob, listJobApplicants } from '../../api/employer_api'
+import { displaySkillName } from '../../components/skills/skillCatalog'
 import { useAuth } from '../../contexts/AuthContext'
 import type { ApplicantPublic, ApplicationStatus, JobPublic } from '../../types'
 import { useLanguage } from '../../i18n/LanguageContext'
@@ -60,7 +61,7 @@ function ApplicantCard({ applicant, onUpdated }: { applicant: ApplicantPublic; o
                 <h4>{t('applications.skills')}</h4>
                 {applicant.skills.length > 0
                     ? <div className="skill-tags">
-                        {applicant.skills.map(skill => <span className="skill-tag" key={skill}>{skill}</span>)}
+                        {applicant.skills.map(skill => <span className="skill-tag" key={skill}>{displaySkillName(skill)}</span>)}
                     </div>
                     : <p className="record-meta">{t('applications.noSkills')}</p>}
             </section>
@@ -159,7 +160,7 @@ function JobDetail({ jobId }: { jobId: string | undefined }) {
                         <h3>{t('jobs.requiredSkills')}</h3>
                         {job.required_skills.length > 0
                             ? <div className="skill-tags">
-                                {job.required_skills.map(skill => <span className="skill-tag" key={skill}>{skill}</span>)}
+                                {job.required_skills.map(skill => <span className="skill-tag" key={skill}>{displaySkillName(skill)}</span>)}
                             </div>
                             : <p className="record-meta">{t('jobs.noRequiredSkills')}</p>}
                     </section>

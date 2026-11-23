@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { getMyProfile, updateMyProfile } from '../../api/candidate_api'
-import SkillTagPicker from '../../components/skills/SkillTagPicker'
+import CandidateSkillPicker from '../../components/skills/CandidateSkillPicker'
 import type { CandidateProfilePublic } from '../../types'
 import { useLanguage } from '../../i18n/LanguageContext'
 import type { MessageKey } from '../../i18n/zh-CN'
@@ -62,7 +62,7 @@ function ProfilePage() {
                     <label htmlFor="resume">{t('profile.resume')}</label>
                     <textarea id="resume" rows={10} value={profile.resume_text} onChange={event => edit({ resume_text: event.target.value })} />
                 </div>
-                <SkillTagPicker value={profile.skills} onChange={skills => edit({ skills })} />
+                <CandidateSkillPicker value={profile.skills} onChange={skills => edit({ skills })} />
                 <p className="page-intro">{t('profile.privacy')}</p>
                 {error && <p className="feedback" role="alert">{t(error)}</p>}
                 {notice && <p className="feedback" role="status">{t(notice)}</p>}

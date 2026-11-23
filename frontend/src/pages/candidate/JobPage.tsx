@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { getJob } from '../../api/candidate_api'
+import { displaySkillName } from '../../components/skills/skillCatalog'
 import ApplyButton from '../../components/candidate/ApplyButton'
 import type { RecommendedJob } from '../../types'
 import { useLanguage } from '../../i18n/LanguageContext'
@@ -28,7 +29,7 @@ function JobContent({ jobId }: { jobId: string }) {
             <header className="candidate-heading"><h1>{job.title}</h1><p className="page-intro">{t('common.companyValue', { name: job.company_name })}</p></header>
             <section className="panel page-section">
                 <p>{t('jobs.scoreLabel')}<strong>{job.match_score} / 100</strong></p>
-                <p>{t('jobs.requiredSkillsValue', { skills: job.required_skills.join(', ') || t('common.none') })}</p>
+                <p>{t('jobs.requiredSkillsValue', { skills: job.required_skills.map(displaySkillName).join(', ') || t('common.none') })}</p>
                 <h2>{t('jobs.description')}</h2><p className="description">{job.description}</p>
                 <ApplyButton key={job.id} jobId={job.id} applied={job.applied} />
             </section>

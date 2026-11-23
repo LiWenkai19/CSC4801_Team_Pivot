@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError } from '../../api/common_api'
 import { deleteJob, listMyJobs } from '../../api/employer_api'
+import { displaySkillName } from '../../components/skills/skillCatalog'
 import { useAuth } from '../../contexts/AuthContext'
 import type { JobPublic } from '../../types'
 import { useLanguage } from '../../i18n/LanguageContext'
@@ -82,7 +83,7 @@ function JobListPage() {
                     <div className="skill-tags employer-job-skills">
                         <span className="record-meta">{t('jobs.requiredSkills')}</span>
                         {job.required_skills.length > 0
-                            ? job.required_skills.map(skill => <span className="skill-tag" key={skill}>{skill}</span>)
+                            ? job.required_skills.map(skill => <span className="skill-tag" key={skill}>{displaySkillName(skill)}</span>)
                             : <span className="record-meta">{t('jobs.noRequiredSkills')}</span>}
                     </div>
                 </div>

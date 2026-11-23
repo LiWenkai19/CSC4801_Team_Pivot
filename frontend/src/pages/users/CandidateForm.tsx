@@ -1,7 +1,7 @@
 import { useId, useRef, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import type { CandidateProfileCreate } from '../../types'
-import SkillTagPicker from '../../components/skills/SkillTagPicker'
+import CandidateSkillPicker from '../../components/skills/CandidateSkillPicker'
 import { useLanguage } from '../../i18n/LanguageContext'
 import type { MessageKey } from '../../i18n/zh-CN'
 import { apiFeedback } from '../../i18n/apiFeedback'
@@ -69,7 +69,7 @@ function CandidateForm({ submitting, submitError, onSubmit }: CandidateFormProps
                         rows={6}
                     />
                 </div>
-                <SkillTagPicker value={skills} onChange={setSkills} />
+                <CandidateSkillPicker value={skills} onChange={setSkills} />
                 {formError && <p className="feedback" role="alert">{t(formError)}</p>}
                 {submitError && <p className="feedback" role="alert">{t(submitError)}</p>}
                 <button type="submit">{submitting ? t('common.saving') : t('common.saveAndContinue')}</button>
