@@ -81,7 +81,7 @@ def test_fp_sec_1_other_candidate_cannot_read_resume(db, actors):
 
 
 def test_fp_can_1_course_resume_privacy_includes_related_employer(db, actors, result):
-    """课程FP-CAN-1禁止所有雇主读取；现行投递后策略冲突保留为红测试。"""
+    """课程 FP-CAN-1：简历私有，有投递关系的雇主直接读取也必须 403。"""
     owner_id = uuid4()
     db.exec.side_effect = [result(first=uuid4()), result(rows=["python"])]
     db.get.return_value = CandidateProfile(

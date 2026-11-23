@@ -87,22 +87,16 @@ def get_my_profile(session: Session, user: User) -> CandidateProfilePublic:
 def read_profile(
     session: Session, user: User, candidate_id: uuid.UUID
 ) -> CandidateProfilePublic:
-    """本人或有投递关系的雇主可读；不按申请状态撤销关系。"""
+    """候选人资料仅本人可读；简历私有，任何雇主都不得直接访问。
+
+    雇主要查看投递者的简历，只能走与申请绑定的入口（待实现），
+    不能通过直接请求候选人资料获得。
+    """
     if user.role == Role.Candidate:
         if user.id != candidate_id:
             raise ForbiddenError("Not the owner of this profile")
     elif user.role == Role.Employer:
-        related = session.exec(
-            select(Application.id)
-            .join(Job, Application.job_id == Job.id)
-            .where(
-                Application.candidate_id == candidate_id,
-                Job.employer_id == user.id,
-            )
-            .limit(1)
-        ).first()
-        if related is None:
-            raise ForbiddenError("No application relationship with this candidate")
+        raise ForbiddenError("Employers cannot access candidate resumes directly")
     else:
         raise ForbiddenError("Profile access denied")
     return _profile_public(session, _profile(session, candidate_id))

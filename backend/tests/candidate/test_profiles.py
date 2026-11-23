@@ -110,14 +110,8 @@ def test_profile_permission_matrix(client, account, job):
             ).status_code
             == 200
         )
-        response = client.get(path, headers=employer)
-        assert response.status_code == 200
-        assert set(response.json()) == {
-            "user_id",
-            "display_name",
-            "resume_text",
-            "skills",
-        }
+        # 课程 FP-CAN-1：简历私有，雇主不得直接访问；与投递关系及状态无关。
+        assert client.get(path, headers=employer).status_code == 403
     assert client.get(path, headers=outsider).status_code == 403
     assert (
         client.patch(
