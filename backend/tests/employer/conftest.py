@@ -23,7 +23,7 @@ def _build_test_database_url() -> str:
     """复用 .env 的主机与账号，把库名换成独立测试库。"""
     from sqlalchemy.engine import make_url
 
-    url = make_url(_read_env_database_url())
+    url = make_url(os.environ.get("EMPLOYER_TEST_DATABASE_URL") or _read_env_database_url())
     return url.set(database=TEST_DATABASE).render_as_string(hide_password=False)
 
 
