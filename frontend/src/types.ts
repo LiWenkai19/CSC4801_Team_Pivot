@@ -113,6 +113,7 @@ export interface ApplicantPublic {
   application_id: string
   candidate_id: string
   display_name: string
+  email: string
   skills: string[]
   match_score: number
   status: ApplicationStatus
@@ -168,5 +169,7 @@ export interface ManagedInterviewSlot extends InterviewSlot {
   /** 已预约时段归属的职位；历史数据可能为空。 */
   job_id: string | null
   job_title: string | null
+  /** 预约对应的申请，用于跳转到职位详情并定位该申请人。 */
+  application_id: string | null
   applicant_name: string | null
 }

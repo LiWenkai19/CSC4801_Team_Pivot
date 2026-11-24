@@ -16,6 +16,8 @@ class ManagedSlotPublic(SlotPublic):
     # 时段被预约后归属该职位；历史数据可能为空，此时回退到申请上的职位。
     job_id: uuid.UUID | None = None
     job_title: str | None = None
+    # 预约关联的申请，用于从时段列表定位到职位详情里的具体申请人。
+    application_id: uuid.UUID | None = None
     applicant_name: str | None = None
 
 

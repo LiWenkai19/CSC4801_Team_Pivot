@@ -99,12 +99,13 @@ class BookingPublic(SQLModel):
 
 
 class ApplicantPublic(SQLModel):
-    """申请人行；不含简历等私有字段。"""
+    """申请人行；不含简历等私有字段，邮箱用于区分同名候选人。"""
 
     application_id: uuid.UUID
     version: int
     candidate_id: uuid.UUID
     display_name: str
+    email: str
     skills: list[str]
     match_score: int
     status: ApplicationStatus

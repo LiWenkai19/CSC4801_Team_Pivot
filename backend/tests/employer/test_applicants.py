@@ -8,9 +8,11 @@ import pytest
 def test_fp_emp_3_applicant_rows_contain_required_fields(
     client, make_employer, make_candidate, make_job, make_application
 ):
-    """每行含身份、技能、匹配分、状态、预约；绝不含简历。"""
+    """每行含身份、邮箱、技能、匹配分、状态、预约；绝不含简历。"""
     employer = make_employer()
-    candidate = make_candidate(name="Alice", skills=["python", "sql"])
+    candidate = make_candidate(
+        email="alice@example.com", name="Alice", skills=["python", "sql"]
+    )
     job = make_job(employer, required_skills=["python", "sql"])
     application = make_application(candidate, job)
 
@@ -27,6 +29,7 @@ def test_fp_emp_3_applicant_rows_contain_required_fields(
         "application_id",
         "candidate_id",
         "display_name",
+        "email",
         "skills",
         "match_score",
         "status",
@@ -34,6 +37,7 @@ def test_fp_emp_3_applicant_rows_contain_required_fields(
     }
     assert row["application_id"] == str(application.id)
     assert row["display_name"] == "Alice"
+    assert row["email"] == "alice@example.com"
     assert row["skills"] == ["python", "sql"]
     assert row["match_score"] == 100
     assert row["status"] == "Pending"

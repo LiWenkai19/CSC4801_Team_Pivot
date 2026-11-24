@@ -190,6 +190,7 @@ def test_employer_slot_list_shows_applicant_and_job(client, interview, db):
     assert len(rows) == 1
     row = rows[0]
     assert row["is_booked"] is True
+    assert row["application_id"] == data["application"]["application_id"]
     assert row["job_id"] == data["job"]["id"]
     assert row["job_title"] == "Engineer"
     assert row["applicant_name"] == "Candidate"

@@ -431,6 +431,8 @@ label, legend { font-weight: 650; }
 .employer-job-skill-panel h3 { font-size: 16px; }
 
 .employer-applicant-card { display: grid; gap: 16px; min-width: 0; }
+/* 从面试时段列表跳转过来时高亮被定位的申请人卡片。 */
+.employer-applicant-card:target { outline: 2px solid var(--mint); outline-offset: 3px; }
 .employer-applicant-heading {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -441,6 +443,14 @@ label, legend { font-weight: 650; }
 }
 
 .employer-applicant-heading h3 { font-size: clamp(19px, 2vw, 23px); }
+/* 姓名可能重复，用更小更淡的邮箱区分同名申请人。 */
+.applicant-email {
+  margin-inline-start: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: normal;
+}
 .employer-applicant-score {
   display: grid;
   justify-items: end;

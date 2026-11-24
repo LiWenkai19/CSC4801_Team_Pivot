@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { SubmitEvent } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { changeApplicationStatus, getMyJob, listJobApplicants } from '../../api/employer_api'
 import { displaySkillName } from '../../components/skills/skillCatalog'
 import { useAuth } from '../../contexts/AuthContext'
@@ -98,9 +98,9 @@ function ApplicantCard({ applicant, jobId, onUpdated }: { applicant: ApplicantPu
         finally { pending.current = false; setReloading(false) }
     }
 
-    return <li className="panel employer-applicant-card">
+    return <li className="panel employer-applicant-card" id={`application-${applicant.application_id}`}>
         <header className="employer-applicant-heading">
-            <h3>{applicant.display_name}</h3>
+            <h3>{applicant.display_name}<small className="applicant-email">{applicant.email}</small></h3>
             <p className="employer-applicant-score">
                 <span>{t('jobs.score')}</span>
                 <strong>{applicant.match_score}<small> / 100</small></strong>
@@ -155,6 +155,7 @@ function JobDetailPage() {
 function JobDetail({ jobId }: { jobId: string | undefined }) {
     const { t } = useLanguage()
     const { currentUser } = useAuth()
+    const location = useLocation()
     const isEmployer = currentUser?.role === 'employer'
     const [job, setJob] = useState<JobPublic | null>(null)
     const [applicants, setApplicants] = useState<ApplicantPublic[]>([])
@@ -175,6 +176,14 @@ function JobDetail({ jobId }: { jobId: string | undefined }) {
         }).finally(() => { if (active) setLoading(false) })
         return () => { active = false }
     }, [isEmployer, jobId, attempt])
+
+    /** 从面试时段列表带 #application-<id> 进入时，滚动到对应申请人卡片。 */
+    useEffect(() => {
+        if (loading) return
+        const match = location.hash.match(/^#application-(.+)$/)
+        if (!match) return
+        document.getElementById(`application-${match[1]}`)?.scrollIntoView({ block: 'center' })
+    }, [loading, applicants, location.hash])
 
     function retryLoad() {
         setLoading(true)

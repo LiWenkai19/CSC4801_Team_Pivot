@@ -316,7 +316,8 @@ def list_job_applicants(
     rows: list[ApplicantPublic] = []
     for application in applications:
         profile = session.get(CandidateProfile, application.candidate_id)
-        if profile is None:
+        candidate_user = session.get(User, application.candidate_id)
+        if profile is None or candidate_user is None:
             continue
         skills = session.exec(
             select(CandidateSkill.name).where(
@@ -329,6 +330,7 @@ def list_job_applicants(
                 version=application.version,
                 candidate_id=application.candidate_id,
                 display_name=profile.display_name,
+                email=candidate_user.email,
                 skills=sorted(skills),
                 match_score=match_score(list(skills), list(required_skills)),
                 status=application.status,

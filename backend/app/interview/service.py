@@ -75,6 +75,7 @@ def list_slots(session: Session, employer: User) -> list[ManagedSlotPublic]:
         select(
             InterviewSlot,
             Booking.id,
+            Booking.application_id,
             Application.job_id,
             Job.title,
             CandidateProfile.display_name,
@@ -100,11 +101,13 @@ def list_slots(session: Session, employer: User) -> list[ManagedSlotPublic]:
             # 新预约会写入 slot.job_id；历史数据为空时回退到申请上的职位。
             job_id=slot.job_id or application_job_id,
             job_title=job_title,
+            application_id=application_id,
             applicant_name=applicant_name,
         )
         for (
             slot,
             booking_id,
+            application_id,
             application_job_id,
             job_title,
             applicant_name,

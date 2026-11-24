@@ -157,7 +157,7 @@ function InterviewSlotsPage() {
                         <div className="slot-status-line">
                             <span className="status-chip">{slot.is_booked ? t('slots.booked') : t('slots.unbooked')}</span>
                             {slot.is_booked && slot.job_id && <>
-                                <Link className="status-chip" to={`/employer/jobs/${slot.job_id}`}>{t('slots.applicant', { name: slot.applicant_name ?? '—' })}</Link>
+                                {slot.application_id && <Link className="status-chip" to={`/employer/jobs/${slot.job_id}#application-${slot.application_id}`}>{t('slots.applicant', { name: slot.applicant_name ?? '—' })}</Link>}
                                 <Link className="status-chip" to={`/employer/jobs/${slot.job_id}`}>{t('slots.job', { jobTitle: slot.job_title ?? slot.job_id })}</Link>
                             </>}
                         </div>
