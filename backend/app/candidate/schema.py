@@ -20,6 +20,16 @@ def _as_utc(value: datetime) -> datetime:
 UTCDateTime = Annotated[datetime, AfterValidator(_as_utc)]
 
 
+def _reject_nul(value: str) -> str:
+    """拒绝 PostgreSQL 文本列无法保存的 NUL 字符。"""
+    if "\x00" in value:
+        raise ValueError("Text cannot contain NUL characters")
+    return value
+
+
+ProfileText = Annotated[str, AfterValidator(_reject_nul)]
+
+
 class BookingPublic(EmployerBookingPublic):
     """保留共享预约字段，时间以 UTC 传输。"""
 
@@ -37,9 +47,9 @@ class ProfileUpdate(RequestSchema):
     """省略保留，文本和技能可以清空，显式 null 不合法。"""
 
     version: ResourceVersion
-    display_name: NonBlankName | None = None
-    resume_text: str | None = None
-    skills: list[str] | None = None
+    display_name: Annotated[NonBlankName, AfterValidator(_reject_nul)] | None = None
+    resume_text: ProfileText | None = None
+    skills: list[ProfileText] | None = None
 
     @field_validator("*", mode="before")
     @classmethod
