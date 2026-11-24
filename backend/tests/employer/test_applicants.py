@@ -23,6 +23,7 @@ def test_fp_emp_3_applicant_rows_contain_required_fields(
     assert len(rows) == 1
     row = rows[0]
     assert set(row) == {
+        "version",
         "application_id",
         "candidate_id",
         "display_name",
@@ -102,18 +103,20 @@ def test_fp_emp_3_set_status_all_four_values(
 
     response = client.patch(
         f"/employer/applications/{application.id}/status",
-        json={"status": new_status},
+        json={"version": 1, "status": new_status},
         headers=employer,
     )
     assert response.status_code == 200, response.text
     body = response.json()
     assert set(body) == {
+        "version",
         "application_id",
         "job_id",
         "candidate_id",
         "status",
         "updated_at",
     }
+    assert body["version"] == 2
     assert body["status"] == new_status
     assert body["job_id"] == job["id"]
     assert body["application_id"] == str(application.id)
@@ -124,7 +127,7 @@ def test_fp_emp_3_set_status_all_four_values(
 
     invalid = client.patch(
         f"/employer/applications/{application.id}/status",
-        json={"status": "Hired"},
+        json={"version": body["version"], "status": "Hired"},
         headers=employer,
     )
     assert invalid.status_code == 422
@@ -148,7 +151,7 @@ def test_fp_emp_3_status_change_keeps_booking(
 
     rejected = client.patch(
         f"/employer/applications/{application.id}/status",
-        json={"status": "Rejected"},
+        json={"version": 1, "status": "Rejected"},
         headers=employer,
     )
     assert rejected.status_code == 200
@@ -175,7 +178,7 @@ def test_fp_emp_3_other_employer_and_candidate_cannot_change(
 
     foreign = client.patch(
         f"/employer/applications/{application.id}/status",
-        json={"status": "Accepted"},
+        json={"version": 1, "status": "Accepted"},
         headers=other,
     )
     assert foreign.status_code == 403
@@ -183,7 +186,7 @@ def test_fp_emp_3_other_employer_and_candidate_cannot_change(
 
     by_candidate = client.patch(
         f"/employer/applications/{application.id}/status",
-        json={"status": "Accepted"},
+        json={"version": 1, "status": "Accepted"},
         headers=candidate,
     )
     assert by_candidate.status_code == 403
@@ -199,7 +202,7 @@ def test_fp_emp_3_missing_application_returns_404(client, make_employer):
     employer = make_employer()
     response = client.patch(
         f"/employer/applications/{uuid.uuid4()}/status",
-        json={"status": "Accepted"},
+        json={"version": 1, "status": "Accepted"},
         headers=employer,
     )
     assert response.status_code == 404

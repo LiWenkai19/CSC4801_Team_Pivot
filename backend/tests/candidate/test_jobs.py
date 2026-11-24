@@ -162,7 +162,7 @@ def test_apply_once_in_every_status(client, account, job, db, state):
         client.patch(
             f"/employer/applications/{first.json()['application_id']}/status",
             headers=employer,
-            json={"status": state.value},
+            json={"version": 1, "status": state.value},
         ).status_code
         == 200
     )
@@ -202,7 +202,7 @@ def test_application_isolation_and_historical_records(client, account, job, db):
         client.patch(
             f"/employer/applications/{application['application_id']}/status",
             headers=candidate,
-            json={"status": "Accepted"},
+            json={"version": 1, "status": "Accepted"},
         ).status_code
         == 403
     )

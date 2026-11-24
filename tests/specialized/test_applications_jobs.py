@@ -149,7 +149,7 @@ def test_duplicate_application_in_every_state_preserves_all_related_tables(
     changed = client.patch(
         f"/employer/applications/{first.json()['application_id']}/status",
         headers=owner["headers"],
-        json={"status": state},
+        json={"version": 1, "status": state},
     )
     assert changed.status_code == 200 and changed.json()["status"] == state
     before = snapshot()

@@ -31,7 +31,7 @@ def test_booked_status_transitions_preserve_new_managed_flag(
         client.patch(
             f"/employer/applications/{app}/status",
             headers=owner["headers"],
-            json={"status": before},
+            json={"version": 2, "status": before},
         ).status_code
         == 200
     )
@@ -39,7 +39,7 @@ def test_booked_status_transitions_preserve_new_managed_flag(
     updated = client.patch(
         f"/employer/applications/{app}/status",
         headers=owner["headers"],
-        json={"status": after},
+        json={"version": data["version"] + 1, "status": after},
     )
     assert updated.status_code == 200 and updated.json()["status"] == after
     listed = client.get("/employer/interview-slots", headers=owner["headers"])

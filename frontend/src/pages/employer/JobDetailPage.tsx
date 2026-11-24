@@ -10,6 +10,8 @@ import type { MessageKey } from '../../i18n/zh-CN'
 import type { Locale } from '../../i18n/LanguageContext'
 import { apiFeedback } from '../../i18n/apiFeedback'
 import { formatShanghaiTime } from '../../i18n/dates'
+import { ApiError } from '../../api/common_api'
+import { isVersionConflict } from '../../i18n/apiFeedback'
 
 const statuses: ApplicationStatus[] = ['Pending', 'Interviewing', 'Rejected', 'Accepted']
 
@@ -20,32 +22,80 @@ function bookingTime(value: string, locale: Locale): string {
 }
 
 /** 每张申请人卡片独立保存状态，提交失败时保留当前选择。 */
-function ApplicantCard({ applicant, onUpdated }: { applicant: ApplicantPublic; onUpdated: (id: string, status: ApplicationStatus) => void }) {
+function ApplicantCard({ applicant, jobId, onUpdated }: { applicant: ApplicantPublic; jobId: string; onUpdated: (id: string, status: ApplicationStatus, version: number) => void }) {
     const { locale, t } = useLanguage()
     const [selected, setSelected] = useState<ApplicationStatus>(applicant.status)
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState<MessageKey | ''>('')
     const [notice, setNotice] = useState<MessageKey | ''>('')
+    const [conflict, setConflict] = useState(false)
+    const [reloading, setReloading] = useState(false)
     const pending = useRef(false)
 
     async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
-        if (pending.current) return
+        if (pending.current || conflict) return
         pending.current = true
         setSubmitting(true)
         setError('')
         setNotice('')
         try {
-            const saved = await changeApplicationStatus(applicant.application_id, { status: selected })
-            onUpdated(saved.application_id, saved.status)
+            const saved = await changeApplicationStatus(applicant.application_id, { status: selected, version: applicant.version })
+            onUpdated(saved.application_id, saved.status, saved.version)
             setSelected(saved.status)
             setNotice('applications.statusSaved')
         } catch (reason) {
-            setError(apiFeedback(reason, 'applications.statusSaveFailed'))
+            if (isVersionConflict(reason)) setConflict(true)
+            else setError(apiFeedback(reason, 'applications.statusSaveFailed'))
         } finally {
             pending.current = false
             setSubmitting(false)
         }
+    }
+
+    async function latestStatus() {
+        const rows = await listJobApplicants(jobId)
+        const latest = rows.find(row => row.application_id === applicant.application_id)
+        if (!latest) throw new ApiError('Application not found', 404)
+        return latest
+    }
+
+    function applyLatest(latest: ApplicantPublic) {
+        onUpdated(latest.application_id, latest.status, latest.version)
+        setSelected(latest.status)
+        setConflict(false)
+        setError('')
+        setNotice('edit.refreshed')
+    }
+
+    async function reloadLatest() {
+        if (pending.current || !window.confirm(t('edit.discardConfirm'))) return
+        pending.current = true
+        setReloading(true)
+        try { applyLatest(await latestStatus()) }
+        catch (reason) { setError(apiFeedback(reason, 'common.loadFailed')) }
+        finally { pending.current = false; setReloading(false) }
+    }
+
+    async function checkForUpdates() {
+        if (pending.current) return
+        pending.current = true
+        setReloading(true)
+        setError('')
+        setNotice('')
+        try {
+            const latest = await latestStatus()
+            if (latest.version === applicant.version) {
+                setNotice('edit.upToDate')
+                return
+            }
+            if (selected !== applicant.status) {
+                setConflict(true)
+                if (!window.confirm(t('edit.discardConfirm'))) return
+            }
+            applyLatest(latest)
+        } catch (reason) { setError(apiFeedback(reason, 'edit.checkFailed')) }
+        finally { pending.current = false; setReloading(false) }
     }
 
     return <li className="panel employer-applicant-card">
@@ -68,16 +118,18 @@ function ApplicantCard({ applicant, onUpdated }: { applicant: ApplicantPublic; o
             <section className="employer-applicant-section">
                 <h4>{t('applications.statusTitle')}</h4>
                 <p className="status-chip">{t('applications.currentStatus', { status: t(`status.${applicant.status}`) })}</p>
-                <form className="employer-applicant-form" onSubmit={handleSubmit} aria-busy={submitting}>
-                    <select aria-label={t('applications.statusFor', { name: applicant.display_name })} value={selected} disabled={submitting} onChange={event => {
+                <form className="employer-applicant-form" onSubmit={handleSubmit} aria-busy={submitting || reloading}>
+                    <select aria-label={t('applications.statusFor', { name: applicant.display_name })} value={selected} disabled={submitting || reloading} onChange={event => {
                         const status = statuses.find(value => value === event.target.value)
                         if (status) setSelected(status)
                         setNotice('')
                     }}>
                         {statuses.map(status => <option key={status} value={status}>{t(`status.${status}`)}</option>)}
                     </select>
-                    <button type="submit" disabled={submitting}>{submitting ? t('common.saving') : t('applications.saveStatus')}</button>
+                    <button type="submit" disabled={submitting || reloading || conflict}>{submitting ? t('common.saving') : t('applications.saveStatus')}</button>
+                    <button type="button" disabled={submitting || reloading} onClick={checkForUpdates}><svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginInlineEnd: 6, verticalAlign: 'text-bottom' }}><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /></svg>{reloading ? t('edit.checkingUpdates') : t('edit.checkUpdates')}</button>
                 </form>
+                {conflict && <div className="feedback" role="alert"><p>{t('edit.conflict')}</p><button type="button" disabled={submitting || reloading} onClick={reloadLatest}>{t('edit.reloadLatest')}</button></div>}
                 {error && <p className="feedback" role="alert">{t(error)} <Link to="/employer/jobs">{t('jobs.backToList')}</Link></p>}
                 {notice && <p className="feedback" role="status">{t(notice)}</p>}
             </section>
@@ -133,8 +185,8 @@ function JobDetail({ jobId }: { jobId: string | undefined }) {
         setAttempt(previous => previous + 1)
     }
 
-    function updateStatus(id: string, status: ApplicationStatus) {
-        setApplicants(previous => previous.map(applicant => applicant.application_id === id ? { ...applicant, status } : applicant))
+    function updateStatus(id: string, status: ApplicationStatus, version: number) {
+        setApplicants(previous => previous.map(applicant => applicant.application_id === id ? { ...applicant, status, version } : applicant))
     }
 
     if (!isEmployer) return <main className="work-page"><p className="feedback" role="alert">{t('auth.employerOnly')}</p><Link to="/navpage">{t('common.home')}</Link></main>
@@ -172,7 +224,7 @@ function JobDetail({ jobId }: { jobId: string | undefined }) {
                     <p className="page-intro">{t('jobs.applicantsIntro')}</p>
                 </header>
                 {!applicantsError && (applicants.length === 0 ? <p className="panel empty-state">{t('jobs.noApplicants')}</p> : <ul className="employer-applicant-list" role="list">
-                    {applicants.map(applicant => <ApplicantCard key={applicant.application_id} applicant={applicant} onUpdated={updateStatus} />)}
+                    {applicants.map(applicant => <ApplicantCard key={applicant.application_id} applicant={applicant} jobId={job.id} onUpdated={updateStatus} />)}
                 </ul>)}
             </section>
         </>}

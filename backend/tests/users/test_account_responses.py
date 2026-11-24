@@ -241,6 +241,7 @@ def test_employer_profile_is_saved_for_current_user(client, description):
         "user_id": auth["user"]["id"],
         "company_name": "Demo Company",
         "company_description": description or "",
+        "version": 1,
     }
     with Session(client.app.state.test_engine) as session:
         saved = session.exec(select(EmployerProfile)).one()

@@ -42,9 +42,10 @@ Override any of them with `docker run -e NAME=value`.
 
 ## Database Setup and Migrations
 
-The version-protection release adds migration `7b2c9d4e6f10` after
-`5a1d3c7e9b20`. With APP_NAME/DATABASE_URL configured for the intended application
-database, run from the repository root in the activated project environment:
+The edit-version release adds migration `7b2c9d4e6f10` after
+`5a1d3c7e9b20`, then `8c3d0e5f7a21` for company profiles and application status.
+With APP_NAME/DATABASE_URL configured for the intended application database, run
+from the repository root in the activated project environment:
 
 ```sh
 cd backend
@@ -52,13 +53,15 @@ python -m alembic upgrade head
 cd ..
 ```
 
-This adds positive, non-null `version` columns to candidate profiles and jobs,
-initializing existing rows to 1 without resetting application data. Coordinate
+This adds positive, non-null `version` columns to candidate profiles, jobs,
+company profiles and applications, initializing existing rows to 1 without
+resetting application data. Coordinate
 the database, backend and frontend upgrade while writes are stopped, then refresh
-open editor pages. Both edit PATCH endpoints require the version returned by
+open editor pages. All four edit PATCH endpoints require the version returned by
 their GET: missing/invalid versions return 422, stale versions return 409.
 Creation requests must not supply version. New database migration checks are in
-`backend/tests/candidate/test_version_migration.py` and run only in disposable
+`backend/tests/candidate/test_version_migration.py` and
+`backend/tests/candidate/test_extended_versions.py` and run only in disposable
 test databases. The local repair validation did not migrate a shared/development DB.
 
 ## Demo Data and Reset Command
@@ -186,11 +189,11 @@ To inspect the three component results alone:
 node --test frontend/tests/rendering.unit.mjs
 ```
 
-After the version-protection change the complete unit command passes **137
+After the company/status version extension the complete unit command passes **157
 tests** (exit 0), including strict versions, stale-write rejection and no-op
 semantics. The old employer-privacy test already passes after teammate commit
 `5143f1e`. No skip/xfail/filter is used. See the
-[repair evidence](docs/testing/VERSION_PROTECTION.md) for before/after results.
+[extension evidence](docs/testing/EDITOR_VERSIONS.md) for before/after results.
 
 ### Existing PostgreSQL/API regression (separate from unit tests)
 
@@ -218,7 +221,7 @@ python tests/run_tests.py --integration
 
 These are synthetic local example settings, not real credentials; configure local
 authentication for the disposable database separately. This complete legacy suite
-was verified with 195 passing cases on isolated PostgreSQL16.4 (account tests use
+was verified with 229 passing cases on isolated PostgreSQL16.4 (account tests use
 their own in-memory SQLite). Failure also returns nonzero. The runner requires
 both explicit URLs and never starts/stops an existing database service.
 
@@ -246,6 +249,7 @@ then run from the repository root:
 python tests/specialized/run.py functional
 python tests/specialized/run.py browser
 python tests/specialized/run.py browser --browser-script version_conflicts
+python tests/specialized/run.py browser --browser-script editor_update_checks
 python tests/specialized/run.py render
 ```
 
@@ -265,5 +269,13 @@ python tests/specialized/run.py delivery
 The edit-version follow-up re-executed these modes and the complete browser/SSR
 sets; counts, remaining failures and test-harness adaptations are in the
 [follow-up report](docs/testing/VERSION_RETEST.md). Delivery mode excludes Docker.
+
+The company/status extension and always-visible update-check button have their
+own [verification report](docs/testing/EDITOR_VERSIONS.md). The integration entry
+includes real concurrent company/status saves, rollback, ORM cache, and a migration
+that creates and drops a separate random database inside the disposable cluster.
+The browser extension checks all four editors in Chinese/English on Chromium,
+Firefox and WebKit. Old company/status scripts must include their loaded version;
+refresh old tabs after deploying the coordinated database/backend/frontend update.
 
 ## Troubleshooting

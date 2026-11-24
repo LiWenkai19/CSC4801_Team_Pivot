@@ -102,12 +102,12 @@ def test_profile_permission_matrix(client, account, job):
     application = client.post(
         f"/candidate/jobs/{posting['id']}/applications", headers=candidate
     ).json()
-    for state in ["Pending", "Interviewing", "Rejected", "Accepted"]:
+    for version, state in enumerate(["Pending", "Interviewing", "Rejected", "Accepted"], start=1):
         assert (
             client.patch(
                 f"/employer/applications/{application['application_id']}/status",
                 headers=employer,
-                json={"status": state},
+                json={"version": version, "status": state},
             ).status_code
             == 200
         )

@@ -64,7 +64,7 @@ def test_missing_company_normal_route_is_404(client, account, snapshot, method):
     actor = account("employer", complete=False)
     before = snapshot()
     args = (
-        {"json": {"company_name": "No existing company"}} if method == "patch" else {}
+        {"json": {"version": 1, "company_name": "No existing company"}} if method == "patch" else {}
     )
     r = getattr(client, method)("/employer/company", headers=actor["headers"], **args)
     assert r.status_code == 404 and snapshot() == before
@@ -335,6 +335,6 @@ def test_defensive_missing_related_lookup_without_corrupting_real_database(
                     db,
                     owner,
                     uuid.UUID(data["application_id"]),
-                    ApplicationStatusUpdate(status="Accepted"),
+                    ApplicationStatusUpdate(version=data["version"], status="Accepted"),
                 )
     assert snapshot() == before

@@ -47,11 +47,13 @@ class CompanyPublic(SQLModel):
     user_id: uuid.UUID
     company_name: str
     company_description: str
+    version: int
 
 
 class CompanyUpdate(PartialUpdateSchema):
     """只修改本次显式提交的公司资料字段。"""
 
+    version: ResourceVersion
     company_name: NonBlankName | None = None
     company_description: str | None = None
 
@@ -100,6 +102,7 @@ class ApplicantPublic(SQLModel):
     """申请人行；不含简历等私有字段。"""
 
     application_id: uuid.UUID
+    version: int
     candidate_id: uuid.UUID
     display_name: str
     skills: list[str]
@@ -111,6 +114,7 @@ class ApplicantPublic(SQLModel):
 class ApplicationStatusUpdate(RequestSchema):
     """申请状态只能是四个取值之一。"""
 
+    version: ResourceVersion
     status: ApplicationStatus
 
 
@@ -118,6 +122,7 @@ class ApplicationStatusPublic(SQLModel):
     """状态修改结果；不包含简历、邮箱或密码哈希。"""
 
     application_id: uuid.UUID
+    version: int
     job_id: uuid.UUID
     candidate_id: uuid.UUID
     status: ApplicationStatus

@@ -1,4 +1,9 @@
 const zhCN = {
+    'edit.checkUpdates': "检查更新",
+    'edit.checkingUpdates': "检查中…",
+    'edit.upToDate': "当前已是最新版本，本页输入已保留。",
+    'edit.refreshed': "已加载最新内容。",
+    'edit.checkFailed': "检查更新失败，本页输入已保留，请重试。",
     'edit.conflict': "内容已在其他页面更新，本页修改尚未保存。",
     'edit.reloadLatest': "重新加载最新内容",
     'edit.discardConfirm': "重新加载将丢弃本页尚未保存的修改，是否继续？",

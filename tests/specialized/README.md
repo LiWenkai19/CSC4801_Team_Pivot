@@ -1,18 +1,19 @@
 # Specialized local test suites
 
-The user-authorized edit-version repair changes both profile/job PATCH contracts:
+The user-authorized edit-version repair covers profile, job, company and application-status PATCH contracts:
 explicitly supply the version from the editor's prior GET. Sequential controls
 advance their saved version; concurrent cases share one version captured before
 starting either request and require exactly one 200 and one 409. Test helpers never
 silently refresh an outdated request. Historical reproduction evidence is retained
 in the reports; unrelated failing cases remain ordinary failures.
 
-The new real-browser regression covers candidate/job editors in Chinese/English
+The real-browser regressions cover all four editors in Chinese/English
 on Chromium, Firefox and WebKit, including retained drafts, cancel, failed reload
 and confirmed reload followed by another save:
 
 ```sh
 python tests/specialized/run.py browser --browser-script version_conflicts
+python tests/specialized/run.py browser --browser-script editor_update_checks
 ```
 
 These are the historical exploratory/regression tests, now runnable from this
@@ -167,3 +168,5 @@ Tool findings require contextual review; a dependency version hit is not proof o
 an exploitable app path, and a scanner hit is not automatically a real secret.
 These optional external-tool commands were not re-executed merely by copying the
 historical reports. Always redact credentials/personal data before publication.
+
+The four-editor extension is documented in [EDITOR_VERSIONS.md](../../docs/testing/EDITOR_VERSIONS.md). `editor_update_checks.mjs` runs 24 engine/language/editor scenarios plus 12 real company/status double-tab scenarios covering same-version checks, draft preservation, failed reads, cancelled/confirmed reloads, real 409 saves, pending skill queries and independent applicant cards. It captures the submitted versions; it never refreshes a stale PATCH body in the API helper.

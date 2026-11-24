@@ -121,3 +121,4 @@ class EmployerProfilePublic(SQLModel):
     user_id: uuid.UUID
     company_name: str
     company_description: str
+    version: int

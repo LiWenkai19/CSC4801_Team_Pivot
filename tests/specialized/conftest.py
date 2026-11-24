@@ -146,7 +146,7 @@ def flow(client, account, create_slot):
         changed = client.patch(
             f"/employer/applications/{app_id}/status",
             headers=owner["headers"],
-            json={"status": "Interviewing"},
+            json={"version": 1, "status": "Interviewing"},
         )
         assert (
             changed.status_code == 200 and changed.json()["status"] == "Interviewing"
@@ -155,6 +155,7 @@ def flow(client, account, create_slot):
             "owner": owner,
             "candidate": candidate,
             "application_id": app_id,
+            "version": changed.json()["version"],
             "job_id": posting.json()["id"],
         }
         if with_slot:
@@ -241,7 +242,7 @@ def add_applicant(client, account):
         result = client.patch(
             f"/employer/applications/{application_id}/status",
             headers=owner["headers"],
-            json={"status": status},
+            json={"version": 1, "status": status},
         )
         assert result.status_code == 200 and result.json()["status"] == status, (
             result.text
@@ -251,6 +252,7 @@ def add_applicant(client, account):
             "candidate": candidate,
             "job_id": job_id,
             "application_id": application_id,
+            "version": result.json()["version"],
         }
 
     return create

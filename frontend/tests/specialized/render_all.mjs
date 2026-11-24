@@ -29,14 +29,15 @@ const load=async name=>import(pathToFileURL(path.join(target,name.replace(/\.tsx
 const {AuthContext}=await load('contexts/AuthContext.tsx');
 const {default:LanguageProvider}=await load('i18n/LanguageProvider.tsx');
 const components={};for(const name of ['pages/candidate/ProfilePage.tsx','pages/candidate/JobsPage.tsx','pages/candidate/ApplicationsPage.tsx','pages/candidate/JobPage.tsx','pages/employer/CompanyPage.tsx','pages/employer/JobListPage.tsx','pages/employer/JobDetailPage.tsx','pages/users/CandidateForm.tsx','pages/users/EmployerForm.tsx','components/skills/SkillTagPicker.tsx'])components[name]=await load(name);
+globalThis.window={localStorage:{getItem:()=> 'zh-CN'}};
 const records=[];const inputStrings=['<script>alert(1)</script>','<b>audit & literal</b>','普通 résumé 🌏\n第二行'];
 const escape=x=>x.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;'}[c]));
 for(const [i,value] of inputStrings.entries()){
  const job={id:'job',title:value,description:value,company_name:value,required_skills:[value],match_score:100,applied:false,created_at:'2030-01-01T00:00:00Z',version:1};
  const profile={display_name:value,resume_text:value,skills:[value],user_id:'candidate',version:1};
- const company={company_name:value,company_description:value,user_id:'employer'};
- const applicant={application_id:'app',candidate_id:'candidate',display_name:value,skills:[value],match_score:100,status:'Pending',booking:null};
- const application={application_id:'app',job_id:'job',job_title:value,company_name:value,status:'Pending',booking:null};
+ const company={version:1,company_name:value,company_description:value,user_id:'employer'};
+ const applicant={version:1,application_id:'app',candidate_id:'candidate',display_name:value,skills:[value],match_score:100,status:'Pending',booking:null};
+ const application={version:1,application_id:'app',job_id:'job',job_title:value,company_name:value,status:'Pending',booking:null};
  const specs=[
   ['profile-name-resume-skills','candidate','pages/candidate/ProfilePage.tsx',[profile,false,'','','',false,false,false,0],{},'default'],
   ['recommended-job-title-company-skills','candidate','pages/candidate/JobsPage.tsx',[[job],false,'',0],{},'default'],

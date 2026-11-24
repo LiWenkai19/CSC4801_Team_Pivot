@@ -63,6 +63,7 @@ class ApplicationPublic(SQLModel):
     """本人申请及共享预约，不包含私有简历或账户凭据。"""
 
     application_id: uuid.UUID
+    version: int
     job_id: uuid.UUID
     job_title: str
     company_name: str

@@ -118,11 +118,11 @@ def test_all_four_verified_status_changes_preserve_booking_and_unavailability(
     booked = book(client, data)
     assert booked.status_code == 201, booked.text
     fixed = snapshot()
-    for status in ("Pending", "Rejected", "Accepted", "Interviewing"):
+    for version, status in enumerate(("Pending", "Rejected", "Accepted", "Interviewing"), start=data["version"]):
         changed = client.patch(
             f"/employer/applications/{data['application_id']}/status",
             headers=data["owner"]["headers"],
-            json={"status": status},
+            json={"version": version, "status": status},
         )
         assert changed.status_code == 200 and changed.json()["status"] == status, (
             changed.text
@@ -184,7 +184,7 @@ def test_each_ineligible_booking_preserves_complete_related_state(
         response = client.patch(
             f"/employer/applications/{data['application_id']}/status",
             headers=data["owner"]["headers"],
-            json={"status": kind},
+            json={"version": 2, "status": kind},
         )
         assert response.status_code == 200 and response.json()["status"] == kind
     if kind == "foreign-application":

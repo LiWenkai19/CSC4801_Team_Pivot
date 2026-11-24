@@ -167,7 +167,7 @@ def interview(client, account, job, db):
     changed = client.patch(
         f"/employer/applications/{applied['application_id']}/status",
         headers=employer,
-        json={"status": "Interviewing"},
+        json={"version": 1, "status": "Interviewing"},
     )
     assert changed.status_code == 200
     start = utc_now() + timedelta(days=1)
@@ -183,6 +183,6 @@ def interview(client, account, job, db):
         "candidate": candidate,
         "candidate_id": candidate_id,
         "job": posting,
-        "application": applied,
+        "application": {**applied, **changed.json()},
         "slot": slot,
     }

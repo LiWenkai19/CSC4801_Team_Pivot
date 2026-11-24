@@ -1,6 +1,11 @@
 import type { MessageKey } from './zh-CN'
 
 const enUS = {
+    'edit.checkUpdates': "Check for updates",
+    'edit.checkingUpdates': "Checking…",
+    'edit.upToDate': "Already up to date. Your input has been kept.",
+    'edit.refreshed': "Latest content loaded.",
+    'edit.checkFailed': "Could not check for updates. Your input has been kept. Please retry.",
     'edit.conflict': "This content was updated on another page. Your changes have not been saved.",
     'edit.reloadLatest': "Reload latest content",
     'edit.discardConfirm': "Reloading will discard your unsaved changes on this page. Continue?",

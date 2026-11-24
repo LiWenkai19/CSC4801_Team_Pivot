@@ -30,6 +30,7 @@ ERROR_STATUS = {
     service.JobForbiddenError: status.HTTP_403_FORBIDDEN,
     service.JobHasDependentsError: status.HTTP_409_CONFLICT,
     service.JobVersionConflictError: status.HTTP_409_CONFLICT,
+    service.ResourceVersionConflictError: status.HTTP_409_CONFLICT,
     service.ApplicationNotFoundError: status.HTTP_404_NOT_FOUND,
 }
 BUSINESS_ERRORS = tuple(ERROR_STATUS)

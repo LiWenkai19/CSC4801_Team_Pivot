@@ -8,12 +8,13 @@ def test_fp_emp_1_view_and_edit_company_profile(client, make_employer):
     assert viewed.status_code == 200
     assert viewed.json() == {
         "user_id": viewed.json()["user_id"],
+        "version": 1,
         "company_name": "Acme",
         "company_description": "We build tools.",
     }
 
     renamed = client.patch(
-        "/employer/company", json={"company_name": "Acme 2"}, headers=headers
+        "/employer/company", json={"version": 1, "company_name": "Acme 2"}, headers=headers
     )
     assert renamed.status_code == 200
     body = renamed.json()
@@ -22,7 +23,7 @@ def test_fp_emp_1_view_and_edit_company_profile(client, make_employer):
 
     rewritten = client.patch(
         "/employer/company",
-        json={"company_description": ""},
+        json={"version": body["version"], "company_description": ""},
         headers=headers,
     )
     assert rewritten.status_code == 200
@@ -40,7 +41,7 @@ def test_fp_emp_1_company_profile_validation(client, make_employer):
         {"unknown_field": "x"},
     ]
     for payload in invalid_payloads:
-        response = client.patch("/employer/company", json=payload, headers=headers)
+        response = client.patch("/employer/company", json={"version": 1, **payload}, headers=headers)
         assert response.status_code == 422, payload
     unchanged = client.get("/employer/company", headers=headers).json()
     assert unchanged["company_name"] == "Acme"
@@ -59,11 +60,11 @@ def test_fp_emp_1_role_and_auth_boundaries(client, register, make_candidate):
     candidate = make_candidate()
     assert client.get("/employer/company", headers=candidate).status_code == 403
     patched = client.patch(
-        "/employer/company", json={"company_name": "X"}, headers=candidate
+        "/employer/company", json={"version": 1, "company_name": "X"}, headers=candidate
     )
     assert patched.status_code == 403
 
     anonymous_get = client.get("/employer/company")
     assert anonymous_get.status_code == 401
-    anonymous_patch = client.patch("/employer/company", json={"company_name": "X"})
+    anonymous_patch = client.patch("/employer/company", json={"version": 1, "company_name": "X"})
     assert anonymous_patch.status_code == 401

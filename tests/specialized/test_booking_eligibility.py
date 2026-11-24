@@ -65,7 +65,7 @@ def test_full_booking_eligibility_decision_table(
         changed = client.patch(
             f"/employer/applications/{data['application_id']}/status",
             headers=data["owner"]["headers"],
-            json={"status": "Pending"},
+            json={"version": 2, "status": "Pending"},
         )
         assert changed.status_code == 200 and changed.json()["status"] == "Pending"
     before = snapshot()

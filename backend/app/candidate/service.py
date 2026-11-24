@@ -277,6 +277,7 @@ def _applications_public(
     return [
         ApplicationPublic(
             application_id=row.id,
+            version=row.version,
             job_id=row.job_id,
             job_title=jobs[row.job_id][0],
             company_name=jobs[row.job_id][1],

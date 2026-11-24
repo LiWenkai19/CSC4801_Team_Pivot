@@ -302,6 +302,7 @@ label, legend { font-weight: 650; }
 }
 
 .form-panel fieldset:not(.skill-picker) > legend { margin-block-end: 12px; padding: 0; font-size: 18px; }
+.editor-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .form-panel [type="submit"] { justify-self: start; }
 .slot-form { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
 .slot-form .field { flex: 1 1 245px; }

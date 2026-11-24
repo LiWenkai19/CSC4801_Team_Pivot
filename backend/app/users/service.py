@@ -217,6 +217,8 @@ def create_employer_profile(
     )
     session.add(new_profile)
     try:
+        session.flush()
+        response = EmployerProfilePublic.model_validate(new_profile)
         session.commit()
     except IntegrityError as error:
         session.rollback()
@@ -228,8 +230,7 @@ def create_employer_profile(
         session.rollback()
         raise
 
-    session.refresh(new_profile)
-    return EmployerProfilePublic.model_validate(new_profile)
+    return response
 
 
 class CandidateRoleRequiredError(ValueError):

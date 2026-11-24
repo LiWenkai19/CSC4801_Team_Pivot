@@ -106,7 +106,44 @@ behavior/documentation rather than treating a named test as proof of compliance.
 | FP-TEST-1 | `tests/unit/`; existing `backend/tests/users/test_schema.py`; `tests/run_tests.py`; `frontend/tests/rendering.unit.mjs` | One non-interactive unit command includes backend business/schema and actual component tests; it returns nonzero for any failure. Version-schema, stale-write, no-op and server-assigned creation contracts are in `tests/unit/test_versions.py`; real-PG migration and concurrency tests are under `backend/tests/candidate/`. |
 | FP-SUB-1 | `Dockerfile`; GitHub main commit submission | Permanent public main commit and complete Docker build/start remain final submission checks. Docker is excluded from this local test-only task; no submission or CI pass is claimed. |
 
-## Verification Status and Known Limitations
+## Current Editor Protection Extension (2026-11-23)
+
+The current local patch extends protection to **company profiles and applicant
+status**, alongside the protected candidate profile and job editors. All four
+have **Check for updates** beside Save. An unchanged server version keeps input;
+a changed version requires confirmation before discarding a draft. A cancelled
+check or failed read retains the draft and its old version. Checking one applicant
+card cannot advance another card's draft version. No cross-tab communication
+service is required.
+
+Apply migration `8c3d0e5f7a21` after `7b2c9d4e6f10`, deploying database, backend and
+frontend together. Company/status PATCH requests now require the loaded strict
+positive version, with the same 409 conflict contract as profile/job updates.
+New/create, booking and delete contracts are preserved. Existing records receive
+version 1 without resetting data. See [INSTALL](INSTALL.md) and the
+[extension verification report](docs/testing/EDITOR_VERSIONS.md).
+
+Additional requirement-to-test mapping:
+
+| Requirement | Additional actual tests |
+|---|---|
+| FP-EMP-1 company edit | `backend/tests/candidate/test_extended_versions.py::test_stale_company_or_status_tab_cannot_overwrite_newer_save[company]`; `test_extended_same_value_and_omission_revision_rules[company]`; company schema/no-op cases in `tests/unit/test_versions.py` |
+| FP-EMP-3 applicant status | Application parameters of `test_extended_invalid_versions_cannot_write`, `test_extended_concurrent_edit_has_one_winner`, `test_extended_commit_failure_rolls_back_revision_and_content`; existing four-state and booking-preservation regressions |
+| FP-CAN-1 / FP-EMP-1 / FP-EMP-2 / FP-EMP-3 editor drafts | `frontend/tests/specialized/editor_update_checks.mjs`: all four editors, both languages, three engines; failed reads, unchanged version, discard cancellation/confirmation, unadded skill query, independent cards and real double tabs |
+| Migration consistency / FP-TEST-1 | `test_extended_migration_preserves_old_company_application_and_defaults`: isolated 7b → 8c upgrade, preserved rows, new SQL defaults, positive/non-null constraints and downgrade/re-upgrade; schema contracts in `tests/unit/test_versions.py` |
+
+This extension passed **157 unit tests**, **229 API/database cases** and **36 new
+browser scenarios**. Full browser results are 197/205 passing with 8 known
+failures; functional replay remains 375/393 passing with 18 known failures. SSR36
+and performance4 passed. See the linked report for failed causes and delivery limits.
+
+The initial extension evidence is based on `b21d9d9` plus the patch. Before
+publication it was integrated with main `4ba0c25`, preserving the team Docker and
+English-default changes. Subsequent unit/render/browser verification and the
+refresh-icon change are recorded in the extension report; historical execution
+snapshots retain their original hashes and dates.
+
+## Earlier Verification Status and Known Limitations
 
 Validation baseline: `5143f1e944cac5b9e19e484320e2684b883b5ab4` plus the
 user-authorized local version-protection patch (2026-11-23). No new commit is
@@ -149,6 +186,7 @@ claimed. Historical reports retain their original versions and results.
 - [Component rendering unit tests](frontend/tests/rendering.unit.mjs)
 - [Existing API/database regression](backend/tests/)
 - [Specialized test suites and runners](tests/specialized/README.md)
+- [Four-editor version protection verification](docs/testing/EDITOR_VERSIONS.md)
 - [Consolidated and historical test reports](docs/testing/REPORT.md)
 
 The consolidated report and rewritten historical report copies are committed in

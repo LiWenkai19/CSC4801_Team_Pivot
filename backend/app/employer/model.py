@@ -75,6 +75,7 @@ class Application(SQLModel, table=True):
     __tablename__ = "application"  # type: ignore
     __table_args__ = (
         UniqueConstraint("candidate_id", "job_id", name="uq_application_candidate_job"),
+        CheckConstraint("version > 0", name="ck_application_version"),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -82,6 +83,9 @@ class Application(SQLModel, table=True):
         foreign_key="candidate_profile.user_id", index=True
     )
     job_id: uuid.UUID = Field(foreign_key="job.id", index=True)
+    version: int = Field(
+        default=1, sa_column=Column(Integer, nullable=False, server_default=text("1"))
+    )
     status: ApplicationStatus = Field(
         default=ApplicationStatus.Pending,
         sa_column=Column(

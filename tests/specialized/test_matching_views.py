@@ -18,7 +18,7 @@ def test_candidate_full_order_and_membership_are_independently_precomputed(
             client.patch(
                 "/employer/company",
                 headers=owner["headers"],
-                json={"company_name": name},
+                json={"version": 1, "company_name": name},
             ).status_code
             == 200
         )
@@ -215,8 +215,7 @@ def test_irrelevant_text_cannot_change_score_or_order(client, account, job, fiel
                 "company_description": "Rust SQL Python Go and unrelated company description"
             },
         )
-    if field != "company-description":
-        payload["version"] = 1
+    payload["version"] = 1
     changed = client.patch(path, headers=headers, json=payload)
     assert changed.status_code == 200, changed.text
     after = client.get("/candidate/jobs", headers=candidate["headers"]).json()

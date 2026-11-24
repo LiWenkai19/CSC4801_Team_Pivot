@@ -41,11 +41,11 @@ The application defines ten persistent SQLModel tables in PostgreSQL. Identifier
 | `User` / `user` | `id`, `email`, `hashed_password`, `role`, `created_at` | `id` is the primary key. `email` has a unique index. `role` is restricted to `candidate` or `employer`. |
 | `UserSession` / `user_session` | `id`, `token_hash`, `csrf_token`, `user_id`, `created_at`, `expires_at` | `id` is the primary key. `token_hash` has a unique index and stores the SHA-256 digest of the session token. `user_id` references `user.id` with `ON DELETE CASCADE`. |
 | `CandidateProfile` / `candidate_profile` | `user_id`, `display_name`, `resume_text`, `version` | `user_id` is both the primary key and a foreign key to `user.id`. `resume_text` holds the candidate's private plain-text resume. `version` is a positive integer with a database default of `1`. |
-| `EmployerProfile` / `employer_profile` | `user_id`, `company_name`, `company_description` | `user_id` is both the primary key and a foreign key to `user.id`. This row stores the employer's company profile. |
+| `EmployerProfile` / `employer_profile` | `user_id`, `company_name`, `company_description`, `version` | `user_id` is both the primary key and a foreign key to `user.id`. This row stores the employer's company profile. `version` is a positive integer with a database default of `1`. |
 | `CandidateSkill` / `candidate_skill` | `candidate_id`, `name` | The primary key is (`candidate_id`, `name`). `candidate_id` references `candidate_profile.user_id`. A check requires a nonempty, trimmed, lowercase skill name. |
 | `Job` / `job` | `id`, `employer_id`, `title`, `description`, `is_deleted`, `version`, `created_at`, `updated_at` | `id` is the primary key. `employer_id` references `employer_profile.user_id`. The title and description must be nonempty after trimming. `is_deleted` marks a soft deletion. `version` is a positive integer with a database default of `1`. |
 | `JobSkill` / `job_skill` | `job_id`, `name` | The primary key is (`job_id`, `name`). `job_id` references `job.id`. A check requires a nonempty, trimmed, lowercase skill name. A job may have zero required skills. |
-| `Application` / `application` | `id`, `candidate_id`, `job_id`, `status`, `created_at`, `updated_at` | `id` is the primary key. `candidate_id` references `candidate_profile.user_id` and `job_id` references `job.id`. A unique constraint on (`candidate_id`, `job_id`) allows one application per candidate per job. `status` is restricted to `Pending`, `Interviewing`, `Rejected`, or `Accepted`. |
+| `Application` / `application` | `id`, `candidate_id`, `job_id`, `status`, `version`, `created_at`, `updated_at` | `id` is the primary key. `candidate_id` references `candidate_profile.user_id` and `job_id` references `job.id`. A unique constraint on (`candidate_id`, `job_id`) allows one application per candidate per job. `status` is restricted to `Pending`, `Interviewing`, `Rejected`, or `Accepted`. `version` is a positive integer with a database default of `1`. |
 | `InterviewSlot` / `interview_slot` | `id`, `employer_id`, `job_id`, `starts_at`, `ends_at` | `id` is the primary key. `employer_id` references `employer_profile.user_id`. The optional `job_id` references `job.id`. A check requires `ends_at` to be later than `starts_at`. |
 | `Booking` / `booking` | `id`, `application_id`, `slot_id`, `created_at` | `id` is the primary key. `application_id` references `application.id` and `slot_id` references `interview_slot.id`. Each foreign key has its own unique constraint, limiting each application and slot to one booking. |
 
@@ -98,6 +98,7 @@ erDiagram
         uuid user_id PK, FK
         varchar company_name
         varchar company_description
+        integer version
     }
     CANDIDATE_SKILL {
         uuid candidate_id PK, FK
@@ -122,6 +123,7 @@ erDiagram
         uuid candidate_id FK
         uuid job_id FK
         varchar status
+        integer version
         timestamptz created_at
         timestamptz updated_at
     }
@@ -205,6 +207,59 @@ The candidate service uses `_owned_application` for application detail, slot lis
 The employer service uses `_load_owned_job` for job detail, edit, deletion, and applicant listing. For a status update, it follows `application.job_id` and compares `job.employer_id` with the caller's account ID. The interview service uses `interview_slot.employer_id` for slot ownership. [Employer service](backend/app/employer/service.py) · [Interview service](backend/app/interview/service.py)
 <!-- 这里等改完代码才能确定 -->
 
+### Candidate profile and job edit versions (2026-11-23)
+
+`candidate_profile.version` and `job.version` are positive, non-null integers with
+Python/database default 1, added through migration `7b2c9d4e6f10`. Existing data is
+preserved. Creation assigns version 1 and rejects a client-supplied version.
+Profile, job and derived recommended-job responses include version.
+
+`PATCH /candidate/profile` and `PATCH /employer/jobs/{id}` require a strict positive
+integer `version`; missing/null/bool/string/non-positive values return 422. Existing
+authentication, ownership and missing-resource errors precede stale-version checks.
+The service locks and refreshes the parent row, compares version, then updates
+fields/skill rows and increments version in one transaction. A stale edit returns
+409 with `{"detail":"Resource version conflict"}` and makes no changes. A version-only
+request checks freshness but changes neither revision nor update timestamp; any
+request containing an editable field increments version once even for equal values.
+Failed transactions roll back content and version. Response DTOs are captured
+inside the transaction and returned only after commit succeeds.
+
+Editors retain the loaded version and all draft values when rejected. Save stays
+disabled until the user confirms discarding the draft and a fresh GET succeeds.
+Cancel or load failure preserves the draft and conflict state. There is no automatic
+merge, force-save, retry, WebSocket or BroadcastChannel synchronization. HTTP JSON
+fetch and Cookie/CSRF authentication are retained; clients without versions must
+upgrade rather than use an unprotected fallback.
+
+### Company profile, application status and explicit update checks (2026-11-23)
+
+Migration `8c3d0e5f7a21`, following `7b2c9d4e6f10`, adds positive, non-null
+`version` columns (Python/database default 1) to `employer_profile` and
+`application`, preserving existing data. Employer-profile creation and company,
+applicant-list, candidate-application and status-update responses include version.
+Company creation rejects client-supplied versions; applying creates version 1.
+
+`PATCH /employer/company` and `PATCH /employer/applications/{id}/status` now
+require the same strict positive `version` and 409 conflict contract above.
+The company parent / application row remains locked through commit; fresh ORM
+values are loaded before comparison and response DTOs are captured before commit.
+Company fields preserve omission/clearing rules; a version-only company request
+is a no-op. Status updates still require `status`, allow all four existing values,
+and increment once even for the same value. Role, ownership and missing-resource
+checks precede version comparison. Booking links survive status updates; booking,
+creation and deletion actions keep their existing atomic contracts.
+
+All four editors have a **Check for updates** button beside Save. It performs a
+GET without writing. An unchanged version preserves every input, including skill
+search text. A changed version applies immediately only when there is no draft;
+otherwise explicit discard confirmation is required. Cancelling preserves the old
+draft/version and disables Save. Read failure retains the draft and allows retry.
+Confirmed application changes one applicant card only, keeping other cards' drafts
+and loaded versions intact. A typed but unadded skill query counts as a draft.
+Checking never advances the version of a draft that the user chose to keep.
+New-job creation has no update-check button because no saved resource exists yet.
+
 ## API Routes or Server Actions
 
 The tables list all 28 application API operations using their FastAPI paths. Browser clients prepend `/api`, so `GET /candidate/jobs` is requested as `GET /api/candidate/jobs`. Resource IDs in path parameters are UUIDs. Request bodies use JSON, `[]` denotes an array response, and `204 No Content` has no response body. Session cookies, CSRF headers, and resource ownership are described in [Authentication and Authorization](#authentication-and-authorization).
@@ -246,14 +301,14 @@ These operations require the employer role. Job and applicant operations are sco
 | Operation | JSON request | Success | Behavior |
 | --- | --- | --- | --- |
 | `GET /employer/company` | — | `200` `CompanyPublic` | Read the caller's company profile. |
-| `PATCH /employer/company` | Any of `company_name`, `company_description` | `200` `CompanyPublic` | Update the supplied company profile fields. |
+| `PATCH /employer/company` | `version` and any of `company_name`, `company_description` | `200` `CompanyPublic` | Update the supplied company profile fields. A stale version returns `409`. |
 | `POST /employer/jobs` | `title`, `description`, optional `required_skills` | `201` `JobPublic` | Publish a job for the caller's company. Publishing before company setup returns `409`. |
 | `GET /employer/jobs` | — | `200` `JobPublic[]` | List the caller's active job postings. |
 | `GET /employer/jobs/{job_id}` | — | `200` `JobPublic` | Read an active job owned by the caller. |
 | `PATCH /employer/jobs/{job_id}` | `version` and any of `title`, `description`, `required_skills` | `200` `JobPublic` | Update an owned job and replace required skills when supplied. A stale version returns `409`. |
 | `DELETE /employer/jobs/{job_id}` | — | `204` No Content | Soft-delete an owned job. Existing applications or job-linked slots cause `409`. |
 | `GET /employer/jobs/{job_id}/applications` | — | `200` `ApplicantPublic[]` | List applicants for an owned job by descending match score, with their skills, statuses, and bookings. |
-| `PATCH /employer/applications/{application_id}/status` | `status` (`Pending`, `Interviewing`, `Rejected`, or `Accepted`) | `200` `ApplicationStatusPublic` | Change an application status for an owned job and retain any existing booking. |
+| `PATCH /employer/applications/{application_id}/status` | `version`, `status` (`Pending`, `Interviewing`, `Rejected`, or `Accepted`) | `200` `ApplicationStatusPublic` | Change an application status for an owned job and retain any existing booking. A stale version returns `409`. |
 
 ### Employer interview slots
 

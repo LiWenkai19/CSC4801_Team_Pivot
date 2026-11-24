@@ -42,7 +42,7 @@ def test_flush_then_failed_commit_restores_all_related_records(
                     session,
                     user,
                     uuid.UUID(data["application_id"]),
-                    ApplicationStatusUpdate(status="Accepted"),
+                    ApplicationStatusUpdate(version=data["version"], status="Accepted"),
                 )
             else:
                 candidate.apply(session, user, uuid.UUID(data["job_id"]))

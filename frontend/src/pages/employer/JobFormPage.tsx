@@ -6,6 +6,7 @@ import EmployerSkillPicker from '../../components/skills/EmployerSkillPicker'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLanguage } from '../../i18n/LanguageContext'
 import type { MessageKey } from '../../i18n/zh-CN'
+import type { JobPublic } from '../../types'
 import { apiFeedback, isVersionConflict } from '../../i18n/apiFeedback'
 
 /** 新建和编辑共用表单；路由变化后重新加载，避免沿用上一职位输入。 */
@@ -31,7 +32,11 @@ function JobForm({ jobId }: { jobId: string | undefined }) {
     const [submitError, setSubmitError] = useState<MessageKey | ''>('')
     const [submitting, setSubmitting] = useState(false)
     const [attempt, setAttempt] = useState(0)
+    const [editorReset, setEditorReset] = useState(0)
+    const [checkNotice, setCheckNotice] = useState<MessageKey | ''>('')
     const pending = useRef(false)
+    const baseline = useRef<JobPublic | null>(null)
+    const form = useRef<HTMLFormElement>(null)
 
     useEffect(() => {
         if (!isEmployer) return
@@ -43,6 +48,7 @@ function JobForm({ jobId }: { jobId: string | undefined }) {
                 setDescription(job.description)
                 setSkills(job.required_skills)
                 setVersion(job.version)
+                baseline.current = job
             }).catch(reason => { if (active) setLoadError(apiFeedback(reason, 'common.loadFailed')) })
                 .finally(() => { if (active) setLoading(false) })
         }
@@ -75,6 +81,7 @@ function JobForm({ jobId }: { jobId: string | undefined }) {
             if (jobId && version !== null) {
                 const saved = await updateJob(jobId, { ...data, version })
                 setVersion(saved.version)
+                baseline.current = saved
             }
             else await createJob(data)
             navigate('/employer/jobs')
@@ -97,10 +104,45 @@ function JobForm({ jobId }: { jobId: string | undefined }) {
             setDescription(latest.description)
             setSkills(latest.required_skills)
             setVersion(latest.version)
+            baseline.current = latest
+            setEditorReset(value => value + 1)
             setConflict(false)
             setSubmitError('')
         } catch (reason) {
             setSubmitError(apiFeedback(reason, 'common.loadFailed'))
+        } finally { pending.current = false; setReloading(false) }
+    }
+
+    async function checkForUpdates() {
+        if (!jobId || version === null || pending.current) return
+        pending.current = true
+        setReloading(true)
+        setSubmitError('')
+        setCheckNotice('')
+        try {
+            const latest = await getMyJob(jobId)
+            if (latest.version === version) {
+                setCheckNotice('edit.upToDate')
+                return
+            }
+            const original = baseline.current
+            const hasChanges = !original || title !== original.title || description !== original.description
+                || JSON.stringify([...skills].sort()) !== JSON.stringify([...original.required_skills].sort())
+                || Boolean(form.current?.querySelector<HTMLInputElement>('.skill-input input')?.value.trim())
+            if (hasChanges) {
+                setConflict(true)
+                if (!window.confirm(t('edit.discardConfirm'))) return
+            }
+            setTitle(latest.title)
+            setDescription(latest.description)
+            setSkills(latest.required_skills)
+            setVersion(latest.version)
+            baseline.current = latest
+            setEditorReset(value => value + 1)
+            setConflict(false)
+            setCheckNotice('edit.refreshed')
+        } catch (reason) {
+            setSubmitError(apiFeedback(reason, 'edit.checkFailed'))
         } finally { pending.current = false; setReloading(false) }
     }
 
@@ -110,7 +152,7 @@ function JobForm({ jobId }: { jobId: string | undefined }) {
         <h1>{jobId ? t('jobs.edit') : t('jobs.new')}</h1>
         {loading && <p className="feedback" role="status">{t('jobs.loading')}</p>}
         {loadError && <div className="page-section"><p className="feedback" role="alert">{t(loadError)}</p><button type="button" onClick={retryLoad}>{t('common.reload')}</button></div>}
-        {!loading && !loadError && <form className="form-panel" onSubmit={handleSubmit} aria-busy={submitting || reloading}>
+        {!loading && !loadError && <form ref={form} className="form-panel" onSubmit={handleSubmit} aria-busy={submitting || reloading}>
             <fieldset disabled={submitting || reloading}>
                 <legend>{t('jobs.info')}</legend>
                 <div className="field">
@@ -121,12 +163,16 @@ function JobForm({ jobId }: { jobId: string | undefined }) {
                     <label htmlFor="job-description">{t('jobs.descriptionField')}</label>
                     <textarea id="job-description" value={description} required rows={6} onChange={event => setDescription(event.target.value)} />
                 </div>
-                <EmployerSkillPicker value={skills} onChange={setSkills} />
+                <EmployerSkillPicker key={editorReset} value={skills} onChange={setSkills} />
                 {conflict && <div className="feedback" role="alert"><p>{t('edit.conflict')}</p><button type="button" onClick={reloadLatest}>{t('edit.reloadLatest')}</button></div>}
-                <button type="submit" disabled={conflict}>{submitting ? t('common.saving') : t('jobs.save')}</button>
+                <div className="editor-actions">
+                    <button type="submit" disabled={conflict}>{submitting ? t('common.saving') : t('jobs.save')}</button>
+                    {jobId && <button type="button" onClick={checkForUpdates}><svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginInlineEnd: 6, verticalAlign: 'text-bottom' }}><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /></svg>{reloading ? t('edit.checkingUpdates') : t('edit.checkUpdates')}</button>}
+                </div>
             </fieldset>
         </form>}
         {submitError && <p className="feedback" role="alert">{t(submitError)}</p>}
+        {checkNotice && <p className="feedback" role="status">{t(checkNotice)}</p>}
     </main>
 }
 

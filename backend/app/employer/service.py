@@ -56,7 +56,11 @@ class JobHasDependentsError(ValueError):
     """职位仍有申请或面试时段，不能删除。"""
 
 
-class JobVersionConflictError(ValueError):
+class ResourceVersionConflictError(ValueError):
+    """旧页面的修改不能覆盖同一资源已提交的新版本。"""
+
+
+class JobVersionConflictError(ResourceVersionConflictError):
     """请求基于旧版本，不能覆盖较新的职位修改。"""
 
 
@@ -76,6 +80,7 @@ def _company_public(profile: EmployerProfile) -> CompanyPublic:
         user_id=profile.user_id,
         company_name=profile.company_name,
         company_description=profile.company_description,
+        version=profile.version,
     )
 
 
@@ -91,22 +96,33 @@ def get_my_company(session: Session, user: User) -> CompanyPublic:
 def update_my_company(
     session: Session, user: User, changes: CompanyUpdate
 ) -> CompanyPublic:
-    """只修改本次显式提交的公司资料字段。"""
+    """锁住公司资料并比较版本，只更新显式提供的业务字段。"""
     _require_employer(user)
-    profile = session.get(EmployerProfile, user.id)
-    if profile is None:
-        raise CompanyNotFoundError("Company not found")
     try:
-        for name, value in changes.model_dump(exclude_unset=True).items():
+        profile = session.exec(
+            select(EmployerProfile)
+            .where(EmployerProfile.user_id == user.id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        ).first()
+        if profile is None:
+            raise CompanyNotFoundError("Company not found")
+        if profile.version != changes.version:
+            raise ResourceVersionConflictError("Resource version conflict")
+        fields = changes.model_dump(exclude_unset=True, exclude={"version"})
+        for name, value in fields.items():
             setattr(profile, name, value)
-        session.add(profile)
+        if fields:
+            profile.version += 1
+            session.add(profile)
+            session.flush()
+        response = _company_public(profile)
         session.commit()
-    except SQLAlchemyError:
+    except (ResourceVersionConflictError, CompanyNotFoundError, SQLAlchemyError):
         session.rollback()
         raise
 
-    session.refresh(profile)
-    return _company_public(profile)
+    return response
 
 
 def _job_public(session: Session, job: Job) -> JobPublic:
@@ -310,6 +326,7 @@ def list_job_applicants(
         rows.append(
             ApplicantPublic(
                 application_id=application.id,
+                version=application.version,
                 candidate_id=application.candidate_id,
                 display_name=profile.display_name,
                 skills=sorted(skills),
@@ -332,30 +349,39 @@ def change_application_status(
 ) -> ApplicationStatusPublic:
     """只修改申请状态；四个状态之间可任意切换，不触碰预约。"""
     _require_employer(user)
-    application = session.exec(
-        select(Application).where(Application.id == application_id).with_for_update()
-    ).first()
-    if application is None:
-        raise ApplicationNotFoundError("Application not found")
-    job = session.get(Job, application.job_id)
-    if job is None or job.is_deleted:
-        raise JobNotFoundError("Job not found")
-    if job.employer_id != user.id:
-        raise JobForbiddenError("Not the owner of this job")
-
-    application.status = data.status
-    application.updated_at = utc_now()
     try:
+        application = session.exec(
+            select(Application)
+            .where(Application.id == application_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        ).first()
+        if application is None:
+            raise ApplicationNotFoundError("Application not found")
+        job = session.get(Job, application.job_id)
+        if job is None or job.is_deleted:
+            raise JobNotFoundError("Job not found")
+        if job.employer_id != user.id:
+            raise JobForbiddenError("Not the owner of this job")
+        if application.version != data.version:
+            raise ResourceVersionConflictError("Resource version conflict")
+        application.status = data.status
+        application.updated_at = utc_now()
+        application.version += 1
+        session.add(application)
+        session.flush()
+        session.refresh(application)
+        response = ApplicationStatusPublic(
+            application_id=application.id,
+            version=application.version,
+            job_id=application.job_id,
+            candidate_id=application.candidate_id,
+            status=application.status,
+            updated_at=application.updated_at,
+        )
         session.commit()
-    except SQLAlchemyError:
+    except (ResourceVersionConflictError, ApplicationNotFoundError, JobNotFoundError, JobForbiddenError, SQLAlchemyError):
         session.rollback()
         raise
 
-    session.refresh(application)
-    return ApplicationStatusPublic(
-        application_id=application.id,
-        job_id=application.job_id,
-        candidate_id=application.candidate_id,
-        status=application.status,
-        updated_at=application.updated_at,
-    )
+    return response

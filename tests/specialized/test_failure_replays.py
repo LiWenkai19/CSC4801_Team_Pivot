@@ -141,12 +141,12 @@ def test_shared_nul_storage_boundary_with_normal_unicode_control(
             "description",
         )
     ordinary = ["c++", "sql"] if field == "skills" else "普通文本 Résumé 🙂 C++"
-    protected = {} if target == "company-description" else {"version": 1}
+    protected = {"version": 1}
     normal = client.patch(path, headers=headers, json={**protected, field: ordinary})
     assert normal.status_code == 200, normal.text
     before = snapshot()
     value = ["py\x00thon"] if field == "skills" else "ordinary\x00text"
-    protected = {} if target == "company-description" else {"version": normal.json()["version"]}
+    protected = {"version": normal.json()["version"]}
     bad = client.patch(path, headers=headers, json={**protected, field: value})
     after = snapshot()
     evidence(

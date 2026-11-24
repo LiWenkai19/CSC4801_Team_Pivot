@@ -74,10 +74,16 @@ class EmployerProfile(SQLModel, table=True):
     """雇主拥有的公司资料。"""
 
     __tablename__ = "employer_profile"  # type: ignore
+    __table_args__ = (
+        CheckConstraint("version > 0", name="ck_employer_profile_version"),
+    )
 
     user_id: uuid.UUID = Field(foreign_key="user.id", primary_key=True)
     company_name: str = Field(nullable=False)
     company_description: str = Field(default="", nullable=False)
+    version: int = Field(
+        default=1, sa_column=Column(Integer, nullable=False, server_default=text("1"))
+    )
 
     user: User = Relationship(back_populates="employer_profile")
 

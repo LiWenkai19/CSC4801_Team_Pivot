@@ -133,7 +133,7 @@ def test_real_database_schedules_preserve_contract(
         "PATCH",
         f"/employer/applications/{data['application_id']}/status",
         data["owner"]["headers"],
-        {"status": "Rejected"},
+        {"version": data["version"], "status": "Rejected"},
     )
     lock_table = "interview_slot"
     if kind == "delete-before-book":

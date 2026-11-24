@@ -166,7 +166,7 @@ def test_opposite_normal_role_is_403(client, account, snapshot, role, path):
     "role,method,path,body",
     [
         ("candidate", "PATCH", "/candidate/profile", {"display_name": "Changed"}),
-        ("employer", "PATCH", "/employer/company", {"company_name": "Changed"}),
+        ("employer", "PATCH", "/employer/company", {"version": 1, "company_name": "Changed"}),
         (
             "employer",
             "POST",

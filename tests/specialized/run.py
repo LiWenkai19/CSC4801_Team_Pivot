@@ -31,6 +31,7 @@ GROUPS = {
 }
 BROWSER_SCRIPTS = [
     "version_conflicts",
+    "editor_update_checks",
     "auth_browser_checks",
     "auth_browser_focused",
     "probe_existing_helpers",
@@ -75,7 +76,7 @@ def main():
     parser.add_argument(
         "--browser-script",
         choices=BROWSER_SCRIPTS,
-        help="Run one browser module rather than all seven",
+        help="Run one browser module rather than all browser modules",
     )
     parser.add_argument(
         "--coverage",

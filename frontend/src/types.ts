@@ -56,6 +56,7 @@ export interface CandidateProfilePublic {
 
 /** 雇主公司资料响应。 */
 export interface EmployerProfilePublic {
+  version: number
   user_id: string
   company_name: string
   company_description: string
@@ -66,6 +67,7 @@ export interface CompanyPublic extends EmployerProfilePublic {}
 
 /** 省略字段表示不修改；不发送 null。 */
 export interface CompanyUpdate {
+  version: number
   company_name?: string
   company_description?: string
 }
@@ -107,6 +109,7 @@ export interface BookingPublic {
 
 /** 不包含候选人私有简历等信息；分数及顺序由服务端决定。 */
 export interface ApplicantPublic {
+  version: number
   application_id: string
   candidate_id: string
   display_name: string
@@ -117,10 +120,12 @@ export interface ApplicantPublic {
 }
 
 export interface ApplicationStatusUpdate {
+  version: number
   status: ApplicationStatus
 }
 
 export interface ApplicationStatusPublic {
+  version: number
   application_id: string
   job_id: string
   candidate_id: string
@@ -142,6 +147,7 @@ export interface RecommendedJob extends JobPublic {
 }
 
 export interface CandidateApplication {
+  version: number
   application_id: string
   job_id: string
   job_title: string

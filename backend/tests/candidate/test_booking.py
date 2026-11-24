@@ -42,7 +42,7 @@ def test_booking_visible_to_both_roles_and_survives_status_change(client, interv
     client.patch(
         f"/employer/applications/{application_id}/status",
         headers=data["employer"],
-        json={"status": "Accepted"},
+        json={"version": 2, "status": "Accepted"},
     )
     assert (
         client.get(path, headers=data["candidate"]).json()["booking"] == booked.json()
@@ -106,11 +106,11 @@ def test_booking_rejects_foreign_application_and_non_interviewing(
         ).status_code
         == 422
     )
-    for state in ["Pending", "Rejected", "Accepted"]:
+    for version, state in enumerate(["Pending", "Rejected", "Accepted"], start=2):
         client.patch(
             f"/employer/applications/{data['application']['application_id']}/status",
             headers=data["employer"],
-            json={"status": state},
+            json={"version": version, "status": state},
         )
         assert client.get(path + "/slots", headers=data["candidate"]).status_code == 409
         assert (
@@ -132,7 +132,7 @@ def test_real_postgres_two_candidates_compete_for_one_slot(
     client.patch(
         f"/employer/applications/{applied['application_id']}/status",
         headers=data["employer"],
-        json={"status": "Interviewing"},
+        json={"version": 1, "status": "Interviewing"},
     )
     barrier = Barrier(2)
     from app.main import app

@@ -167,14 +167,15 @@ def test_fp_can_3_booking_is_visible_in_both_role_serializers(db, actors, result
     )
 
 
-def test_fp_emp_1_company_profile(db, actors):
+def test_fp_emp_1_company_profile(db, actors, result):
     profile = EmployerProfile(
         user_id=actors[1].id, company_name="Company", company_description="Before"
     )
     db.get.return_value = profile
     assert employer.get_my_company(db, actors[1]).company_name == "Company"
+    db.exec.return_value = result(first=profile)
     saved = employer.update_my_company(
-        db, actors[1], CompanyUpdate(company_description="After")
+        db, actors[1], CompanyUpdate(version=1, company_description="After")
     )
     assert saved.company_name == "Company" and saved.company_description == "After"
     db.commit.assert_called_once()
@@ -186,7 +187,7 @@ def test_fp_emp_1_missing_company_and_wrong_role(db, actors):
     with pytest.raises(employer.CompanyNotFoundError):
         employer.get_my_company(db, actors[1])
     with pytest.raises(EmployerRoleRequiredError):
-        employer.update_my_company(db, actors[0], CompanyUpdate(company_name="Other"))
+        employer.update_my_company(db, actors[0], CompanyUpdate(version=1, company_name="Other"))
     db.commit.assert_not_called()
 
 
@@ -285,11 +286,12 @@ def test_fp_emp_3_applicant_status_and_booking_preservation(db, actors, result, 
     db.exec.return_value = result(first=row)
     db.get.return_value = job
     saved = employer.change_application_status(
-        db, actors[1], row.id, ApplicationStatusUpdate(status=status)
+        db, actors[1], row.id, ApplicationStatusUpdate(version=1, status=status)
     )
     assert saved.status == status and saved.candidate_id == row.candidate_id
     db.delete.assert_not_called()
-    db.add.assert_not_called()
+    db.add.assert_called_once_with(row)
+    assert saved.version == 2 and row.version == 2
     db.execute.assert_not_called()
     assert db.exec.call_count == 1
     db.commit.assert_called_once()
@@ -309,7 +311,7 @@ def test_fp_emp_3_other_employer_and_candidate_cannot_change_status(db, actors, 
     ]:
         with pytest.raises(error):
             employer.change_application_status(
-                db, user, row.id, ApplicationStatusUpdate(status="Accepted")
+                db, user, row.id, ApplicationStatusUpdate(version=1, status="Accepted")
             )
     assert row.status == ApplicationStatus.Pending
     db.commit.assert_not_called()
@@ -317,7 +319,7 @@ def test_fp_emp_3_other_employer_and_candidate_cannot_change_status(db, actors, 
 
 def test_fp_emp_3_invalid_status_is_rejected():
     with pytest.raises(ValidationError):
-        ApplicationStatusUpdate(status="Unknown")
+        ApplicationStatusUpdate(version=1, status="Unknown")
 
 
 def test_fp_auth_3_missing_object_becomes_404(db, actors):

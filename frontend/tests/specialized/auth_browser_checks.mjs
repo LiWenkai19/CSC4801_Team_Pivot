@@ -26,6 +26,7 @@ const browser=await chromium.launch({headless:true,...(process.env.CHROME_EXECUT
 let seq=0;
 async function fresh(){
   const context=await browser.newContext({viewport:{width:1280,height:900},timezoneId:'America/New_York'}); contexts.push(context);
+  await context.addInitScript(()=>{if(!localStorage.getItem('skillmatch.language'))localStorage.setItem('skillmatch.language','zh-CN');});
   const page=await context.newPage(); page.setDefaultTimeout(6000);
   page.on('pageerror',e=>consoleErrors.push(e.message));
   page.on('dialog',async d=>{consoleErrors.push('Unexpected dialog');await d.dismiss();});

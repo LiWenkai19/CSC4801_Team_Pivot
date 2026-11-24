@@ -93,14 +93,14 @@ def test_candidate_profile_create_ignores_client_supplied_owner():
 def test_profile_update_distinguishes_omission_from_clearing():
     """未传字段不更新，显式空内容用于清空可选字段。"""
     assert ProfileUpdate(version=1).model_dump(exclude_unset=True) == {"version": 1}
-    assert CompanyUpdate().model_dump(exclude_unset=True) == {}
+    assert CompanyUpdate(version=1).model_dump(exclude_unset=True) == {"version": 1}
     assert ProfileUpdate(version=1, resume_text="", skills=[]).model_dump(exclude_unset=True) == {
         "version": 1,
         "resume_text": "",
         "skills": [],
     }
-    assert CompanyUpdate(company_description="").model_dump(exclude_unset=True) == {
-        "company_description": ""
+    assert CompanyUpdate(version=1, company_description="").model_dump(exclude_unset=True) == {
+        "version": 1, "company_description": ""
     }
 
 

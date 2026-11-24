@@ -23,9 +23,9 @@ def test_complete_status_transition_relation_with_and_without_booking(
         )
         assert made.status_code == 201, made.text
         old_booking = made.json()
-    for state in (source, target):
+    for version, state in enumerate((source, target), start=data["version"]):
         changed = client.patch(
-            status_path, headers=data["owner"]["headers"], json={"status": state}
+            status_path, headers=data["owner"]["headers"], json={"version": version, "status": state}
         )
         assert changed.status_code == 200 and changed.json()["status"] == state, (
             changed.text
@@ -82,7 +82,7 @@ def test_existing_booking_survives_live_profile_company_and_job_updates(
         (
             "/employer/company",
             data["owner"]["headers"],
-            {"company_name": "Updated company"},
+            {"version": 1, "company_name": "Updated company"},
         ),
         (
             f"/employer/jobs/{data['job_id']}",
