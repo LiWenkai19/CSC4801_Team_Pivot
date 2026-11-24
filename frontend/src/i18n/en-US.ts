@@ -36,6 +36,8 @@ const enUS = {
     'auth.backToLogin': "Back to Sign In",
     'auth.logOut': "Sign Out",
     'auth.signOut': "Sign Out",
+    'auth.logoutFailed': "Could not sign out. Please try again.",
+    'auth.logoutUnconfirmed': "Could not confirm whether you signed out. Please try again.",
     'auth.email': "Email",
     'auth.emailPlaceholder': "Enter your email",
     'auth.password': "Password",

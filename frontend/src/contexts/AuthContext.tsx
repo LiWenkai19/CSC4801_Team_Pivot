@@ -1,13 +1,34 @@
-import { createContext, useState ,useEffect, useContext } from 'react';
+import { createContext, useState, useEffect, useContext, useRef } from 'react';
 import type { AuthResponse, Role, UserPublic as CurrentUser } from '../types';
-import { createUser as apiRegister, getCurrentUser, login as apiLogin, logout as apiLogout } from '../api/common_api';
+import { ApiError, createUser as apiRegister, getCurrentUser, login as apiLogin, logout as apiLogout } from '../api/common_api';
 
 type AuthDestination = '/navpage' | '/candidate/details' | '/employer/details';
+type LogoutError = 'auth.logoutFailed' | 'auth.logoutUnconfirmed';
+type LogoutState = 'pending' | LogoutError | null;
 
 /** 根据资料完成状态与角色统一选择认证后的目标页面。 */
 function getAuthDestination(user: CurrentUser): AuthDestination {
     if (user.profile_completed) return '/navpage';
     return user.role === 'candidate' ? '/candidate/details' : '/employer/details';
+}
+
+/** 发起注销，失败时检查原会话是否仍有效。 */
+async function requestLogout(): Promise<LogoutError | null> {
+    try {
+        await apiLogout();
+        return null;
+    } catch (error) {
+        if (error instanceof ApiError && error.status === 401) return null;
+    }
+
+    try {
+        await getCurrentUser();
+        return 'auth.logoutFailed';
+    } catch (error) {
+        return error instanceof ApiError && error.status === 401
+            ? null
+            : 'auth.logoutUnconfirmed';
+    }
 }
 
 type AuthContextValue = {
@@ -16,6 +37,7 @@ type AuthContextValue = {
     register: (email: string, password: string, role: Role) => Promise<AuthDestination>;
     getAuthDestination: (user: CurrentUser) => AuthDestination;
     logout: () => Promise<void>;
+    logoutState: LogoutState;
     refreshCurrentUser: () => Promise<CurrentUser>;
     loading: boolean;
 }
@@ -26,6 +48,8 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
     const [loading, setLoading] = useState(true);
+    const [logoutState, setLogoutState] = useState<LogoutState>(null);
+    const logoutInFlight = useRef(false);
 
 
     useEffect(() => {
@@ -44,6 +68,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     /** 使用认证响应更新登录态，避免额外查询账户和读取旧状态。 */
     const finishAuthentication = (response: AuthResponse): AuthDestination => {
         setCurrentUser(response.user);
+        setLogoutState(null);
         return getAuthDestination(response.user);
     };
 
@@ -76,12 +101,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    /** 先让后端删除会话；即使请求失败（如会话已过期）也清空前端状态。 */
+    /** 在服务端会话失效后清空登录态，失败时保留当前页面并提供提示。 */
     const logout = async () => {
+        if (logoutInFlight.current) return;
+        logoutInFlight.current = true;
+        setLogoutState('pending');
         try {
-            await apiLogout();
+            const error = await requestLogout();
+            setLogoutState(error);
+            if (error === null) setCurrentUser(null);
         } finally {
-            setCurrentUser(null);
+            logoutInFlight.current = false;
         }
     };
 
@@ -93,7 +123,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ currentUser, loading, login, register, logout, refreshCurrentUser, getAuthDestination }}>
+        <AuthContext.Provider value={{ currentUser, loading, login, register, logout, logoutState, refreshCurrentUser, getAuthDestination }}>
             {children}
         </AuthContext.Provider>
     );

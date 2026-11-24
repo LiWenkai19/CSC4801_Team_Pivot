@@ -26,7 +26,7 @@ const workspaceNavigation = {
 /** 登录后的角色入口；各角色沿用各自的工作流。 */
 function NavPage() {
     const { t } = useLanguage()
-    const { currentUser, logout } = useAuth()
+    const { currentUser, logout, logoutState } = useAuth()
     const navigation = currentUser && workspaceNavigation[currentUser.role]
 
     return (
@@ -35,9 +35,10 @@ function NavPage() {
                 <Brand />
                 <div className="workspace-header-actions">
                     <LanguageSwitcher />
-                    <button type="button" onClick={logout}>{t('auth.signOut')}</button>
+                    <button type="button" onClick={logout} disabled={logoutState === 'pending'}>{t('auth.signOut')}</button>
                 </div>
             </header>
+            {logoutState && logoutState !== 'pending' && <p className="feedback" role="alert">{t(logoutState)}</p>}
             <h1>{t('home.title')}</h1>
             <p className="home-email">{currentUser?.email}</p>
             {navigation && <nav className="home-nav" aria-label={t(navigation.label)}>

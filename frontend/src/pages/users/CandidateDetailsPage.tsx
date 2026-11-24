@@ -11,7 +11,7 @@ import { apiFeedback } from '../../i18n/apiFeedback'
 /** 为候选人首次保存资料，支持未完成资料时直接退出登录。 */
 function CandidateDetailsPage() {
     const { t } = useLanguage()
-    const { currentUser, loading, refreshCurrentUser, logout } = useAuth()
+    const { currentUser, loading, refreshCurrentUser, logout, logoutState } = useAuth()
     const [submitting, setSubmitting] = useState(false)
     const [submitError, setSubmitError] = useState<MessageKey | ''>('')
     const [profileSaved, setProfileSaved] = useState(false)
@@ -73,7 +73,8 @@ function CandidateDetailsPage() {
             ) : (
                 <CandidateForm submitting={submitting} submitError={submitError} onSubmit={handleSubmit} />
             )}
-            <button className="button-quiet" type="button" onClick={logout} disabled={submitting}>
+            {logoutState && logoutState !== 'pending' && <p className="feedback" role="alert">{t(logoutState)}</p>}
+            <button className="button-quiet" type="button" onClick={logout} disabled={submitting || logoutState === 'pending'}>
                 {t('auth.logOut')}
             </button>
         </main>

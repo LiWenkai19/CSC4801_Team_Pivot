@@ -34,6 +34,8 @@ const zhCN = {
     'auth.backToLogin': "返回登录",
     'auth.logOut': "退出登录",
     'auth.signOut': "注销",
+    'auth.logoutFailed': "注销失败，请重试。",
+    'auth.logoutUnconfirmed': "暂时无法确认是否已注销，请重试。",
     'auth.email': "邮箱",
     'auth.emailPlaceholder': "输入邮箱",
     'auth.password': "密码",
