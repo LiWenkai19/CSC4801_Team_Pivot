@@ -12,7 +12,7 @@ function CandidateLayout() {
     if (currentUser?.role !== 'candidate') return <main className="work-page"><p className="feedback" role="alert">{t('auth.candidateOnly')}</p><Link to="/navpage">{t('common.home')}</Link></main>
     return <div className="candidate-layout">
         <aside className="workspace-nav">
-            <Brand />
+            <Brand to="/navpage" />
             <nav aria-label={t('profile.candidateNav')}>
                 <NavLink to="/candidate/jobs"><span className="nav-icon nav-icon-jobs" aria-hidden="true" />{t('jobs.recommended')}</NavLink>
                 <NavLink to="/candidate/applications"><span className="nav-icon nav-icon-sheet" aria-hidden="true" />{t('applications.title')}</NavLink>
