@@ -154,7 +154,13 @@ function InterviewSlotsPage() {
                         <p><time dateTime={slot.starts_at}>{formatShanghaiTime(slot.starts_at, locale)}</time>
                         {' – '}
                         <time dateTime={slot.ends_at}>{formatShanghaiTime(slot.ends_at, locale)}</time></p>
-                        <span className="status-chip">{slot.is_booked ? t('slots.booked') : t('slots.unbooked')}</span>
+                        <div className="slot-status-line">
+                            <span className="status-chip">{slot.is_booked ? t('slots.booked') : t('slots.unbooked')}</span>
+                            {slot.is_booked && slot.job_id && <>
+                                <Link className="status-chip" to={`/employer/jobs/${slot.job_id}`}>{t('slots.applicant', { name: slot.applicant_name ?? '—' })}</Link>
+                                <Link className="status-chip" to={`/employer/jobs/${slot.job_id}`}>{t('slots.job', { jobTitle: slot.job_title ?? slot.job_id })}</Link>
+                            </>}
+                        </div>
                     </div>
                     <button className="button-danger" type="button" onClick={() => handleDelete(slot)} disabled={slot.is_booked || action !== null}>
                         {action?.kind === 'delete' && action.slotId === slot.id ? t('common.deleting') : t('common.delete')}

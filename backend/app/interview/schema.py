@@ -1,5 +1,6 @@
 """面试时段的请求和响应。"""
 
+import uuid
 from datetime import datetime, timezone
 
 from pydantic import field_validator
@@ -9,9 +10,13 @@ from app.candidate.schema import SlotPublic as SlotPublic
 
 
 class ManagedSlotPublic(SlotPublic):
-    """雇主列表另带预约状态，用于控制删除操作。"""
+    """雇主列表另带预约状态，以及已预约时段的申请人和职位。"""
 
     is_booked: bool
+    # 时段被预约后归属该职位；历史数据可能为空，此时回退到申请上的职位。
+    job_id: uuid.UUID | None = None
+    job_title: str | None = None
+    applicant_name: str | None = None
 
 
 class SlotCreate(SQLModel):

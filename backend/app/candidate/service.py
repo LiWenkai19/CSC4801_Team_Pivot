@@ -3,7 +3,7 @@
 import uuid
 from datetime import timedelta
 
-from sqlalchemy import delete
+from sqlalchemy import delete, or_
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlmodel import Session, select
 
@@ -371,6 +371,8 @@ def available_slots(
         select(InterviewSlot)
         .where(
             InterviewSlot.employer_id == job.employer_id,
+            # 通用时段尚未归属职位；已归属的时段只能被同一职位预约。
+            or_(InterviewSlot.job_id.is_(None), InterviewSlot.job_id == job.id),
             InterviewSlot.starts_at > utc_now(),
             InterviewSlot.ends_at - InterviewSlot.starts_at == timedelta(minutes=30),
             InterviewSlot.id.not_in(select(Booking.slot_id)),
@@ -408,6 +410,11 @@ def book(
             is not None
         ):
             raise ConflictError("Slot already booked")
+        # 预约成功即把时段归属到该职位；已绑定其他职位的时段不能复用。
+        if slot.job_id is not None and slot.job_id != job.id:
+            raise ConflictError("Slot is reserved for another job")
+        slot.job_id = job.id
+        session.add(slot)
         booking = Booking(application_id=application.id, slot_id=slot.id)
         session.add(booking)
         session.commit()

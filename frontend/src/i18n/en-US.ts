@@ -238,6 +238,8 @@ const enUS = {
     'slots.empty': "No upcoming interview slots.",
     'slots.booked': "Booked",
     'slots.unbooked': "Unbooked",
+    'slots.applicant': "Applicant: {name}",
+    'slots.job': "Job: {jobTitle}",
 } satisfies Record<MessageKey, string>
 
 export default enUS

@@ -13,7 +13,7 @@ from app.employer.model import Booking, InterviewSlot
 from app.users.model import utc_now
 
 
-def test_booking_visible_to_both_roles_and_survives_status_change(client, interview):
+def test_booking_visible_to_both_roles_and_survives_status_change(client, interview, db):
     data = interview
     application_id = data["application"]["application_id"]
     path = f"/candidate/applications/{application_id}"
@@ -26,6 +26,9 @@ def test_booking_visible_to_both_roles_and_survives_status_change(client, interv
     )
     assert booked.status_code == 201
     assert booked.json()["starts_at"].endswith("Z")
+    # 预约成功后时段归属到该职位，供职位删除依赖和雇主列表使用。
+    db.refresh(data["slot"])
+    assert data["slot"].job_id == uuid.UUID(data["job"]["id"])
     ours = client.get(path, headers=data["candidate"]).json()["booking"]
     theirs = client.get(
         f"/employer/jobs/{data['job']['id']}/applications", headers=data["employer"]
@@ -171,6 +174,55 @@ def test_real_postgres_two_candidates_compete_for_one_slot(
         client.get(f"/candidate/applications/{loser_id}/slots", headers=loser).json()
         == []
     )
+
+
+def test_employer_slot_list_shows_applicant_and_job(client, interview, db):
+    """雇主时段列表带出申请人名称和职位，供前端跳转到职位详情。"""
+    data = interview
+    booked = client.post(
+        f"/candidate/applications/{data['application']['application_id']}/booking",
+        headers=data["candidate"],
+        json={"slot_id": str(data["slot"].id)},
+    )
+    assert booked.status_code == 201
+
+    rows = client.get("/employer/interview-slots", headers=data["employer"]).json()
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["is_booked"] is True
+    assert row["job_id"] == data["job"]["id"]
+    assert row["job_title"] == "Engineer"
+    assert row["applicant_name"] == "Candidate"
+
+
+def test_booking_rejects_slot_reserved_for_another_job(client, interview, job, db):
+    """已归属其他职位的时段不展示、也不能被本职位预约。"""
+    data = interview
+    other = job(data["employer"], title="Other Role")
+    start = utc_now() + timedelta(days=3)
+    slot = InterviewSlot(
+        employer_id=data["employer_id"],
+        job_id=uuid.UUID(other["id"]),
+        starts_at=start,
+        ends_at=start + timedelta(minutes=30),
+    )
+    db.add(slot)
+    db.commit()
+    db.refresh(slot)
+
+    path = f"/candidate/applications/{data['application']['application_id']}"
+    visible = client.get(path + "/slots", headers=data["candidate"]).json()
+    assert str(slot.id) not in [row["id"] for row in visible]
+
+    response = client.post(
+        path + "/booking", headers=data["candidate"], json={"slot_id": str(slot.id)}
+    )
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Slot is reserved for another job"
+    db.expire_all()
+    assert db.exec(select(Booking)).all() == []
+    db.refresh(slot)
+    assert slot.job_id == uuid.UUID(other["id"])
 
 
 def test_same_application_concurrent_booking_has_one_winner(

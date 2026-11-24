@@ -236,6 +236,8 @@ const zhCN = {
     'slots.empty': "暂无未开始的面试时段。",
     'slots.booked': "已预约",
     'slots.unbooked': "未预约",
+    'slots.applicant': "申请人：{name}",
+    'slots.job': "申请职位：{jobTitle}",
 } as const
 
 export type MessageKey = keyof typeof zhCN

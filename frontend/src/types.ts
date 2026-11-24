@@ -165,4 +165,8 @@ export interface InterviewSlot {
 
 export interface ManagedInterviewSlot extends InterviewSlot {
   is_booked: boolean
+  /** 已预约时段归属的职位；历史数据可能为空。 */
+  job_id: string | null
+  job_title: string | null
+  applicant_name: string | null
 }

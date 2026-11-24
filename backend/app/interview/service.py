@@ -6,9 +6,9 @@ from uuid import UUID
 from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, col, select
 
-from app.employer.model import Booking, InterviewSlot
+from app.employer.model import Application, Booking, InterviewSlot, Job
 from app.interview.schema import ManagedSlotPublic, SlotCreate, SlotPublic
-from app.users.model import EmployerProfile, User, utc_now
+from app.users.model import CandidateProfile, EmployerProfile, User, utc_now
 
 SLOT_LENGTH = timedelta(minutes=30)
 
@@ -70,12 +70,21 @@ def create_slot(session: Session, employer: User, payload: SlotCreate) -> SlotPu
 
 
 def list_slots(session: Session, employer: User) -> list[ManagedSlotPublic]:
-    """返回当前雇主尚未开始的时段及预约状态。"""
-    is_booked = (
-        select(Booking.id).where(col(Booking.slot_id) == col(InterviewSlot.id)).exists()
-    )
+    """返回当前雇主尚未开始的时段、预约状态及申请人信息。"""
     statement = (
-        select(InterviewSlot, is_booked.label("is_booked"))
+        select(
+            InterviewSlot,
+            Booking.id,
+            Application.job_id,
+            Job.title,
+            CandidateProfile.display_name,
+        )
+        .outerjoin(Booking, Booking.slot_id == InterviewSlot.id)
+        .outerjoin(Application, Application.id == Booking.application_id)
+        .outerjoin(Job, Job.id == Application.job_id)
+        .outerjoin(
+            CandidateProfile, CandidateProfile.user_id == Application.candidate_id
+        )
         .where(
             InterviewSlot.employer_id == employer.id,
             InterviewSlot.starts_at > utc_now(),
@@ -83,8 +92,23 @@ def list_slots(session: Session, employer: User) -> list[ManagedSlotPublic]:
         .order_by(col(InterviewSlot.starts_at), col(InterviewSlot.id))
     )
     return [
-        ManagedSlotPublic.model_validate(slot, update={"is_booked": booked})
-        for slot, booked in session.exec(statement)
+        ManagedSlotPublic(
+            id=slot.id,
+            starts_at=slot.starts_at,
+            ends_at=slot.ends_at,
+            is_booked=booking_id is not None,
+            # 新预约会写入 slot.job_id；历史数据为空时回退到申请上的职位。
+            job_id=slot.job_id or application_job_id,
+            job_title=job_title,
+            applicant_name=applicant_name,
+        )
+        for (
+            slot,
+            booking_id,
+            application_job_id,
+            job_title,
+            applicant_name,
+        ) in session.exec(statement)
     ]
 
 

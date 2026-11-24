@@ -368,6 +368,11 @@ label, legend { font-weight: 650; }
   overflow-wrap: anywhere;
 }
 
+/* 已预约状态与申请人/职位入口排在同一行，点击都跳转到职位详情。 */
+.slot-status-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.slot-status-line a { text-decoration: none; }
+.slot-status-line a:hover { text-decoration: underline; }
+
 .employer-job-list, .employer-applicant-list {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
