@@ -66,7 +66,7 @@ const enUS = {
     'api.companyRequired': "Complete your company profile first.",
     'api.slotPast': "This interview slot has already started. Choose another slot.",
     'api.slotLength': "Interview slots must be 30 minutes long.",
-    'api.slotOutOfRange': "The end time is out of range. Choose another start time.",
+    'api.slotOutOfRange': "Interview slots must end by the end of 3000 (Shanghai time).",
     'api.interviewingRequired': "You can book an interview once the application reaches the interviewing stage.",
     'api.applicationBooked': "This application already has a booking. Refresh your applications.",
     'home.title': "Recruitment Workspace",

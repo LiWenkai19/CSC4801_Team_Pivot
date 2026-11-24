@@ -18,7 +18,7 @@ const knownDetails = new Map<string, MessageKey>([
     ['Slot is in the past', 'api.slotPast'],
     ['Slot must last 30 minutes', 'api.slotLength'],
     ['Slot must start in the future', 'slots.future'],
-    ['Slot end time is out of range', 'api.slotOutOfRange'],
+    ['Interview slots must end before 3001 in Asia/Shanghai', 'api.slotOutOfRange'],
     ['Slot overlaps an existing slot', 'slots.overlap'],
 ])
 

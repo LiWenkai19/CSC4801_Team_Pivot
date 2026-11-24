@@ -337,7 +337,7 @@ These operations require the employer role and apply to the caller's own availab
 | `DELETE /employer/interview-slots/{slot_id}` | 用 UUID 标识时段，删除本雇主的未来空闲时段，成功返回 `204`。 | UUID 格式非法返回 `422`，时段不存在返回 `404`，属于其他雇主返回 `403`，已预约或已开始返回 `409`。 |
 
 - **权限** 使用 `require_employer` 核验服务端会话。未登录返回 `401`，候选人访问返回 `403`。创建和删除还需通过 `X-CSRF-Token` 校验。列表限定 `employer_id = current_user.id`，创建也从当前登录用户取得 `employer_id`。
-- **时间** `starts_at` 为带 `Z` 或 UTC 偏移量的 ISO 8601 字符串（如 `2026-12-01T09:00:00+08:00`）。服务端归一为 UTC，确认开始时间晚于当前时间后加 30 分钟。数据库使用 `timestamptz`，接口以 UTC 返回时间，新管理页面按 `Asia/Shanghai` 标注和展示。
+- **时间** `starts_at` 为带 `Z` 或 UTC 偏移量的 ISO 8601 字符串（如 `2026-12-01T09:00:00+08:00`）。服务端归一为 UTC，时段必须在未来且恰好 30 分钟。开始和结束时间都必须早于 `Asia/Shanghai` 的 `3001-01-01 00:00`，超出范围返回 `422` 且不写入。数据库使用 `timestamptz`，接口以 UTC 返回时间，新管理页面按 `Asia/Shanghai` 标注和展示。
 - **重叠** 按同一雇主判断，已预约时段也占用时间。两个时段首尾相接时可以创建。
 - **数据** 复用 `interview_slot` 与 `booking`。新时段由雇主跨职位共享，现有可空 `job_id` 在创建时留空。时段是否已被预约以 `booking.slot_id` 为准。
 

@@ -1,6 +1,6 @@
 """Focused replay and environment control for the initial date-boundary failure."""
 
-from datetime import timedelta
+from datetime import datetime
 import traceback
 import uuid
 
@@ -14,44 +14,52 @@ PATH = "/employer/interview-slots"
 
 @pytest.mark.parametrize(
     "start",
-    ["9999-12-31T15:29:59.999999Z", "9999-12-31T15:30:00Z", "9999-12-31T16:00:00Z"],
+    [
+        "3000-12-31T15:30:00Z",
+        "3000-12-31T23:30:00+08:00",
+        "3001-01-01T00:00:00+08:00",
+        "9999-12-31T15:30:00Z",
+        "9999-12-31T23:59:59Z",
+    ],
 )
-def test_minimal_create_then_list_boundary_replay(
+def test_create_rejects_future_times_outside_supported_range(
     client, account, snapshot, evidence, start
 ):
+    """拒绝结束时间跨入 3001 年的时段，并确认没有写入。"""
     owner = account()
-    before = client.get(PATH, headers=owner["headers"])
-    assert before.status_code == 200 and before.json() == []
+    before = snapshot()
     created = client.post(PATH, headers=owner["headers"], json={"starts_at": start})
-    assert created.status_code == 201, created.text
     listed = client.get(PATH, headers=owner["headers"])
+    after = snapshot()
     evidence(
         "minimal-replay",
         {
             "input": start,
-            "initial_list": before.status_code,
             "create_status": created.status_code,
-            "create": created.json(),
+            "create": created.text,
             "list_status": listed.status_code,
             "list": listed.text,
-            "state": snapshot(),
+            "state_unchanged": after == before,
         },
     )
-    assert listed.status_code == 200, (
-        "Successfully accepted slot must remain readable: " + listed.text
+    assert created.status_code == 422, created.text
+    assert created.json()["detail"] == (
+        "Interview slots must end before 3001 in Asia/Shanghai"
     )
+    assert listed.status_code == 200 and listed.json() == []
+    assert after == before
 
 
-def test_driver_exception_and_utc_session_control(client, account, engine, evidence):
+def test_legacy_driver_exception_and_utc_session_control(
+    client, account, engine, insert_slot, evidence
+):
+    """用直插的遗留时段复现驱动边界，并确认 UTC 会话能读取同一行。"""
     from app.main import app
     from app.interview import service
     from app.users.model import User
 
     owner = account()
-    created = client.post(
-        PATH, headers=owner["headers"], json={"starts_at": "9999-12-31T15:30:00Z"}
-    )
-    assert created.status_code == 201
+    slot_id = insert_slot(owner, datetime.fromisoformat("9999-12-31T15:30:00Z"))
     with engine.connect() as connection:
         default_zone = connection.execute(text("SHOW TimeZone")).scalar_one()
         raw = (
@@ -78,7 +86,9 @@ def test_driver_exception_and_utc_session_control(client, account, engine, evide
         with Session(bind=connection) as session:
             user = session.get(User, uuid.UUID(owner["id"]))
             controlled = service.list_slots(session, user)
-            controlled = [slot.model_dump(mode="json") for slot in controlled]
+            controlled = [
+                slot.model_dump(mode="json", exclude_none=True) for slot in controlled
+            ]
     evidence(
         "root-cause",
         {
@@ -90,4 +100,11 @@ def test_driver_exception_and_utc_session_control(client, account, engine, evide
     )
     assert default_zone == "Asia/Shanghai"
     assert caught is not None and "10000" in caught["message"], caught
-    assert controlled == [{**created.json(), "is_booked": False}]
+    assert controlled == [
+        {
+            "id": slot_id,
+            "starts_at": "9999-12-31T15:30:00Z",
+            "ends_at": "9999-12-31T16:00:00Z",
+            "is_booked": False,
+        }
+    ]

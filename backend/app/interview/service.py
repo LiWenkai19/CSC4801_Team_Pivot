@@ -1,7 +1,8 @@
 """雇主面试时段的规则和数据库事务。"""
 
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, col, select
@@ -11,6 +12,9 @@ from app.interview.schema import ManagedSlotPublic, SlotCreate, SlotPublic
 from app.users.model import CandidateProfile, EmployerProfile, User, utc_now
 
 SLOT_LENGTH = timedelta(minutes=30)
+SLOT_END_CUTOFF_UTC = datetime(3001, 1, 1, tzinfo=ZoneInfo("Asia/Shanghai")).astimezone(
+    timezone.utc
+)
 
 
 class InvalidSlotError(ValueError):
@@ -30,7 +34,7 @@ class ConflictError(ValueError):
 
 
 def create_slot(session: Session, employer: User, payload: SlotCreate) -> SlotPublic:
-    """为当前雇主创建一个未来且不重叠的 30 分钟时段。"""
+    """创建未来且不重叠的 30 分钟时段，结束时间须在上海时间 3000 年内。"""
     starts_at = payload.starts_at
     try:
         # 同一雇主的并发创建必须先获取同一把锁，再检查已有时段。
@@ -38,10 +42,10 @@ def create_slot(session: Session, employer: User, payload: SlotCreate) -> SlotPu
             raise NotFoundError("Employer profile not found")
         if starts_at <= utc_now():
             raise InvalidSlotError("Slot must start in the future")
-        try:
-            ends_at = starts_at + SLOT_LENGTH
-        except OverflowError as error:
-            raise InvalidSlotError("Slot end time is out of range") from error
+        # 先比较开始时间，避免给极端日期加 30 分钟时溢出。
+        if starts_at >= SLOT_END_CUTOFF_UTC - SLOT_LENGTH:
+            raise InvalidSlotError("Interview slots must end before 3001 in Asia/Shanghai")
+        ends_at = starts_at + SLOT_LENGTH
 
         overlapping_slot = session.exec(
             select(InterviewSlot.id)

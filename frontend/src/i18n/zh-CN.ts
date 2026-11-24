@@ -64,7 +64,7 @@ const zhCN = {
     'api.companyRequired': "请先填写公司资料。",
     'api.slotPast': "该面试时段已开始，请选择其他时段。",
     'api.slotLength': "面试时段必须为 30 分钟。",
-    'api.slotOutOfRange': "结束时间超出可用范围，请选择其他开始时间。",
+    'api.slotOutOfRange': "面试时段最晚只能安排在 3000 年内（北京时间）。",
     'api.interviewingRequired': "申请进入面试阶段后才能预约。",
     'api.applicationBooked': "这份申请已有面试预约，请刷新申请。",
     'home.title': "招聘工作台",

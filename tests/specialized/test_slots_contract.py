@@ -1,8 +1,7 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import uuid
 
 import pytest
-from sqlalchemy import text
 from conftest import FROZEN
 
 PATH = "/employer/interview-slots"
@@ -266,10 +265,13 @@ def test_delete_success_removes_only_target_and_repeat_is_404(
     )
 
 
-@pytest.mark.parametrize("start", ["9999-12-31T15:00:00Z", "9999-12-31T16:00:00Z"])
+@pytest.mark.parametrize(
+    "start", ["3000-12-31T15:29:59.999999Z", "3000-12-31T23:29:59.999999+08:00"]
+)
 def test_accepted_representable_future_time_remains_readable(
     client, account, snapshot, evidence, start
 ):
+    """截止前最后一个可创建的时段可用不同偏移量提交，且能读回。"""
     owner = account()
     response = client.post(PATH, headers=owner["headers"], json={"starts_at": start})
     assert response.status_code == 201, response.text
@@ -288,4 +290,14 @@ def test_accepted_representable_future_time_remains_readable(
     assert listed.status_code == 200, (
         "Accepted and persisted slot must remain listable: " + listed.text
     )
-    assert listed.json() == [{**response.json(), "is_booked": False}]
+    assert response.json()["ends_at"] == "3000-12-31T15:59:59.999999Z"
+    assert listed.json() == [
+        {
+            **response.json(),
+            "is_booked": False,
+            "job_id": None,
+            "job_title": None,
+            "application_id": None,
+            "applicant_name": None,
+        }
+    ]

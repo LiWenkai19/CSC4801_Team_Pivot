@@ -20,11 +20,12 @@ PATH = "/employer/interview-slots"
 def test_same_accepted_date_across_related_entrypoints(
     client, flow, snapshot, evidence, operation, expected
 ):
+    """截止前最后一个可创建的时段仍可删除、查询和预约。"""
     data = flow(with_slot=False)
     created = client.post(
         PATH,
         headers=data["owner"]["headers"],
-        json={"starts_at": "9999-12-31T15:30:00Z"},
+        json={"starts_at": "3000-12-31T15:29:59.999999Z"},
     )
     assert created.status_code == 201, created.text
     slot = created.json()
@@ -62,6 +63,7 @@ def test_same_accepted_date_across_related_entrypoints(
 
 
 def test_minimal_witness_through_real_http_server(client, account, evidence):
+    """真实 HTTP 请求拒绝原复现日期，正常时段仍可查询。"""
     owner = account()
     root = Path(os.environ["SLOT_AUDIT_OUT"])
     with socket.socket() as sock:
@@ -126,10 +128,12 @@ def test_minimal_witness_through_real_http_server(client, account, evidence):
                     "body": listed.text,
                 },
             )
-            assert created.status_code == 201
-            assert listed.status_code == 200, (
-                "Real server reproduced create=201 then list=" + str(listed.status_code)
+            assert created.status_code == 422, created.text
+            assert created.json()["detail"] == (
+                "Interview slots must end before 3001 in Asia/Shanghai"
             )
+            assert listed.status_code == 200, listed.text
+            assert listed.json() == before.json()
     finally:
         process.terminate()
         try:
