@@ -313,8 +313,7 @@ node --test frontend/tests/rendering.unit.mjs
 After the text-validation and fixture updates the complete unit command passes **196
 tests** (exit 0), including strict versions, stale-write rejection and no-op
 semantics. The old employer-privacy test already passes after teammate commit
-`5143f1e`. No skip/xfail/filter is used. See the
-[extension evidence](docs/testing/EDITOR_VERSIONS.md) for before/after results.
+`5143f1e`. No skip/xfail/filter is used.
 
 ### Existing PostgreSQL/API regression (separate from unit tests)
 
@@ -378,8 +377,7 @@ Other modes cover delivery/seed/migrations, mutation and a 360-second performanc
 loop. Each creates its own loopback DB/service when needed and ignores existing
 application DB configuration. Output is always outside the checkout; use a new
 empty --out path to preserve logs. Never point a raw specialized fixture at a
-shared database. Known product failures return nonzero, as documented in
-[the report](docs/testing/REPORT.md); no xfail/skip turns them into passes.
+shared database. Failed checks return nonzero.
 
 ```sh
 python tests/specialized/run.py performance
@@ -387,14 +385,11 @@ python tests/specialized/run.py mutation
 python tests/specialized/run.py delivery
 ```
 
-The edit-version follow-up re-executed these modes and the complete browser/SSR
-sets; counts, remaining failures and test-harness adaptations are in the
-[follow-up report](docs/testing/VERSION_RETEST.md). Delivery mode excludes Docker.
+Delivery mode excludes Docker.
 
-The company/status extension and always-visible update-check button have their
-own [verification report](docs/testing/EDITOR_VERSIONS.md). The integration entry
-includes real concurrent company/status saves, rollback, ORM cache, and a migration
-that creates and drops a separate random database inside the disposable cluster.
+The integration entry includes real concurrent company/status saves, rollback,
+ORM cache, and a migration that creates and drops a separate random database
+inside the disposable cluster.
 The browser extension checks all four editors in Chinese/English on Chromium,
 Firefox and WebKit. Old company/status scripts must include their loaded version;
 refresh old tabs after deploying the coordinated database/backend/frontend update.
