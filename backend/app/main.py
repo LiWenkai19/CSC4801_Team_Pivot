@@ -1,7 +1,9 @@
 # from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 # from sqlmodel import Session
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.candidate.router import candidate_router
@@ -25,6 +27,19 @@ from app.users.router import user_router
 
 
 app = FastAPI(title=settings.APP_NAME)
+
+
+@app.exception_handler(RequestValidationError)
+async def handle_request_validation_error(
+    _request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    """仅返回定位校验错误所需的信息，避免回显原始请求中的密码。"""
+    details = [
+        {"loc": error["loc"], "msg": error["msg"], "type": error["type"]}
+        for error in exc.errors()
+    ]
+    return JSONResponse(status_code=422, content={"detail": details})
+
 
 # cross origin resourse sharing middleware
 app.add_middleware(
