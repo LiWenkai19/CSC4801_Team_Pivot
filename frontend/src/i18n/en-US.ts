@@ -91,7 +91,7 @@ const enUS = {
     'profile.nameRequired': "Enter a display name.",
     'profile.nameWhitespace': "Enter a display name with at least one non-space character.",
     'profile.resume': "Résumé (optional)",
-    'profile.privacy': "Only you and employers you have applied to can view your résumé.",
+    'profile.privacy': "Only you can view your résumé.",
     'profile.save': "Save Profile",
     'onboarding.candidateTitle': "Complete Your Candidate Profile",
     'onboarding.candidateIntro': "Enter a display name to continue. You can add your résumé and skills later.",

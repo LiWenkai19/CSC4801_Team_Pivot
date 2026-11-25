@@ -67,12 +67,18 @@ def test_fp_match_1_employer_ties_use_name_then_stable_id(
         UUID(int=i): CandidateProfile(user_id=UUID(int=i), display_name=name)
         for i, name in [(3, "zoe"), (2, "alice"), (1, "Alice")]
     }
-    applications = [Application(candidate_id=i, job_id=job.id) for i in profiles]
-    users = {
-        ident: User(id=ident, email=f"candidate{ident.int}@example.com", hashed_password="synthetic", role=Role.Candidate)
-        for ident in profiles
+    accounts = {
+        candidate_id: User(
+            id=candidate_id,
+            email=f"candidate-{candidate_id.int}@example.com",
+            hashed_password="synthetic",
+            role=Role.Candidate,
+        )
+        for candidate_id in profiles
     }
-    db.get.side_effect = lambda model, ident: job if model is Job else users[ident] if model is User else profiles[ident]
+    applications = [Application(candidate_id=i, job_id=job.id) for i in profiles]
+    records = {Job: {job.id: job}, CandidateProfile: profiles, User: accounts}
+    db.get.side_effect = lambda model, ident: records[model].get(ident)
     db.exec.side_effect = [
         result(rows=["python"]),
         result(rows=applications),
@@ -81,7 +87,7 @@ def test_fp_match_1_employer_ties_use_name_then_stable_id(
     monkeypatch.setattr(employer, "_booking_public", lambda session, ident: None)
     rows = employer.list_job_applicants(db, actors[1], job.id)
     assert [row.candidate_id.int for row in rows] == [1, 2, 3]
-    assert [row.email for row in rows] == ["candidate1@example.com", "candidate2@example.com", "candidate3@example.com"]
+    assert all(row.email == accounts[row.candidate_id].email for row in rows)
     assert all(
         row.match_score == 100 and row.status == ApplicationStatus.Pending
         for row in rows

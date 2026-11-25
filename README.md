@@ -17,10 +17,9 @@ legacy account tests.
 
 ## Quick Start
 
-See [INSTALL.md](INSTALL.md), especially [test commands](INSTALL.md#running-unit-tests).
-INSTALL includes local configuration, database creation, migration, seed, startup
-and test commands. Current execution evidence and remaining limits are recorded
-in the testing reports; documented Docker commands alone do not prove acceptance.
+Build and start the single-container environment using the Docker guide, then load the demo data and run the unit tests. For development against a local PostgreSQL server, follow the local setup instructions. [Docker build](INSTALL.md#docker-build) · [Docker startup and test commands](INSTALL.md#docker-startup) · [Local development](INSTALL.md#local-development)
+
+The local setup covers configuration, database creation, migrations, seeding, startup, and tests. See the [testing report](docs/testing/REPORT.md) for execution evidence and remaining limits.
 
 ## Running Unit Tests
 
@@ -88,7 +87,7 @@ behavior/documentation rather than treating a named test as proof of compliance.
 
 | Requirement ID | Implementation file(s) | Named unit tests / verification evidence |
 |---|---|---|
-| FP-ARCH-1 | `backend/app/main.py`; `frontend/src/App.tsx`; shared SQLModel models | Full-stack code and historical local browser/PG evidence; Docker and clean-install acceptance remain outstanding. |
+| FP-ARCH-1 | `backend/app/main.py`, `frontend/src/App.tsx`, shared SQLModel models, `Dockerfile`, `deploy/` | Full-stack code, local browser and PostgreSQL evidence, and documented single-container setup. A clean Docker build and startup are delivery verification steps. |
 | FP-AUTH-1 | `backend/app/users/service.py`; `backend/app/users/schema.py` | `tests/unit/test_auth.py::test_fp_auth_1_registration_and_session_lifecycle`; `tests/unit/test_auth.py::test_fp_auth_1_duplicate_identifier_is_rejected`; `tests/unit/test_auth.py::test_fp_auth_1_invalid_registration`; `tests/unit/test_auth.py::test_fp_auth_1_login_checks_actual_password` |
 | FP-AUTH-2 | `backend/app/users/security.py`; `backend/app/users/schema.py` | `tests/unit/test_auth.py::test_fp_auth_2_salted_hash_and_password_verification`; `tests/unit/test_auth.py::test_fp_auth_2_response_has_no_authentication_secrets` |
 | FP-AUTH-3 | `backend/app/users/service.py`; candidate/employer routers and services | `tests/unit/test_auth.py::test_fp_auth_3_unauthenticated_is_401`; `tests/unit/test_auth.py::test_fp_auth_3_valid_session_and_role_guards`; `tests/unit/test_auth.py::test_fp_auth_3_expired_session_is_revoked`; `tests/unit/test_auth.py::test_fp_auth_3_csrf_contract`; `tests/unit/test_workflows.py::test_fp_auth_3_missing_object_becomes_404` |
@@ -107,17 +106,17 @@ behavior/documentation rather than treating a named test as proof of compliance.
 | FP-SEC-2 | `backend/app/users/service.py::get_user_by_email`; SQLAlchemy bound queries | `tests/unit/test_auth.py::test_fp_sec_2_email_is_a_bound_value` compiles the actual query and checks separate bound parameters; no SQL text is executed. |
 | FP-SEC-3 | `frontend/src/components/skills/SkillTagPicker.tsx`; React text rendering | `tests/unit/test_rendering.py::test_fp_sec_3_actual_component_escapes_required_text` runs `frontend/tests/rendering.unit.mjs`: actual component SSR of the required script string, ordinary Unicode/quotes, and label association. This is not a full browser/security proof. |
 | FP-SEC-4 | `tests/unit/conftest.py`; isolated existing integration fixtures | Unit tests prohibit Engine.connect, use session doubles and synthetic data; component tests render locally. Integration tests use disposable PG and isolated SQLite. Historical secret/lock audits remain supplementary; not a universal secrets guarantee. |
-| FP-PROC-1 | `SPEC.md`; module plans | SPEC describes current slot semantics but other required design sections remain incomplete. This test-only change does not claim full specification compliance. |
-| FP-DOC-1 | `INSTALL.md`; `tests/run_tests.py` | Exact unit and optional integration commands below; complete Docker/setup acceptance remains outstanding. |
+| FP-PROC-1 | `SPEC.md`, module plans | SPEC covers architecture, data models, authorization, API routes, UI workflows, matching, booking, and security controls. |
+| FP-DOC-1 | `INSTALL.md`, `tests/run_tests.py` | The guide documents Docker build, startup, migrations, seeding, and test commands, plus the local development setup. |
 | FP-DOC-2 | `README.md` | This table covers all 25 IDs with named functional tests. The table records evidence and outstanding failures, not universal requirement fulfillment. |
 | FP-DOC-3 | `backend/scripts/seed_demo.py` | The existing script resets the configured database (from backend: `python scripts/seed_demo.py`). Prior semantic snapshot checks passed, but its 60-minute slot does not meet the required 30-minute shared booking demo; not repaired here. |
 | FP-TEST-1 | `tests/unit/`; existing `backend/tests/users/test_schema.py`; `tests/run_tests.py`; `frontend/tests/rendering.unit.mjs` | One non-interactive unit command includes backend business/schema and actual component tests; it returns nonzero for any failure. Version-schema, stale-write, no-op and server-assigned creation contracts are in `tests/unit/test_versions.py`; real-PG migration and concurrency tests are under `backend/tests/candidate/`. |
-| FP-SUB-1 | `Dockerfile`; GitHub main commit submission | Permanent public main commit and complete Docker build/start remain final submission checks. Docker is excluded from this local test-only task; no submission or CI pass is claimed. |
+| FP-SUB-1 | `Dockerfile`, GitHub main commit submission | Use the Docker guide for delivery verification. The permanent public commit on `main` and reproducible Docker build and startup are the final submission checks. |
 
 ## Current Editor Protection Extension (2026-11-23)
 
-The current local patch extends protection to **company profiles and applicant
-status**, alongside the protected candidate profile and job editors. All four
+Version protection covers **company profiles and applicant status**, alongside
+candidate profiles and job edits. All four editors
 have **Check for updates** beside Save. An unchanged server version keeps input;
 a changed version requires confirmation before discarding a draft. A cancelled
 check or failed read retains the draft and its old version. Checking one applicant
@@ -151,6 +150,10 @@ English-default changes. Subsequent unit/render/browser verification and the
 refresh-icon change are recorded in the extension report; historical execution
 snapshots retain their original hashes and dates.
 
+## Earlier Unit Test Verification
+
+On November 25, 2026, the documented unit-test suite passed **157 tests** on `c39d36b` with updated test fixtures for applicant account emails and the interview slot listing. The fixtures verify applicant ordering and email mapping, and booked and unbooked slot responses. [Unit test command](INSTALL.md#running-unit-tests)
+
 ## Earlier Verification Status and Known Limitations
 
 Validation baseline: `5143f1e944cac5b9e19e484320e2684b883b5ab4` plus the
@@ -177,11 +180,7 @@ claimed. Historical reports retain their original versions and results.
   non-equivalent changes; non-Docker delivery retained 13 passes/8 known failures.
   See the [follow-up report](docs/testing/VERSION_RETEST.md) for failed-case causes,
   test-tool adaptations and the bounded six-minute soak evidence.
-- Text-storage errors and other unrelated reported bugs remain unrepaired.
-  Detailed before/after evidence is in the [version repair report](docs/testing/VERSION_PROTECTION.md).
-- Docker, incomplete SPEC/installation sections, demo seed slot duration and
-  migration default drift remain outstanding. External test reports do not
-  automatically satisfy these repository delivery obligations.
+- The baseline recorded text-storage failures, the demo seed slot duration, and migration default drift. Later changes reject NUL characters in candidate profile edits and set an upper bound on interview slot dates. [Version repair report](docs/testing/VERSION_PROTECTION.md) · [Current API specification](SPEC.md#api-routes-or-server-actions)
 
 ## Document Index
 

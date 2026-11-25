@@ -213,6 +213,15 @@ servers with `start.bat` (Windows) or run `uvicorn app.main:app --reload --port
 8000` in `backend/` plus `npm --prefix frontend run dev`. The browser UI is then
 served at <http://127.0.0.1:5173/>, where Vite proxies `/api` to port 8000.
 
+On Windows, `start.bat` selects Python in this order.
+
+1. `.venv\Scripts\python.exe` in the repository root.
+2. `python.exe` in the active Conda environment.
+3. `python.exe` in the `SYManage` environment under `%USERPROFILE%\miniconda3\envs`.
+4. `python` on `PATH`.
+
+Before starting the servers, the script checks that the selected Python can import FastAPI, SQLModel, and Uvicorn. It also checks for `npm.cmd` and the frontend's installed Vite executable. Install the dependencies from `requirements.txt` with the Python interpreter selected by the launcher. [Windows launcher](start.bat)
+
 ## Running Unit Tests
 
 Run commands from the repository root in the activated Python environment.

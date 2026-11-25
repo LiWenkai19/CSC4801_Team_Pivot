@@ -89,7 +89,7 @@ const zhCN = {
     'profile.nameRequired': "请输入显示名称。",
     'profile.nameWhitespace': "请输入显示名称，不能只填写空格。",
     'profile.resume': "简历（选填）",
-    'profile.privacy': "简历仅向你本人及你已投递职位的雇主开放。",
+    'profile.privacy': "简历仅本人可查看。",
     'profile.save': "保存资料",
     'onboarding.candidateTitle': "填写候选人资料",
     'onboarding.candidateIntro': "填写显示名称即可继续，简历和技能可以稍后补充。",

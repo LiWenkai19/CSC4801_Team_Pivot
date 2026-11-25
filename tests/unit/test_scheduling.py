@@ -107,13 +107,28 @@ def test_fp_sched_1_management_list_preserves_booking_flag(db, actors, result):
         starts_at=NOW + timedelta(days=1),
         ends_at=NOW + timedelta(days=1, minutes=30),
     )
-    booking_id, application_id, job_id = uuid4(), uuid4(), uuid4()
-    db.exec.return_value = result(rows=[(slot, booking_id, application_id, job_id, "Interview job", "Candidate")])
+    unbooked_slot = InterviewSlot(
+        employer_id=actors[1].id,
+        starts_at=slot.ends_at,
+        ends_at=slot.ends_at + timedelta(minutes=30),
+    )
+    job_id, application_id = uuid4(), uuid4()
+    db.exec.return_value = result(
+        rows=[
+            (slot, uuid4(), application_id, job_id, "Backend Engineer", "Candidate"),
+            (unbooked_slot, None, None, None, None, None),
+        ]
+    )
     rows = service.list_slots(db, actors[1])
-    assert rows[0].id == slot.id and rows[0].is_booked
-    assert (rows[0].job_id, rows[0].job_title, rows[0].application_id, rows[0].applicant_name) == (job_id, "Interview job", application_id, "Candidate")
+    booked, available = rows
+    assert booked.id == slot.id and booked.is_booked
+    assert booked.job_id == job_id and booked.job_title == "Backend Engineer"
+    assert booked.application_id == application_id and booked.applicant_name == "Candidate"
+    assert available.id == unbooked_slot.id and not available.is_booked
+    assert available.job_id is None and available.application_id is None
     query = db.exec.call_args.args[0].compile()
-    assert actors[1].id in query.params.values()
+    assert actors[1].id in query.params.values() and NOW in query.params.values()
+    assert "LEFT OUTER JOIN booking" in str(query)
     assert "interview_slot.employer_id" in str(query)
 
 

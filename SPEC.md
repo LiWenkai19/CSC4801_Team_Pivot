@@ -8,7 +8,7 @@ SkillMatch is a browser-based recruiting platform for candidates looking for job
 - **Candidate workflow.** Candidates can maintain their own display name, technical skills, and private plain-text resume. They can browse all active jobs ranked by match score, open job details, and apply once per job. New applications start as `Pending`. Candidates can track their own application statuses and interview bookings. Resume access is restricted to the owner.
 - **Employer workflow.** Employers can maintain their company profile and create, view, edit, and delete their own job postings. Deletion is blocked when a job has applications or linked interview slots. For each owned job, employers can review applicants ranked by match score, see their skills and bookings, and set each application to `Pending`, `Interviewing`, `Rejected`, or `Accepted`.
 - **Skill matching.** Both rankings use the percentage of the job's required skills that the candidate has, rounded down to a whole number. A job with no required skills scores 100.
-- **Interview scheduling.** Employers can publish future 30-minute slots shared across their jobs and remove future unbooked slots. A candidate can book one available slot from the job's employer for an owned `Interviewing` application. Both parties can see the confirmed booking. If two eligible candidates request the same slot concurrently, exactly one booking succeeds.
+- **Interview scheduling.** Employers can publish future 30-minute slots shared across their jobs until booked and remove future unbooked slots. A candidate can book one eligible slot for an owned `Interviewing` application. Booking assigns the slot to that application’s job and makes the booking visible to both parties. If two eligible candidates request the same slot concurrently, exactly one booking succeeds.
 
 The application runs locally in a single Docker container that includes the web frontend, backend API, and a PostgreSQL database for persistent storage. The core workflows require no external AI service. PDF resume upload and extraction, LLM-generated match explanations or recommendations, and hosted deployment are outside the current product scope.
 
@@ -52,7 +52,7 @@ The application defines ten persistent SQLModel tables in PostgreSQL. Identifier
 - **Account and profile ownership.** An account can have multiple sessions and at most one row in each profile table. The server permits users to create the profile for their account role. `profile_completed` is derived from the presence of that profile.
 - **Jobs and applications.** Each job belongs to one employer profile. `application` links candidates and jobs, allowing each candidate to apply to many jobs and each job to receive many applications. The application write path supplies `Pending` for new applications. The current migrations require an explicit `status` value for direct SQL inserts. The service blocks a job's soft deletion when it has applications or job-linked slots.
 - **Skills and matching.** Candidate skills and job requirements are stored as individual rows. Match scores are calculated from those rows when needed. The `version` fields on `candidate_profile` and `job` protect updates to the parent records and their associated skills.
-- **Interview availability and bookings.** An employer can own multiple slots. The slot creation service creates future, non-overlapping 30-minute slots and leaves `job_id` empty so slots are shared across that employer's jobs. Booking eligibility uses the employer of the job linked to the application. A slot's booked status comes from the presence of a `booking` row, which remains linked when the application status changes.
+- **Interview availability and bookings.** An employer can own multiple slots. The slot creation service creates future, non-overlapping 30-minute slots with an empty `job_id`. A slot is eligible when the employer owns it and its `job_id` is empty or matches the application’s job. The booking transaction assigns that job to the slot and inserts the `booking` row. The booking determines whether the slot is booked and stays linked through application status changes. The employer's slot list can derive the job from the application for older bookings with an empty slot `job_id`.
 
 ### Entity Relationship Diagram
 
@@ -157,10 +157,9 @@ Protected API requests with a missing, invalid, expired, or revoked session rece
 
 - **Opening or refreshing a protected page.** If the initial `GET /api/users/me` returns `401`, `AuthContext` clears the current user and `RequireAuth` redirects the browser to `/login`. [Authentication context](frontend/src/contexts/AuthContext.tsx) · [Route guard](frontend/src/components/RequireAuth.tsx)
 - **Session loss while a business page is open.** A `401` from a business API becomes an `ApiError` handled by the page. For example, the candidate job list displays a sign-in prompt and stays on the current page. Reloading the page runs the session check again and redirects to `/login` if the session is still invalid. [Shared API client](frontend/src/api/common_api.ts) · [Candidate job list](frontend/src/pages/candidate/JobsPage.tsx)
+- **Signing out from a protected page.** The browser clears its current user and redirects to `/login` when `POST /api/users/logout` returns `204` or `401`. After any other error or a network failure, the browser checks `GET /api/users/me`. A `401` confirms the session ended and triggers the same redirect. If the account is still signed in or the check fails, the browser keeps the current page and offers a retry. [Frontend authentication context](frontend/src/contexts/AuthContext.tsx)
 
-An account can have several active sessions across browsers or devices. Each login creates an independent session with an expiration time fixed at creation. Logging out revokes the session presented by that browser. If users edit the same candidate profile or job concurrently, `candidate_profile.version` and `job.version` protect the parent records and their associated `candidate_skill` or `job_skill` rows from stale writes. [Session service](backend/app/users/service.py) · [Concurrent edit details pending](#design-decisions-and-limitations)
-
-<!-- 指向下文详细描述 -->
+An account can have several active sessions across browsers or devices. Each login creates an independent session with an expiration time fixed at creation. Logging out revokes the session presented by that browser. Concurrent edits across sessions are subject to the same version checks. [Session service](backend/app/users/service.py) · [Version-protected edits](#version-protected-edits)
 
 ### API Authentication and Authorization Dependencies
 
@@ -183,7 +182,7 @@ For a role-protected route, FastAPI resolves `get_valid_session`, then `require_
 | `POST /users/employer/profile` and all `/employer` routes, including interview slot management | `require_employer`. |
 
 The business services use the authenticated account to determine ownership. An ID supplied in a URL or request body selects a resource for the service to check. An ownership violation returns `403`, and an authorized lookup of a missing resource returns `404`. `409` indicates that the current resource state prevents the operation, while `422` indicates invalid input.
-<!-- 这里等改完代码才能确定 -->
+
 ### Candidate Business Access
 
 | Resource | Allowed operations | Authorization and limits |
@@ -191,7 +190,7 @@ The business services use the authenticated account to determine ownership. An I
 | Candidate profile and resume | Create, read, and edit the signed-in candidate's own profile, including display name, skills, and plain-text resume. | The server assigns ownership from the session. A second profile creation returns `409`. The profile-by-ID endpoint returns `403` to other candidates and to all employers, including the employer of a job the candidate applied to. |
 | Job recommendations and details | Browse active jobs across employers and view each job's details and the caller's match score and application indicator. | A candidate profile is required. A missing profile or a request for a missing or soft-deleted job returns `404`. |
 | Job applications | Apply to an active job and view the caller's own applications, statuses, and bookings. | Applying requires a candidate profile and creates a `Pending` application for the caller. A duplicate application returns `409`. The list filters by the caller's candidate ID. Reading another candidate's application returns `403`. Status changes are reserved for the employer who owns the job. |
-| Interview slots and bookings | List available slots and book a slot through the caller's own application. | The application must be `Interviewing` and have no booking. A candidate can book a future, unbooked 30-minute slot owned by the job's employer. Using another candidate's application returns `403`. For an eligible application, selecting a slot owned by a different employer also returns `403`. An ineligible application state, an existing booking, or a slot that has started, is booked, or has the wrong duration returns `409`. |
+| Interview slots and bookings | List available slots and book a slot through the caller's own application. | The application must be `Interviewing` and have no booking. A slot must be future, unbooked, and 30 minutes long. The slot must belong to the job's employer and have an empty `job_id` or match the application’s job. Another candidate's application or another employer's slot returns `403`. An ineligible application state, an existing booking, or a slot that has started, is booked, has the wrong duration, or is reserved for another job returns `409`. |
 
 The candidate service uses `_owned_application` for application detail, slot listing, and booking. The helper compares `application.candidate_id` against the authenticated account ID. [Candidate service](backend/app/candidate/service.py) · [Profile creation service](backend/app/users/service.py)
 
@@ -201,64 +200,10 @@ The candidate service uses `_owned_application` for application detail, slot lis
 | --- | --- | --- |
 | Company profile | Create, read, and edit the signed-in employer's own company profile. | The server uses the employer's account ID. A second profile creation returns `409`. Reading or editing before setup returns `404`. |
 | Job postings | Publish jobs for the caller's company and list, view, edit, or soft-delete the caller's active jobs. | Publishing requires a company profile and returns `409` if it is missing. Accessing another employer's active job through the employer API returns `403`. Deleting a job with any application or a slot linked to that job returns `409`. |
-| Applicants and application status | View applicants for an owned job and set an application to `Pending`, `Interviewing`, `Rejected`, or `Accepted`. | The list includes applicant IDs, display names, skills, scores, statuses, and bookings. Resume access stays with the candidate. Any of the four states may follow the current state, and the update preserves any existing booking. |
+| Applicants and application status | View applicants for an owned job and set an application to `Pending`, `Interviewing`, `Rejected`, or `Accepted`. | The list includes applicant IDs, display names, account emails, skills, scores, statuses, and bookings. Emails help the job owner distinguish applicants who share a display name. Resume access stays with the candidate. Any of the four states may follow the current state, and the update preserves any existing booking. |
 | Interview availability | Create and list the caller's own future slots, see whether they are booked, and delete future unbooked slots. | Creating a slot returns `404` if the employer profile is missing and `422` if the start time is invalid. The server assigns a 30-minute duration. Overlapping slots for the same employer return `409`. Deleting another employer's slot returns `403`. Deleting a booked or already-started slot returns `409`. |
 
 The employer service uses `_load_owned_job` for job detail, edit, deletion, and applicant listing. For a status update, it follows `application.job_id` and compares `job.employer_id` with the caller's account ID. The interview service uses `interview_slot.employer_id` for slot ownership. [Employer service](backend/app/employer/service.py) · [Interview service](backend/app/interview/service.py)
-<!-- 这里等改完代码才能确定 -->
-
-### Candidate profile and job edit versions (2026-11-23)
-
-`candidate_profile.version` and `job.version` are positive, non-null integers with
-Python/database default 1, added through migration `7b2c9d4e6f10`. Existing data is
-preserved. Creation assigns version 1 and rejects a client-supplied version.
-Profile, job and derived recommended-job responses include version.
-
-`PATCH /candidate/profile` and `PATCH /employer/jobs/{id}` require a strict positive
-integer `version`; missing/null/bool/string/non-positive values return 422. Existing
-authentication, ownership and missing-resource errors precede stale-version checks.
-The service locks and refreshes the parent row, compares version, then updates
-fields/skill rows and increments version in one transaction. A stale edit returns
-409 with `{"detail":"Resource version conflict"}` and makes no changes. A version-only
-request checks freshness but changes neither revision nor update timestamp; any
-request containing an editable field increments version once even for equal values.
-Failed transactions roll back content and version. Response DTOs are captured
-inside the transaction and returned only after commit succeeds.
-
-Editors retain the loaded version and all draft values when rejected. Save stays
-disabled until the user confirms discarding the draft and a fresh GET succeeds.
-Cancel or load failure preserves the draft and conflict state. There is no automatic
-merge, force-save, retry, WebSocket or BroadcastChannel synchronization. HTTP JSON
-fetch and Cookie/CSRF authentication are retained; clients without versions must
-upgrade rather than use an unprotected fallback.
-
-### Company profile, application status and explicit update checks (2026-11-23)
-
-Migration `8c3d0e5f7a21`, following `7b2c9d4e6f10`, adds positive, non-null
-`version` columns (Python/database default 1) to `employer_profile` and
-`application`, preserving existing data. Employer-profile creation and company,
-applicant-list, candidate-application and status-update responses include version.
-Company creation rejects client-supplied versions; applying creates version 1.
-
-`PATCH /employer/company` and `PATCH /employer/applications/{id}/status` now
-require the same strict positive `version` and 409 conflict contract above.
-The company parent / application row remains locked through commit; fresh ORM
-values are loaded before comparison and response DTOs are captured before commit.
-Company fields preserve omission/clearing rules; a version-only company request
-is a no-op. Status updates still require `status`, allow all four existing values,
-and increment once even for the same value. Role, ownership and missing-resource
-checks precede version comparison. Booking links survive status updates; booking,
-creation and deletion actions keep their existing atomic contracts.
-
-All four editors have a **Check for updates** button beside Save. It performs a
-GET without writing. An unchanged version preserves every input, including skill
-search text. A changed version applies immediately only when there is no draft;
-otherwise explicit discard confirmation is required. Cancelling preserves the old
-draft/version and disables Save. Read failure retains the draft and allows retry.
-Confirmed application changes one applicant card only, keeping other cards' drafts
-and loaded versions intact. A typed but unadded skill query counts as a draft.
-Checking never advances the version of a draft that the user chose to keep.
-New-job creation has no update-check button because no saved resource exists yet.
 
 ## API Routes or Server Actions
 
@@ -270,30 +215,34 @@ Registration and login establish a session and set the session and CSRF cookies.
 
 | Operation | JSON request | Success | Behavior |
 | --- | --- | --- | --- |
-| `POST /users/register` | `email`, `password`, `role` (`candidate` or `employer`) | `200` `AuthResponse` | Create an account and start its session. A duplicate email returns `400`. |
+| `POST /users/register` | `email`, `password`, `role` (`candidate` or `employer`) | `200` `AuthResponse` | Create an account and start its session. If the initial lookup finds the email, return `400` with `User already exists`. |
 | `POST /users/login` | `email`, `password`, optional `remember_me` | `200` `AuthResponse` | Verify credentials and create a new session. Invalid credentials return `401`. |
 | `POST /users/logout` | — | `204` No Content | Revoke the current session and clear both cookies. |
 | `GET /users/me` | — | `200` `UserPublic` | Return the authenticated account and its `profile_completed` flag. |
 | `POST /users/candidate/profile` | `display_name`, optional `resume_text` and `skills` | `201` `CandidateProfilePublic` | Create the caller's candidate profile. A repeated setup request returns `409`. |
 | `POST /users/employer/profile` | `company_name`, optional `company_description` | `201` `EmployerProfilePublic` | Create the caller's company profile. A repeated setup request returns `409`. |
 
+When two requests for the same email both pass the initial lookup before either commits, PostgreSQL's `ix_user_email` unique index allows only one account insert. One request returns `200`. The other returns `500` because the registration route does not handle the integrity error raised at commit (AUTH-01). The registration page shows “Could not create your account. Please try again.” for this `500`. A `400` with `User already exists` shows “An account already exists for this email address.” [Registration service](backend/app/users/service.py) · [Registration page](frontend/src/pages/users/RegisterPage.tsx) · [Concurrent registration test results](docs/testing/history/auth-pages.md)
+
 ### Candidate
 
 These operations require the candidate role. The profile-by-ID endpoint accepts an authenticated account at the router and checks in the service that the caller is the candidate who owns the profile. [Candidate router](backend/app/candidate/router.py) · [Candidate schemas](backend/app/candidate/schema.py)
 
+Both `GET /candidate/jobs` and `GET /candidate/jobs/{job_id}` include `company_description` as a string in `RecommendedJob`. The value comes from the job owner's current company profile and defaults to an empty string when the description is absent. [Recommendation service](backend/app/candidate/service.py)
+
 | Operation | JSON request | Success | Behavior |
 | --- | --- | --- | --- |
 | `GET /candidate/profile` | — | `200` `CandidateProfilePublic` | Read the caller's profile, skills, and private resume. |
-| `PATCH /candidate/profile` | `version` and any of `display_name`, `resume_text`, `skills` | `200` `CandidateProfilePublic` | Update the caller's profile and replace the skills list when supplied. A stale version returns `409`. |
+| `PATCH /candidate/profile` | `version` and any of `display_name`, `resume_text`, `skills` | `200` `CandidateProfilePublic` | Update the caller's profile and replace the skills list when supplied. A stale version returns `409`. A NUL character (`U+0000`) in the display name, resume, or any skill returns `422`. |
 | `GET /candidate/profiles/{candidate_id}` | — | `200` `CandidateProfilePublic` | Read a profile by candidate ID. Access is restricted to the owner. |
 | `GET /candidate/jobs` | — | `200` `RecommendedJob[]` | List all active jobs by descending match score with the caller's application indicator. |
 | `GET /candidate/jobs/{job_id}` | — | `200` `RecommendedJob` | View an active job and the caller's match score and application indicator. |
 | `POST /candidate/jobs/{job_id}/applications` | Omitted or `{}` | `201` `ApplicationPublic` | Apply to the job as the caller. New applications start as `Pending`. A duplicate returns `409`. |
 | `GET /candidate/applications` | — | `200` `ApplicationPublic[]` | List the caller's applications with their statuses and any bookings. |
 | `GET /candidate/applications/{application_id}` | — | `200` `ApplicationPublic` | View one of the caller's applications and its booking, if any. |
-| `GET /candidate/applications/{application_id}/slots` | — | `200` `SlotPublic[]` | List bookable slots for an eligible application owned by the caller. |
-| `POST /candidate/applications/{application_id}/booking` | `slot_id` | `201` `BookingPublic` | Book a slot for the caller's eligible application. A slot already booked by another request returns `409 Slot already booked`. |
-<!-- 还没看 -->
+| `GET /candidate/applications/{application_id}/slots` | — | `200` `SlotPublic[]` | List the employer's future, unbooked 30-minute slots for an eligible application owned by the caller. Each slot must be unassigned or assigned to the application’s job. |
+| `POST /candidate/applications/{application_id}/booking` | `slot_id` | `201` `BookingPublic` | Book the slot and assign it to the application’s job in the same transaction. An already booked slot returns `409 Slot already booked`. An otherwise eligible slot assigned to another job owned by the same employer returns `409 Slot is reserved for another job`. |
+
 ### Employer
 
 These operations require the employer role. Job and applicant operations are scoped to the caller's company and job ownership. [Employer router](backend/app/employer/router.py) · [Employer schemas](backend/app/employer/schema.py)
@@ -307,7 +256,7 @@ These operations require the employer role. Job and applicant operations are sco
 | `GET /employer/jobs/{job_id}` | — | `200` `JobPublic` | Read an active job owned by the caller. |
 | `PATCH /employer/jobs/{job_id}` | `version` and any of `title`, `description`, `required_skills` | `200` `JobPublic` | Update an owned job and replace required skills when supplied. A stale version returns `409`. |
 | `DELETE /employer/jobs/{job_id}` | — | `204` No Content | Soft-delete an owned job. Existing applications or job-linked slots cause `409`. |
-| `GET /employer/jobs/{job_id}/applications` | — | `200` `ApplicantPublic[]` | List applicants for an owned job by descending match score, with their skills, statuses, and bookings. |
+| `GET /employer/jobs/{job_id}/applications` | — | `200` `ApplicantPublic[]` | List applicants for an owned job by descending match score, with their display names, account `email`, skills, statuses, and bookings. |
 | `PATCH /employer/applications/{application_id}/status` | `version`, `status` (`Pending`, `Interviewing`, `Rejected`, or `Accepted`) | `200` `ApplicationStatusPublic` | Change an application status for an owned job and retain any existing booking. A stale version returns `409`. |
 
 ### Employer interview slots
@@ -316,72 +265,123 @@ These operations require the employer role and apply to the caller's own availab
 
 | Operation | JSON request | Success | Behavior |
 | --- | --- | --- | --- |
-| `POST /employer/interview-slots` | `starts_at` as an ISO 8601 timestamp with `Z` or a UTC offset | `201` `SlotPublic` | Create a future 30-minute slot. An overlapping slot returns `409`. |
-| `GET /employer/interview-slots` | — | `200` `ManagedSlotPublic[]` | List the caller's future slots with an `is_booked` flag. |
+| `POST /employer/interview-slots` | `starts_at` as an ISO 8601 timestamp with `Z` or a UTC offset | `201` `SlotPublic` | Create a future 30-minute slot. An overlapping slot returns `409`. An end time at or after `3001-01-01 00:00` in `Asia/Shanghai` returns `422`. |
+| `GET /employer/interview-slots` | — | `200` `ManagedSlotPublic[]` | List the caller's future slots with `is_booked` and nullable `job_id`, `job_title`, `application_id`, and `applicant_name`. For a booked slot with an empty `job_id`, return the job ID from the application. |
 | `DELETE /employer/interview-slots/{slot_id}` | — | `204` No Content | Delete an owned future slot. A booked or already-started slot returns `409`. |
 
 ## User Interface and Workflows
 
+### Sign-in, setup, and navigation
+
+The sign-in and registration pages use a centered form under the SkillMatch header. At `/login`, users sign in with an email and password and can select **Remember me**. At `/register`, users confirm the password and choose **Candidate** or **Employer**. [Sign-in form](frontend/src/pages/users/LoginForm.tsx) · [Registration page](frontend/src/pages/users/RegisterPage.tsx)
+
+After sign-in or registration, an incomplete account opens the role-specific setup page. `/candidate/details` requires a display name and offers optional résumé text and skills. `/employer/details` requires a company name and offers an optional description. **Save and Continue** opens the Recruitment Workspace at `/navpage` once the profile is confirmed. [Candidate setup](frontend/src/pages/users/CandidateDetailsPage.tsx) · [Employer setup](frontend/src/pages/users/EmployerDetailsPage.tsx)
+
+The workspace shows the signed-in account and its shortcuts. Candidates see **Find Jobs**, **My Profile**, and **My Applications**. Employers see **Manage Recruitment**, **Company Profile**, and **Interview Slots**. The workspace offers a language switch and **Sign Out**. The app defaults to English and uses the browser's saved Simplified Chinese preference when selected. [Workspace](frontend/src/pages/NavPage.tsx) · [Language provider](frontend/src/i18n/LanguageProvider.tsx)
+
+### Candidate workflow
+
+The candidate workspace uses a sidebar with **Recommended Jobs**, **My Applications**, **My Profile**, and a language switch. Selecting the SkillMatch brand or **Back to Home** returns to `/navpage`. [Candidate layout](frontend/src/pages/candidate/CandidateLayout.tsx)
+
+1. **Maintain the profile.** On `/candidate/profile`, candidates edit their display name, plain-text résumé, and skill tags. The skill picker accepts suggestions and custom entries. **Save Profile** submits changes, and **Check for updates** checks for a newer saved profile. The résumé hint tells candidates that only they can view their résumé. The API returns `403` to employers, including those who received an application from the candidate. [Profile page](frontend/src/pages/candidate/ProfilePage.tsx) · [Profile access check](backend/app/candidate/service.py)
+2. **Find and apply to a job.** `/candidate/jobs` lists active jobs by match score. Each row shows the job title, company name, required skills, and score out of 100. **View Job** opens `/candidate/jobs/:jobId` with the full job description. A company introduction with non-whitespace text appears below the company name on the detail page, preserving line breaks. **Apply** is available in both views and changes to **Applied** after a successful submission. [Recommendations](frontend/src/pages/candidate/JobsPage.tsx) · [Job detail](frontend/src/pages/candidate/JobPage.tsx)
+3. **Track an application and book an interview.** `/candidate/applications` shows the job, company, current status, and booking for each application. A new application appears as **Pending**. When an unbooked application moves to **Interviewing**, the candidate can select **Load Available Slots**, choose a time, and select **Confirm Booking**. The application then displays the confirmed start and end times in Shanghai time (UTC+8). [Applications and booking](frontend/src/pages/candidate/ApplicationsPage.tsx)
+
+### Employer workflow
+
+1. **Manage company details.** `/employer/company` shows the company name and description with **Save Company Profile** and **Check for updates**. The page links to the workspace and job list. [Company profile](frontend/src/pages/employer/CompanyPage.tsx)
+2. **Publish and edit jobs.** **Manage Recruitment** opens **My Jobs** at `/employer/jobs`. Each job shows its description and skill requirements, with controls for opening the applicant list, editing, and deleting. **New Job** opens a form for the title, description, and optional required skill tags. Editing an existing job offers **Check for updates** beside **Save Job**. [Job list](frontend/src/pages/employer/JobListPage.tsx) · [Job form](frontend/src/pages/employer/JobFormPage.tsx)
+3. **Review applicants and change status.** `/employer/jobs/:jobId` shows the job details above applicant cards ranked by match score. Each card shows the applicant's display name, account email, skills, score, status, and any booking. The status dropdown offers **Pending**, **Interviewing**, **Rejected**, and **Accepted**. Employers submit the selected status with **Save Status**. [Job detail and applicants](frontend/src/pages/employer/JobDetailPage.tsx)
+4. **Publish and review interview slots.** On `/employer/interview-slots`, an employer enters a Shanghai start time, previews the calculated end time, and selects **Create 30-Minute Slot**. **Refresh Slots** reloads upcoming availability. The list marks slots **Booked** or **Unbooked** and disables **Delete** for booked entries. A booked entry links to both the job detail and the matching applicant card. [Interview slot page](frontend/src/pages/employer/InterviewSlotsPage.tsx)
+
 ## Matching Algorithm and Skill Storage
+
+**Scoring.** Candidate job recommendations and employer applicant rankings both call `match_score`. Let `C` be the candidate's skill set and `R` the job's required skill set after trimming whitespace, converting to lowercase, removing empty entries, and deduplicating. The score is `100` when `R` is empty and `floor(100 × |C ∩ R| / |R|)` otherwise. Both views sort by descending score. The candidate view breaks ties by lowercased job title and then job ID. The employer view breaks ties by lowercased candidate display name and then candidate ID. Matching uses skills alone. Optional AI matching and LLM-generated explanations have not been implemented. [Scoring function](backend/app/employer/matching.py) · [FP-MATCH-1 and FP-MATCH-2](docs/REQUIREMENTS.md#5-matching-contract)
+
+**Skill storage.** PostgreSQL stores one normalized skill per row in `candidate_skill(candidate_id, name)` and `job_skill(job_id, name)`. Each table uses both columns as its primary key to keep skill names unique within a candidate profile or job. [Candidate model](backend/app/users/model.py) · [Job model](backend/app/employer/model.py)
+
+**Skill suggestions.** The candidate profile and employer job forms share a catalog of 1,260 predefined skills across fields such as software engineering, finance, healthcare, and education. Typing searches the catalog by case-insensitive substring and shows up to eight suggestions, excluding skills already selected. Users can choose a suggestion or add a custom skill. Shared names help candidates and employers enter consistent skill tags for exact matching. The UI restores catalog spellings such as `Python` when displaying stored names. [Skill catalog](frontend/src/components/skills/skillCatalog.ts) · [Skill picker](frontend/src/components/skills/SkillTagPicker.tsx)
 
 ## Interview Scheduling and Booking Transaction
 
-### 雇主时段管理
+### Employer availability
 
-[interview 模块](backend/app/interview/PLAN.md)提供三个雇主接口。在 `backend/app/interview/` 下，`router.py` 处理 HTTP，`schema.py` 校验请求及定义响应，`service.py` 执行业务与事务。路由由 `backend/app/main.py` 注册。
+**An employer cannot create overlapping slots.** The rule applies across all of that employer's jobs and covers both available and booked slots. A new slot conflicts when an existing slot starts before the new one ends and ends after the new one starts. Both exact duplicates and partial overlaps return `409 Slot overlaps an existing slot`. Back-to-back slots are allowed, and different employers can offer the same time. Creation locks the employer profile row before checking for overlap, so a concurrent request for the same employer sees any slot the first request committed. [Slot creation service](backend/app/interview/service.py)
 
-| 接口 | 请求与成功响应 | 业务错误 |
-| --- | --- | --- |
-| `POST /employer/interview-slots` | 请求体只含 `starts_at`，服务端加 30 分钟得出 `ends_at`。创建成功返回 `201` 和 `{id, starts_at, ends_at}`。 | 雇主资料缺失返回 `404`。与本人已有时段重叠返回 `409`。额外字段或时间非法返回 `422`。 |
-| `GET /employer/interview-slots` | 返回本雇主尚未开始的所有时段，含 `is_booked`，按 `starts_at`、`id` 排序。返回 `200`，无时段时为 `[]`。 | 适用统一认证和角色校验。 |
-| `DELETE /employer/interview-slots/{slot_id}` | 用 UUID 标识时段，删除本雇主的未来空闲时段，成功返回 `204`。 | UUID 格式非法返回 `422`，时段不存在返回 `404`，属于其他雇主返回 `403`，已预约或已开始返回 `409`。 |
+An employer supplies an ISO 8601 `starts_at` with `Z` or a UTC offset. The service normalizes it to UTC and adds 30 minutes. The slot must start in the future and end strictly before midnight on January 1, 3001 in `Asia/Shanghai`. A new slot has no `job_id` and is shared across the employer's jobs until it is booked. Only the owning employer can delete it while it is still in the future and unbooked. [FP-SCHED-1](docs/REQUIREMENTS.md#fp-sched-1-availability) · [Slot schema](backend/app/interview/schema.py) · [Slot service](backend/app/interview/service.py)
 
-- **权限** 使用 `require_employer` 核验服务端会话。未登录返回 `401`，候选人访问返回 `403`。创建和删除还需通过 `X-CSRF-Token` 校验。列表限定 `employer_id = current_user.id`，创建也从当前登录用户取得 `employer_id`。
-- **时间** `starts_at` 为带 `Z` 或 UTC 偏移量的 ISO 8601 字符串（如 `2026-12-01T09:00:00+08:00`）。服务端归一为 UTC，时段必须在未来且恰好 30 分钟。开始和结束时间都必须早于 `Asia/Shanghai` 的 `3001-01-01 00:00`，超出范围返回 `422` 且不写入。数据库使用 `timestamptz`，接口以 UTC 返回时间，新管理页面按 `Asia/Shanghai` 标注和展示。
-- **重叠** 按同一雇主判断，已预约时段也占用时间。两个时段首尾相接时可以创建。
-- **数据** 复用 `interview_slot` 与 `booking`。新时段由雇主跨职位共享，现有可空 `job_id` 在创建时留空。时段是否已被预约以 `booking.slot_id` 为准。
+### Candidate booking eligibility
 
-### 候选人资格与可见性
+**A candidate can book overlapping interviews on separate applications.** For example, if two employers each offer 10:00–10:30 Shanghai time on the same day, one candidate can book both when both applications are eligible and both slots are available. The backend checks booking conflicts by application ID and slot ID. Each application can have one booking, and each slot can be booked once. [Candidate booking service](backend/app/candidate/service.py) · [Booking model](backend/app/employer/model.py)
 
-复用现有候选人时段列表与预约接口。只有申请本人能通过处于 `Interviewing` 且尚未预约的申请，查看和预约该职位所属雇主未来、空闲的 30 分钟时段。雇主时段管理页显示已预约时段并禁用删除。预约结果通过候选人申请和雇主本人职位的申请人列表分别展示。
+To see and book available slots, the candidate must own an application in `Interviewing` with no existing booking. The slot must belong to the employer for that application, start in the future, last exactly 30 minutes, and be unbooked. It must be unassigned or already assigned to the application's job. A direct request for an otherwise eligible slot assigned to another job at the same employer returns `409 Slot is reserved for another job`. [FP-SCHED-2](docs/REQUIREMENTS.md#fp-sched-2-booking-eligibility) · [Candidate booking service](backend/app/candidate/service.py)
 
-列表查询以查询时的数据库状态为准。雇主用 `EXISTS` 获取预约状态，候选人的可预约列表排除已有预约的时段。删除与预约在写入事务中重新检查条件。
+### Booking transaction
 
-### 事务与行锁
+1. The service locks the application row, checks ownership and eligibility, then locks the slot row and checks its availability and job assignment. It sets the slot's `job_id` and inserts the `booking` row in one transaction. Failed attempts roll back both writes.
+2. Separate database unique constraints on `booking.application_id` and `booking.slot_id` enforce the one-booking rules. If two eligible candidates compete for the same slot, one succeeds and the other receives `409 Slot already booked`. If one application tries to book two slots concurrently, only one attempt can succeed.
+3. Slot deletion acquires the same slot row lock and checks for a booking after acquiring it. If booking commits first, deletion returns `409`. If deletion commits first, booking returns `404`.
 
-1. **创建时段** 事务先锁定雇主资料行，再查询重叠并插入。按 `READ COMMITTED`，等待锁的同一雇主请求会看到前一请求提交的时段。
-2. **删除时段** 在 PostgreSQL 事务中用 `SELECT … FOR UPDATE` 锁住时段行。确认归属后，在持锁状态下检查预约和开始时间，再删除并提交。失败时回滚，保留时段和关联数据。
-3. **创建预约** 沿用申请行、时段行的加锁顺序，持锁检查资格后写入预约。删除只锁时段行。按 `READ COMMITTED` 在获得时段锁后查询 `booking`，可看到先提交的预约。预约先提交时删除返回 `409`，删除先提交时预约返回 `404`。
-4. **并发约束** `booking.application_id` 和 `booking.slot_id` 分别唯一，外键保护预约引用的时段。两名符合资格的候选人竞争同一时段时，一方成功，另一方收到 `409` 和 `Slot already booked`，数据库保留一条预约。
+[FP-SCHED-3](docs/REQUIREMENTS.md#fp-sched-3-atomic-concurrency) · [Candidate booking service](backend/app/candidate/service.py) · [Slot deletion service](backend/app/interview/service.py) · [Booking model](backend/app/employer/model.py)
 
-### 申请状态流转
+### Booking visibility and application status
 
-新申请默认为 `Pending`，见 [FP-CAN-3](docs/REQUIREMENTS.md#fp-can-3-applications)。[FP-EMP-3](docs/REQUIREMENTS.md#fp-emp-3-applicant-management)规定了四个合法状态 `Pending`、`Interviewing`、`Rejected`、`Accepted`，并规定只有职位所属雇主能修改。课程未规定状态流转顺序，现有实现允许直接从 `Pending` 改为 `Accepted`。
+The candidate sees the confirmed booking in **My Applications**. The employer's list shows their future slots, marks each slot as booked when a booking row exists, and includes the associated job and applicant. For older bookings with no slot `job_id`, the list takes the job ID from the application. The employer UI disables deletion for booked slots. [Candidate application service](backend/app/candidate/service.py) · [Employer slot service](backend/app/interview/service.py)
 
-[FP-SCHED-2](docs/REQUIREMENTS.md#fp-sched-2-booking-eligibility)把 `Interviewing` 设为创建预约的前提。已有预约的申请改为 `Accepted` 或其他状态后，预约继续关联原申请，时段继续占用。状态更新与预约共用申请行锁。
+New applications start as `Pending`. The job's employer can set the status to `Pending`, `Interviewing`, `Rejected`, or `Accepted` in any order. Status updates lock the same application row as booking. Once a booking is confirmed, changing the application out of `Interviewing` leaves the booking attached and the slot occupied. [FP-EMP-3](docs/REQUIREMENTS.md#fp-emp-3-applicant-management) · [Employer status service](backend/app/employer/service.py)
 
 ## Security Controls
 
-## Optional AI Features and Data Flow
+### Credentials, sessions, and CSRF
+
+Passwords are stored as salted Argon2 hashes. Each login issues a cryptographically random session token and stores its SHA-256 digest in PostgreSQL. The `HttpOnly` session cookie keeps the raw token out of reach of page JavaScript, limiting direct credential theft if a script runs on the page. The server enforces session expiration and revokes the active session on logout. Both authentication cookies use `SameSite=Lax`, which restricts when browsers attach them to cross-site requests. For HTTPS deployments, setting `COOKIE_SECURE=true` adds the `Secure` flag to both cookies. [FP-AUTH-2](docs/REQUIREMENTS.md#fp-auth-2-credential-storage) · [Token and password handling](backend/app/users/security.py) · [Cookie configuration](backend/app/users/router.py)
+
+Authenticated `POST`, `PUT`, `PATCH`, and `DELETE` requests require a valid session and a matching CSRF token. The same-origin `fetch` client reads the separate `csrf_token` cookie and sends its value in `X-CSRF-Token`. FastAPI compares the header with the token stored for that session using a constant-time comparison. A missing or mismatched token returns `403` before business logic runs. [Authentication dependencies](backend/app/users/service.py) · [Shared API client](frontend/src/api/common_api.ts)
+
+### Access control and safe rendering
+
+FastAPI authorizes each protected request using the account and role from the validated session. Services then check ownership of the requested record. Changing an ID in the URL or request body cannot grant access to another candidate's résumé, application, or booking workflow, or to another employer's job management and applicant list. API response schemas limit the fields returned. Employer applicant responses include the information needed to review an application, while the résumé remains private to its owner. [FP-SEC-1](docs/REQUIREMENTS.md#fp-sec-1-object-access) · [Role and ownership rules](#authentication-and-authorization) · [Employer response schemas](backend/app/employer/schema.py)
+
+React renders user-controlled names, résumés, company descriptions, job text, skills, and search input as text or form values. JSX escaping keeps pasted markup from becoming executable HTML. [FP-SEC-3](docs/REQUIREMENTS.md#fp-sec-3-cross-site-scripting) · [Candidate profile](frontend/src/pages/candidate/ProfilePage.tsx) · [Job details](frontend/src/pages/candidate/JobPage.tsx) · [Skill picker](frontend/src/components/skills/SkillTagPicker.tsx)
+
+### Database queries, validation, and atomic writes
+
+SQLModel and SQLAlchemy bind request values separately from SQL. For example, the account lookup builds a query with `User.email == email`, so characters in the supplied email are treated as data. [FP-SEC-2](docs/REQUIREMENTS.md#fp-sec-2-sql-injection) · [Account lookup](backend/app/users/service.py)
+
+Pydantic rejects the actual NUL character (`U+0000`) in candidate and company profile text, job titles and descriptions, and individual skill entries on create and update. PostgreSQL cannot store NUL in text columns, so the API returns `422` before a write reaches the database. Other Unicode text and the literal characters `\u0000` remain valid. [Shared text validation](backend/app/users/schema.py) · [Candidate schema](backend/app/candidate/schema.py) · [Employer schema](backend/app/employer/schema.py)
+
+PostgreSQL row locks and transactions keep authorization and state checks consistent with sensitive writes. An interview booking locks the application and slot, then commits the slot assignment and booking together. Unique constraints allow one booking per application and one per slot. A failed booking rolls back its changes. Profile, job, and application status edits compare the client's `version` with the locked row and reject stale writes with `409`. Profile and job edits commit skill replacements with the rest of the update, so a failed save cannot leave a partially replaced skill list. Job deletion and application submission lock the same job row so the job's active state and application check stay consistent. [Interview scheduling and booking transaction](#interview-scheduling-and-booking-transaction) · [Version-protected edits](#version-protected-edits) · [Job deletion](#job-deletion-and-hiring-visibility)
+
+### Deployment configuration and test isolation
+
+The Docker deployment routes same-origin `/api/` requests through Nginx to Uvicorn on the container's loopback interface. Runtime database credentials come from environment configuration. The tracked `backend/.env.example` uses placeholders for deployment-specific values, and local `.env` files are excluded from Git. Unit tests use synthetic data and database session doubles, and run React rendering locally. Integration tests that need a database use isolated SQLite or disposable PostgreSQL databases. [FP-SEC-4](docs/REQUIREMENTS.md#fp-sec-4-secrets-and-test-isolation) · [Nginx configuration](deploy/nginx.conf) · [Environment template](backend/.env.example) · [Unit test fixtures](tests/unit/conftest.py)
 
 ## Design Decisions and Limitations
 
-## Candidate Integration (2026-11-05)
+### HTTP requests and manual refresh
 
-Candidate routes use the existing users/employer SQLModel tables and Alembic chain.
-The matching implementation is `backend/app/employer/matching.py::match_score`,
-called directly by both workflows. Skills are normalized using the existing
-`normalize_skills` function and stored in CandidateSkill/JobSkill rows. Resume text
-does not participate in matching. Candidate ties use lowercase job title, then ID.
+The browser loads and changes application data through same-origin HTTP requests using `fetch`. Each page fetches its own snapshot. Persistent connections such as WebSockets and cross-tab broadcasts are outside this design. A successful save feeds the updated data into the current workflow. Other open pages can show stale application statuses, slot availability, or profile details until the user reloads or uses the page's refresh control. [Shared API client](frontend/src/api/common_api.ts)
 
-Candidate profile updates, applications and bookings live in a schema/service/router
-module. Booking locks the application before the slot; the existing two unique
-constraints enforce one booking per application and slot. Responses use UTC,
-and candidate pages display Asia/Shanghai. State changes preserve existing bookings.
+### Version-protected edits
 
-The original relationship-based resume exception was superseded by the user's
-owner-only policy and teammate commit `5143f1e`. Employers cannot read raw resumes.
+Candidate profiles, company profiles, jobs, and applications carry a positive integer `version` initialized to `1`. Migrations `7b2c9d4e6f10` and `8c3d0e5f7a21` add these fields and initialize existing records without replacing them. Read responses expose the version. The four edit endpoints require the strict positive integer returned by the previous read, and a missing or invalid version returns `422`. [API routes](#api-routes-or-server-actions) · [Migrations](backend/alembic/versions/)
 
-API contracts, test commands and known integration boundaries are documented in
-[CANDIDATE_REBUILD.md](docs/completed/CANDIDATE_REBUILD.md). No old candidate database or API
-compatibility layer is included. Employer slot management remains outside this change.
+After checking access to the resource, the service locks its database row and compares the submitted version with the latest stored value. On a match, it commits field changes, any replacement of candidate or job skills, and a single version increment in the same transaction. An edit containing only `version` checks freshness for candidate profiles, company profiles, and jobs. A supplied editable field advances the version even when the value is identical. Application status edits require `status` and advance the version even when the status is unchanged. A stale version returns `409` with `{"detail":"Resource version conflict"}` and leaves the saved record intact. [Candidate update service](backend/app/candidate/service.py) · [Employer update service](backend/app/employer/service.py)
+
+**Check for updates** issues a fresh `GET` in each of the four editors. A matching version keeps the current input. A newer version replaces an untouched form, and a form with a draft asks for confirmation before discarding it. A typed skill search counts as a draft. After a conflict, the editor retains the draft and disables Save until the user loads the latest version. Cancelling the reload or a failed read preserves the draft. Each applicant card handles its own version and draft. [Editor workflow evidence](docs/testing/EDITOR_VERSIONS.md)
+
+### Interview date limit
+
+The slot creation API requires the computed end time to be strictly before `3001-01-01 00:00` in `Asia/Shanghai`. A slot that would end at or after the cutoff returns `422` before any write. The service checks the bound before adding 30 minutes, which keeps extreme date values out of timestamp arithmetic and database timezone conversion. Who would still be using this system in the year 3000，haha? AI might have replaced humans by then. [Slot creation service](backend/app/interview/service.py)
+
+### Job deletion and hiring visibility
+
+A job is protected from deletion as soon as it has an application, regardless of that application's status. `DELETE /employer/jobs/{job_id}` locks the job row with `SELECT ... FOR UPDATE`, checks ownership, and looks for any application or interview slot that references the job. If either exists, it rolls back and returns `409` with `Job has applications or interview slots`. An eligible deletion sets `is_deleted` and returns `204`. The job row stays in the database and is filtered out of active job views. [Job deletion service](backend/app/employer/service.py) · [HTTP status mapping](backend/app/employer/router.py)
+
+Submitting an application acquires the same job row lock before checking whether the job is active. If an application commits first, the deletion sees it and returns `409`. If the deletion commits first, the application sees the soft-deleted job and returns `404`. This keeps an application from being added to a job as it is deleted. [Candidate application service](backend/app/candidate/service.py)
+
+The trade-off is that jobs whose employers have stopped hiring may still appear in recommendations and accept new applications because discovery and submission use `is_deleted` to determine whether a job is active. Existing applications stay visible in **My Applications** with their status and any booking. A possible improvement is a separate **Close or Hide Job** action that removes a posting from discovery and stops new applications while keeping the job accessible through existing records. That action is not implemented in the current release. [Candidate workflow service](backend/app/candidate/service.py)
+
+### Résumé requests
+
+Résumé access is restricted to the candidate who owns the profile. Employers can review applicant details and skills, and direct requests for a candidate profile return `403` even when the candidate applied to that employer's job. An employer-initiated résumé request and candidate approval workflow is outside the current release. [Candidate profile access](backend/app/candidate/service.py) · [Applicant response schema](backend/app/employer/schema.py)
