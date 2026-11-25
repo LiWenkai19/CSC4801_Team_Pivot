@@ -310,13 +310,14 @@
       "original_file": "render_all.mjs",
       "original_sha256": "3028799525a0ac7769ff31b0f69f513a1e3574a9a38e824a6d1aad78ec5e9a09",
       "repository_path": "frontend/tests/specialized/render_all.mjs",
-      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved. Follow-up retest: real LanguageProvider/required props/initial hook state, explicit version fixtures, current localized feedback and chip interactions with preserved aria labels; actual catalogue path with non-empty guard; current SHA metadata. Rendering expressions and failure assertions remain unchanged.; Company/status requests now supply explicit captured revisions; sequential transitions advance expected revisions; independent conflict/concurrency cases retain frozen old versions. SSR fixtures include revisions and jobId. No assertion bypass.; Explicit Chinese test preference when main defaults to English; render expressions and error oracles unchanged.",
+      "adaptations": "Portable module/source/artifact paths; current ApplicantCard/Shanghai contract; stable ID navigation and native WebKit control where applicable; known product failure assertions preserved. Follow-up retest: real LanguageProvider/required props/initial hook state, explicit version fixtures, current localized feedback and chip interactions with preserved aria labels; actual catalogue path with non-empty guard; current SHA metadata. Rendering expressions and failure assertions remain unchanged.; Company/status requests now supply explicit captured revisions; sequential transitions advance expected revisions; independent conflict/concurrency cases retain frozen old versions. SSR fixtures include revisions and jobId. No assertion bypass.; Explicit Chinese test preference when main defaults to English; render expressions and error oracles unchanged.; Assert company introduction appears in job detail, stays absent from list preview, and blank introductions create no paragraph.",
       "initial_port_sha256": "eec11cbece3597a8fd13316a31af1608234b2fa69cb7c5deda6aa403f8241526",
-      "ported_sha256": "2c2aaa3b49554d7d1e1ac5a965011c46ee8f983225799d209c78e578470cf773",
+      "ported_sha256": "3e815d917a485fb4b03892cb7f1c2a3db8c6574aeba8654d3feee48f8bcfc057",
       "ported_hash_format": "UTF-8 content with LF line endings, matching Git blobs across platforms",
       "pre_version_retest_ported_sha256": "31006b3e2a744f2e3896d52781d6ed109a53f3a5111a339c8da18e496e12cca4",
       "pre_extended_editor_version_sha256": "37af40028bdc68e8e88c92832356af83bf597023bcdb92ea0a906db0f3eefbbd",
-      "pre_publish_locale_sha256": "d98a364769e29ff9bbd5d283eaaf0b307fc7d7d06b63ec61a93585f9666c5107"
+      "pre_publish_locale_sha256": "d98a364769e29ff9bbd5d283eaaf0b307fc7d7d06b63ec61a93585f9666c5107",
+      "pre_company_description_fix_sha256": "2c2aaa3b49554d7d1e1ac5a965011c46ee8f983225799d209c78e578470cf773"
     },
     {
       "original_stage": "paths-install-seed-20261123",
@@ -378,5 +379,12 @@
       "pre_publication_diagnostics_sha256_lf": "ce6e4a96d2e6ab227fe9e023317f04cad58f9e53f8c574c347cc73cdff3acef7"
     }
   ],
-  "extended_editor_report": "docs/testing/EDITOR_VERSIONS.md"
+  "extended_editor_report": "docs/testing/EDITOR_VERSIONS.md",
+  "company_description_regression": {
+    "browser_path": "frontend/tests/specialized/company_description.mjs",
+    "browser_sha256_lf": "3bc0e7a7d7c4ab308e2331ecf4582036a7f441fa441b42160428ddb55b60d10c",
+    "backend_path": "backend/tests/candidate/test_jobs.py",
+    "backend_sha256_lf": "2c2b172aa18cbb793ebfb262e4f8619da274e1e1948c9513cf77e8f6a4a15095",
+    "pre_readiness_fix_browser_sha256_lf": "e69579ed62a16dddbe9c22ecd1761d8d58529cf7f6ea8411a29a689a7c804fc4"
+  }
 }

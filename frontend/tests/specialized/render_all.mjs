@@ -33,7 +33,7 @@ globalThis.window={localStorage:{getItem:()=> 'zh-CN'}};
 const records=[];const inputStrings=['<script>alert(1)</script>','<b>audit & literal</b>','普通 résumé 🌏\n第二行'];
 const escape=x=>x.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;'}[c]));
 for(const [i,value] of inputStrings.entries()){
- const job={id:'job',title:value,description:value,company_name:value,required_skills:[value],match_score:100,applied:false,created_at:'2030-01-01T00:00:00Z',version:1};
+ const job={id:'job',title:value,description:value,company_name:value,company_description:'Company intro '+value,required_skills:[value],match_score:100,applied:false,created_at:'2030-01-01T00:00:00Z',version:1};
  const profile={display_name:value,resume_text:value,skills:[value],user_id:'candidate',version:1};
  const company={version:1,company_name:value,company_description:value,user_id:'employer'};
  const applicant={version:1,application_id:'app',candidate_id:'candidate',display_name:value,skills:[value],match_score:100,status:'Pending',booking:null};
@@ -58,10 +58,24 @@ for(const [i,value] of inputStrings.entries()){
    const node=React.createElement(LanguageProvider,null,React.createElement(MemoryRouter,null,React.createElement(AuthContext.Provider,{value:auth},React.createElement(components[name][exportName],props))));
    const html=renderToStaticMarkup(node);
    assert(!html.includes('<script>'),'No executable script markup');assert(!html.includes('<b>'),'No raw formatted HTML');assert(html.includes(escape(value)),'Exact escaped marker emitted by actual component');
+   if(name==='pages/candidate/JobPage.tsx')assert(html.includes(escape(job.company_description)),'Job detail must display the associated company introduction');
+   if(name==='pages/candidate/JobsPage.tsx')assert(!html.includes(escape(job.company_description)),'Job list must retain company-name-only preview');
    records.push({id:id+'-'+i,outcome:'passed',component:name,text_class:i,html_sha256:(await import('node:crypto')).createHash('sha256').update(html).digest('hex')});
   }catch(e){records.push({id:id+'-'+i,outcome:'failed',component:name,text_class:i,error:String(e.stack)});}
  }
 }
+for(const [index,introduction] of ['', ' \t\n', '\u2003\u00a0'].entries()) {
+ const name='pages/candidate/JobPage.tsx';
+ const job={id:'job',title:'Job title',company_name:'Example Company',company_description:introduction,description:'Job description',required_skills:[],match_score:100,applied:false,version:1};
+ globalThis.__AUDIT_RENDER_STATE__={[name]:[job,false,'',0]};
+ try {
+  const node=React.createElement(LanguageProvider,null,React.createElement(MemoryRouter,null,React.createElement(components[name].JobContent,{jobId:'job'})));
+  const html=renderToStaticMarkup(node);
+  assert(html.includes('Example Company'));
+  assert(!html.includes('company-introduction'),'Empty or whitespace-only introduction must not render a paragraph');
+  records.push({id:'job-detail-empty-company-introduction-'+index,outcome:'passed'});
+ } catch(error) { records.push({id:'job-detail-empty-company-introduction-'+index,outcome:'failed',error:String(error.stack)}); }
+}
 delete globalThis.__AUDIT_RENDER_STATE__;
-await fs.writeFile(path.join(out,'all-render-results.json'),JSON.stringify({sha:process.env.GAP_SHA,records,method:'Original latest-main TSX render expressions; TypeScript transpile, CSS omitted; module-local useState adapter injects only initial fixtures; private render components exposed in generated artifacts. Does not exercise effects/events or replace independent browser evidence.',script_execution:false,scope:'10 component/output groups × 3 text classes; no general free-text search feature except skill query'},null,2));
+await fs.writeFile(path.join(out,'all-render-results.json'),JSON.stringify({sha:process.env.GAP_SHA,records,method:'Original latest-main TSX render expressions; TypeScript transpile, CSS omitted; module-local useState adapter injects only initial fixtures; private render components exposed in generated artifacts. Does not exercise effects/events or replace independent browser evidence.',script_execution:false,scope:'10 component/output groups × 3 text classes plus 3 empty-company-introduction boundaries; no general free-text search feature except skill query'},null,2));
 console.log(JSON.stringify({total:records.length,passed:records.filter(r=>r.outcome==='passed').length,failed:records.filter(r=>r.outcome==='failed').length}));process.exitCode=records.some(r=>r.outcome==='failed')?1:0;

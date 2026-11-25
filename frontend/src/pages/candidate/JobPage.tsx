@@ -26,7 +26,11 @@ function JobContent({ jobId }: { jobId: string }) {
         {loading && <p className="feedback" role="status">{t('jobs.detailLoading')}</p>}
         {error && <div className="page-section"><h1>{t('jobs.unavailable')}</h1><p className="feedback" role="alert">{t(error)}</p><button type="button" onClick={() => { setLoading(true); setError(''); setAttempt(value => value + 1) }}>{t('common.reload')}</button></div>}
         {!loading && !error && job?.id === jobId && <>
-            <header className="candidate-heading"><h1>{job.title}</h1><p className="page-intro">{t('common.companyValue', { name: job.company_name })}</p></header>
+            <header className="candidate-heading">
+                <h1>{job.title}</h1>
+                <p className="page-intro">{t('common.companyValue', { name: job.company_name })}</p>
+                {job.company_description.trim() && <p className="page-intro description company-introduction">{job.company_description}</p>}
+            </header>
             <section className="panel page-section">
                 <p>{t('jobs.scoreLabel')}<strong>{job.match_score} / 100</strong></p>
                 <p>{t('jobs.requiredSkillsValue', { skills: job.required_skills.map(displaySkillName).join(', ') || t('common.none') })}</p>

@@ -163,7 +163,7 @@ def _recommended_jobs(
         .exists()
     )
     statement = (
-        select(Job, EmployerProfile.company_name, applied)
+        select(Job, EmployerProfile.company_name, EmployerProfile.company_description, applied)
         .outerjoin(EmployerProfile, Job.employer_id == EmployerProfile.user_id)
         .where(Job.is_deleted.is_(False))
     )
@@ -185,7 +185,7 @@ def _recommended_jobs(
     if not jobs:
         return []
     candidate_skills = [name for _, name in profile_skills if name is not None]
-    ids = [job.id for job, _, _ in jobs]
+    ids = [job.id for job, _, _, _ in jobs]
     skills: dict[uuid.UUID, list[str]] = {job_id: [] for job_id in ids}
     for job_id, name in session.exec(
         select(JobSkill.job_id, JobSkill.name).where(JobSkill.job_id.in_(ids))
@@ -198,6 +198,7 @@ def _recommended_jobs(
             title=job.title,
             description=job.description,
             company_name=company_name or "",
+            company_description=company_description or "",
             required_skills=sorted(skills[job.id]),
             created_at=job.created_at,
             updated_at=job.updated_at,
@@ -205,7 +206,7 @@ def _recommended_jobs(
             match_score=match_score(candidate_skills, skills[job.id]),
             applied=has_applied,
         )
-        for job, company_name, has_applied in jobs
+        for job, company_name, company_description, has_applied in jobs
     ]
 
 

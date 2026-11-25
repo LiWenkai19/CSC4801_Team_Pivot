@@ -246,3 +246,68 @@ def test_candidate_endpoint_auth_matrix(client, account, method, path, payload):
     assert (
         client.request(method, path, headers=employer, json=payload).status_code == 403
     )
+
+
+
+def test_job_detail_includes_company_description(client, account, job):
+    """修前复现：雇主保存非空简介后，候选人详情必须收到同公司的原文。"""
+    employer, _ = account("employer")
+    candidate, _ = account(skills=["python"])
+    description = "Example company introduction\nSecond line"
+    updated = client.patch("/employer/company", headers=employer,
+                           json={"version": 1, "company_description": description})
+    assert updated.status_code == 200 and updated.json()["company_description"] == description
+    posting = job(employer)
+    response = client.get(f"/candidate/jobs/{posting['id']}", headers=candidate)
+    assert response.status_code == 200
+    assert response.json().get("company_description") == description
+
+
+@pytest.mark.parametrize(
+    "description",
+    ["", " \t\n", "\u2003\u00a0", "公司介绍\n第二行 Résumé 🙂", "<b>Ordinary & literal</b>", "long-introduction-" * 500],
+    ids=["empty", "whitespace", "unicode-space", "multiline", "markup-literal", "long-token"],
+)
+def test_company_description_roundtrip_preserves_other_job_fields(client, account, job, description):
+    """同因边界：简介必须原样经过列表/详情，且不改变职位内容、匹配或投递。"""
+    employer, _ = account("employer")
+    candidate, _ = account(skills=["python"])
+    posting = job(employer)
+    path = f"/candidate/jobs/{posting['id']}"
+    before = client.get(path, headers=candidate).json()
+    assert before["company_description"] == ""
+    saved = client.patch("/employer/company", headers=employer,
+                         json={"version": 1, "company_description": description})
+    assert saved.status_code == 200, saved.text
+    detail = client.get(path, headers=candidate)
+    assert detail.status_code == 200
+    assert detail.json() == {**before, "company_description": description}
+    listed = client.get("/candidate/jobs", headers=candidate).json()
+    assert listed == [detail.json()]
+    assert client.post(path + "/applications", headers=candidate).status_code == 201
+    assert client.get(path, headers=candidate).json() == {**detail.json(), "applied": True}
+
+
+def test_company_description_uses_employer_id_and_remains_live(client, account, job):
+    """同名公司不会串简介；更新一家简介不改变另一家、职位版本或推荐次序。"""
+    owners = [account("employer")[0], account("employer")[0]]
+    candidate, _ = account(skills=["python"])
+    postings = []
+    for index, owner in enumerate(owners):
+        saved = client.patch("/employer/company", headers=owner,
+                             json={"version": 1, "company_description": f"Introduction {index}"})
+        assert saved.status_code == 200
+        postings.append(job(owner, title=f"Description job {index}"))
+    before = client.get("/candidate/jobs", headers=candidate).json()
+    assert {row["company_name"] for row in before} == {"Test Company"}
+    assert {row["id"]: row["company_description"] for row in before} == {
+        postings[index]["id"]: f"Introduction {index}" for index in range(2)
+    }
+    saved = client.patch("/employer/company", headers=owners[0],
+                         json={"version": 2, "company_description": "Updated introduction"})
+    assert saved.status_code == 200
+    after = client.get("/candidate/jobs", headers=candidate).json()
+    assert after == [dict(row, company_description="Updated introduction")
+                     if row["id"] == postings[0]["id"] else row for row in before]
+    for row in after:
+        assert client.get(f"/candidate/jobs/{row['id']}", headers=candidate).json() == row

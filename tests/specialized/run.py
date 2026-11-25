@@ -32,6 +32,7 @@ GROUPS = {
 BROWSER_SCRIPTS = [
     "version_conflicts",
     "editor_update_checks",
+    "company_description",
     "auth_browser_checks",
     "auth_browser_focused",
     "probe_existing_helpers",

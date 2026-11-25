@@ -40,7 +40,7 @@ def test_fp_can_2_recommendations_preserve_fields_and_rank_all_jobs(db, actors, 
         for i, title in [(3, "Zulu"), (2, "alpha"), (1, "Alpha"), (4, "Zero")]
     ]
     db.exec.side_effect = [
-        result(rows=[(job, "Company", False) for job in jobs]),
+        result(rows=[(job, "Company", f"Intro {job.id}", False) for job in jobs]),
         result(rows=[(actors[0].id, "python")]),
         result(rows=[(j.id, "rust" if j.id.int == 4 else "python") for j in jobs]),
     ]
@@ -52,6 +52,7 @@ def test_fp_can_2_recommendations_preserve_fields_and_rank_all_jobs(db, actors, 
         for row in rows
     )
     assert rows[-1].required_skills == ["rust"]
+    assert all(row.company_description == f"Intro {row.id}" for row in rows)
     from sqlalchemy.dialects import postgresql
 
     query = db.exec.call_args_list[0].args[0].compile(dialect=postgresql.dialect())

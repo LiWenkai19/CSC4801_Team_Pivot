@@ -143,6 +143,7 @@ export interface CandidateProfileUpdate {
 }
 
 export interface RecommendedJob extends JobPublic {
+  company_description: string
   match_score: number
   applied: boolean
 }
