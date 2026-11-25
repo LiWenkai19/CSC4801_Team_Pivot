@@ -5,9 +5,11 @@ from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
+from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from starlette.requests import Request
 
+from app.main import app
 from app.users import security, service
 from app.users.model import Role, UserSession
 from app.users.schema import AuthResponse, UserCreate, UserPublic
@@ -84,6 +86,28 @@ def test_fp_auth_2_response_has_no_authentication_secrets(actors):
     ).model_dump()
     assert set(body) == {"user"}
     assert set(body["user"]) == {"id", "email", "role", "profile_completed"}
+
+
+@pytest.mark.parametrize(
+    "path,fields,missing",
+    [
+        ("/users/login", {}, "email"),
+        ("/users/register", {"email": "unit@example.com"}, "role"),
+    ],
+)
+def test_fp_auth_2_validation_errors_do_not_echo_password(path, fields, missing):
+    """登录或注册缺少必填字段时，只返回校验详情，且不回显密码。"""
+    password = "synthetic-validation-password"
+
+    with TestClient(app) as client:
+        response = client.post(path, json={**fields, "password": password})
+
+    assert response.status_code == 422
+    assert password not in response.text
+    assert response.json() == {
+        "detail": [{"loc": ["body", missing], "msg": "Field required", "type": "missing"}]
+    }
+    assert "set-cookie" not in response.headers
 
 
 @pytest.mark.parametrize("token", [None, "unknown-token"])
