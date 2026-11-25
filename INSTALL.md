@@ -2,10 +2,21 @@
 
 ## Prerequisites and Versions
 
-The current backend uses Python 3.11 or later; the locked dependency set was
-verified with Python 3.12.13 in the project's `SYManage` Conda environment.
-It uses FastAPI, SQLModel, and PostgreSQL. Flask dependencies from the starter
-remain in the lock file; Flask is not a required application framework.
+| Tool | Version / setup baseline | Where needed |
+| --- | --- | --- |
+| Python | Package metadata requires 3.11+; use 3.12 to match Docker and CI. Historical dependency validation used 3.12.13. | Local backend and Python tests; supplied by the Docker image. |
+| Node.js and npm | Node `^20.19.0 || >=22.12.0`, as required by the locked frontend toolchain. Use Node 22.12+ in the 22.x series to match Docker and CI; npm must support `npm ci`. | Local frontend build and component tests; supplied by the Docker build. |
+| PostgreSQL | Version 15 is used by Docker and CI; historical local integration validation used 16.4. | Local application/integration database; Docker supplies its own PostgreSQL 15 server. |
+| Docker | Engine/CLI 23.0+ with Buildx/BuildKit and Linux-container support. This is a tooling baseline, not a claim that the oldest version has passed project acceptance. | Docker build/start path only; host Python, Node and PostgreSQL are not needed for that path. |
+
+Docker Engine 23.0 made BuildKit the default Linux builder; ensure the Buildx
+plugin is installed. [Docker release notes](https://docs.docker.com/engine/release-notes/23.0/)
+Check `docker version` and `docker buildx version` before following the Docker
+instructions. For local development, check `python --version`, `node --version`,
+`npm --version` and `psql --version` instead.
+
+The backend uses FastAPI, SQLModel, and PostgreSQL. Flask dependencies from the
+starter remain in the lock file; Flask is not a required application framework.
 
 ## Dependency Installation
 
@@ -26,7 +37,7 @@ python -m pip install -r requirements.txt -e "./backend[dev]"
 
 ## Environment Variables
 
-| Variable | Required | Default | Purpose |
+| Variable | Required | Docker default / fallback | Purpose |
 | --- | --- | --- | --- |
 | `DATABASE_URL` | yes | image default points at the in-container PostgreSQL | SQLAlchemy/psycopg connection string |
 | `APP_NAME` | yes | `CSC4801 Final Project` | FastAPI title |
@@ -34,11 +45,52 @@ python -m pip install -r requirements.txt -e "./backend[dev]"
 | `SESSION_TTL_MINUTES` | no | `720` | server-side session lifetime |
 | `SESSION_REMEMBER_DAYS` | no | `30` | "remember me" lifetime |
 | `SESSION_COOKIE_NAME` | no | `session` | HttpOnly session cookie name |
-| `CSRF_COOKIE_NAME` | no | `csrf_token` | CSRF cookie name |
+| `CSRF_COOKIE_NAME` | no | `csrf_token` | Keep this name with the supplied frontend; see the dependency notes below. |
+| `POSTGRES_USER` | no | `postgres` | Container database role; must match connection strings. |
 | `POSTGRES_PASSWORD` | no | `postgres` | demo-only password of the container database |
+| `POSTGRES_DB` | no | `employ` | Container application database; must match `DATABASE_URL`. |
+| `CANDIDATE_TEST_DATABASE_URL` | for integration tests | in-container `postgres` database, role/password `postgres` | Disposable PostgreSQL instance for candidate tests. |
+| `EMPLOYER_TEST_DATABASE_URL` | for integration tests | same as the candidate test URL | Disposable PostgreSQL instance for employer tests. |
 
 The image ships demo defaults only; no real credential is baked into it.
-Override any of them with `docker run -e NAME=value`.
+Use `docker run -e NAME=value` for runtime overrides, keeping these dependencies
+consistent:
+
+- **Database credentials and names.** The entrypoint reads `POSTGRES_USER`,
+  `POSTGRES_PASSWORD` and `POSTGRES_DB`, while the backend reads `DATABASE_URL`.
+  The image's connection strings are fixed defaults; changing a `POSTGRES_*`
+  variable does not regenerate them. When changing the role or password, update
+  `DATABASE_URL` and both test URLs to use the same credentials. When changing
+  `POSTGRES_DB`, update the database name in `DATABASE_URL`; the test URLs should
+  still target the disposable instance's administrative `postgres` database.
+  Percent-encode special characters in URL credentials. Outside Docker,
+  `POSTGRES_*` does not configure or change your local PostgreSQL installation.
+- **Existing data volumes.** The role and password are initialized only when
+  the container data directory is empty. Changing environment variables on an
+  existing volume does not rename the stored role or reset its password. Keep
+  the connection settings consistent with that volume's existing credentials,
+  or deliberately update the database credentials before changing the URLs.
+- **CSRF cookie name.** The backend accepts `CSRF_COOKIE_NAME`, but
+  `frontend/src/api/common_api.ts::readCsrfToken` reads the literal `csrf_token`.
+  Keep `CSRF_COOKIE_NAME=csrf_token` with the supplied frontend. Renaming it
+  requires a matching frontend change and rebuild; a backend-only rename leaves
+  authenticated write requests without the expected CSRF header and returns 403.
+
+For a new disposable container using a different demo password, override all
+three connection strings together (POSIX shell example; stop any other container
+using host port 8080 first):
+
+```sh
+docker run -d --name csc4801-custom -p 127.0.0.1:8080:80 \
+  -e POSTGRES_PASSWORD=local-demo-db-only \
+  -e DATABASE_URL=postgresql+psycopg://postgres:local-demo-db-only@127.0.0.1:5432/employ \
+  -e CANDIDATE_TEST_DATABASE_URL=postgresql+psycopg://postgres:local-demo-db-only@127.0.0.1:5432/postgres \
+  -e EMPLOYER_TEST_DATABASE_URL=postgresql+psycopg://postgres:local-demo-db-only@127.0.0.1:5432/postgres \
+  csc4801-final
+```
+
+For this example, use `csc4801-custom` instead of `csc4801` in subsequent
+`docker exec`, log and stop commands.
 
 For local development, `APP_NAME` and `DATABASE_URL` have **no application
 defaults**. Settings reads `.env` in the command's working directory. From the
