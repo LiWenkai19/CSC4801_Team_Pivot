@@ -42,15 +42,24 @@ Override any of them with `docker run -e NAME=value`.
 
 For local development, `APP_NAME` and `DATABASE_URL` have **no application
 defaults**. Settings reads `.env` in the command's working directory. From the
-repository root, copy the example without overwriting an existing configuration:
+repository root, copy the template (`backend/.env.example`, placeholders only)
+without overwriting an existing configuration:
 
 ```powershell
-if (!(Test-Path backend/.env)) { Copy-Item .env.example backend/.env }
+if (!(Test-Path backend/.env)) { Copy-Item backend/.env.example backend/.env }
 ```
 
-On POSIX: `test -f backend/.env || cp .env.example backend/.env`.
-Edit `backend/.env` to match your local PostgreSQL instance. The supplied URL
-contains only synthetic demo credentials. `.env` must not be committed.
+On POSIX: `test -f backend/.env || cp backend/.env.example backend/.env`.
+Then replace `YOUR_NAME` and `YOUR_DATABASE_URL` with your local values. For the
+demo role and database created in the next section, that means:
+
+```sh
+APP_NAME=CSC4801 Final Project
+DATABASE_URL=postgresql+psycopg://skillmatch:local-demo-only@127.0.0.1:5432/skillmatch
+```
+
+These values are synthetic local/demo configuration, not credentials for any
+shared or production system. `.env` must not be committed.
 
 ## Database Setup and Migrations
 

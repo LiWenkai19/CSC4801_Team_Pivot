@@ -107,7 +107,16 @@ def main():
         cwd = OUT / "config-probes" / kind
         cwd.mkdir(parents=True, exist_ok=True)
         if kind == "example-env":
-            (cwd / ".env").write_bytes((SRC / ".env.example").read_bytes())
+            # The template carries placeholders only; apply the documented
+            # replacements before checking that the resulting config imports.
+            template = (SRC / "backend" / ".env.example").read_text(encoding="utf-8")
+            configured = template.replace(
+                "YOUR_NAME", "CSC4801 Final Project"
+            ).replace(
+                "YOUR_DATABASE_URL",
+                "postgresql+psycopg://example:example@127.0.0.1:1/example",
+            )
+            (cwd / ".env").write_text(configured, encoding="utf-8")
         env = dict(os.environ)
         for key in list(env):
             if key.startswith(("APP_", "DATABASE_", "SESSION_", "CSRF_", "COOKIE_")):
@@ -131,7 +140,7 @@ def main():
             "Missing required settings are explicitly rejected; documented example configuration permits import",
             {"exit_code": result["exit_code"], "log": result["log"]},
             "SE-02",
-            "文档未给出APP_NAME/DATABASE_URL配置；根.env.example仍为旧SQLite示例，Settings读取当前目录.env后仍缺必填项。",
+            "文档未给出APP_NAME/DATABASE_URL配置；示例模板仅含占位符，需按INSTALL替换后才能导入。",
         )
     valid = r.run(
         "config-positive-control",
