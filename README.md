@@ -192,9 +192,7 @@ claimed. Historical reports retain their original versions and results.
 - [Existing API/database regression](backend/tests/)
 - [Specialized test suites and runners](tests/specialized/README.md)
 - [Four-editor version protection verification](docs/testing/EDITOR_VERSIONS.md)
-- [Consolidated and historical test reports](docs/testing/REPORT.md)
+- [Consolidated test report](docs/testing/REPORT.md)
 
-The consolidated report and rewritten historical report copies are committed in
-`docs/testing`. Raw logs, database directories, screenshots, dependency installations
-and synthetic session values remain local artifacts. The current version repair
-is documented separately from the historical test-only reports.
+Detailed historical test reports and internal defect inventories are kept with
+local test artifacts, including raw logs, database directories and screenshots.

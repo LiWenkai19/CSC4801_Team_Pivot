@@ -31,6 +31,9 @@ backend/data/
 !/docs/DOCKER.md
 !/docs/PEER_REVIEW.md
 !/docs/testing/
+/docs/testing/history/
+/docs/testing/failed-cases.json
+/docs/testing/findings.json
 * 中文翻译.md
 /backend/alembic/README
 /backend/app/**/PLAN.md

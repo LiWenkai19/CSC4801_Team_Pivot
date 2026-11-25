@@ -122,8 +122,7 @@ not a new whole-system coverage claim. No exclusions hide known failures.
 Historical port-baseline evidence: functional369 pass/24 fail, browser149 pass/8 fail,
 SSR36 pass, delivery13 pass/8 fail. These original counts and the then-failing
 privacy-contract test belong to that baseline, not the current repaired checkout. See
-[the consolidated report](../../docs/testing/REPORT.md),
-[failure causes and post-fix plans](../../docs/testing/failed-cases.json), and
+[the consolidated report](../../docs/testing/REPORT.md) and
 [source provenance](provenance.json). These results are for the recorded baseline
 plus the test-only migration, not an assurance about future main commits.
 
@@ -146,7 +145,6 @@ patched. Old employer-list assertions were migrated because current SPEC retains
 booked future slots and returns is_booked; candidate availability still excludes
 them. Current ApplicantCard markup/Shanghai time and workspace heading are used.
 WebKit keyboard checks compare equivalent native control types and initial focus.
-Historical SHA/results remain separate in docs/testing/history.
 
 No Docker execution, production/live-target probing, credential validation,
 deployment or business repair is performed by these test entrypoints.

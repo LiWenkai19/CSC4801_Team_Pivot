@@ -52,7 +52,7 @@ REG-TEXT-01 已在本地修复并验证。版本为 `c39d36bbce554479f4e59f0fc44
 
 已从 GitHub 默认分支 main 拉取并快进合并 7 个提交，HEAD 从 `72654ed630dfba73ed1222fd4f4da9cfe3cf9ae2` 更新到 **`c39d36bbce554479f4e59f0fc448b21e6f6ca392`**。测试结束后再次核对远端 main，仍为该 SHA。所有结果针对这个提交加保留的本地未提交修复；没有提交或推送。本地原有 12 个文件在合并时逐文件哈希相同；后续仅适配测试工具并更新报告，产品 `backend/app`、`frontend/src` 均与当前 main 一致。seed、迁移、配置等原本地修复保留。
 
-完整机器可读结果见 [full-retest-verification.json](full-retest-verification.json)，当前问题状态见 [findings.json](findings.json)。下方较早报告保留当时版本与统计，不能当作当前状态。
+完整机器可读结果见 [full-retest-verification.json](full-retest-verification.json)。下方较早结果对应各自的测试版本。
 
 | 范围 | 最终执行结果 | 说明 |
 |---|---|---|
@@ -101,7 +101,7 @@ Docker 客户端存在，但 desktop-linux 引擎管道不可用，容器 build/
 
 ## 2026-11-24：团队决定、DEL-01 与 seed 重写验收
 
-本轮按用户与队友的讨论，仅处理 AUTH-01 的分类、DEL-01 的测试工具修复，以及 SE-05 的 seed 重写。基线 HEAD 为 `72654ed630dfba73ed1222fd4f4da9cfe3cf9ae2` 加本地未提交改动；没有提交、推送或操作团队数据库。下文旧版本统计保持历史口径，最新状态以本节及 findings.json 为准。
+本轮按用户与队友的讨论，仅处理 AUTH-01 的分类、DEL-01 的测试工具修复，以及 SE-05 的 seed 重写。基线 HEAD 为 `72654ed630dfba73ed1222fd4f4da9cfe3cf9ae2` 加本地未提交改动；没有提交、推送或操作团队数据库。
 
 - **AUTH-01：团队决定不作为 bug，不修复。** 注册服务及路由均未改动。保留并发失败方返回 500 的历史观测与旧测试断言，不改称已经修复，也不将它作为本轮待修项。
 - **DEL-01：本地已修复并验证。** 两份原浏览器脚本分别维护 Cookie/CSRF 会话，移除旧 access_token/Bearer 依赖；浏览器同源 `/api` 请求只转发到本轮随机 API 端口。雇主脚本必须显式提供 `EMPLOYER_TEST_DATABASE_URL`，不会读取团队 backend/.env 来创建测试库。原完整场景适配了当前导航、申请卡片、技能标签、中文错误文案和必填版本字段；没有修改产品页面来满足旧脚本。仍断言精确排序、持久化、拒绝后状态、预约关系、失败恢复和角色隔离。新增 CSRF 拒绝、会话隔离、注销撤销及 8000 端口哨兵检查；原辅助函数探针同步使用当前合同。
@@ -158,7 +158,7 @@ Docker 客户端存在，但 desktop-linux 引擎管道不可用，容器 build/
 
 浏览器共272次原始执行（247通过、25失败），包含两批复验；最终认可的157次为上表149通过/8失败。前一轮2次旧“欢迎”标题定位和12次不匹配的WebKit控件对照错误属于工具问题，分别修正并复验对应完整37/78项；未当作产品bug。最终表明确选择复验结果，其余原始尝试留在本地，不合并虚增用例数。
 
-完整新结果见[汇总JSON](verification-summary.json)；所有40次已知功能/浏览器/交付失败逐例关联原因、独立预期及修后新增计划，见[失败索引](failed-cases.json)。单测政策失败单列，不混进这40次。所有失败都是未修复证据，未使用skip/xfail/放宽产品断言。
+完整结果见[验证汇总](verification-summary.json)。本轮记录了 40 次功能、浏览器和交付检查失败，单测政策失败单独统计。原结果保留了失败断言。
 
 ## 判据与移植说明
 
@@ -167,27 +167,6 @@ Docker 客户端存在，但 desktop-linux 引擎管道不可用，容器 build/
 生产渲染表达式保持原样，SSR产物放在仓库外并解析同一React模块，不需要符号链接权限。跨平台资源观察在Windows使用句柄数、其他平台使用文件描述符，不能跨环境直接比较两指标。原始文件来源、SHA-256和最终移植哈希见[provenance.json](../../tests/specialized/provenance.json)。
 
 历史课件方法包括规格/边界、蜕变与独立评分参考、3000有界生成trial、64资格组合、32状态关系、失败原子性、真实PG锁等待、关键变异、防御性文本/依赖/历史审查和360秒可观测性。未宣称执行CPE或全局形式化证明。此前后端99.90%/99.43%为明确同源继承的历史覆盖数据，本轮未重算新的全程序覆盖率。
-
-## 已知问题与交付状态
-
-历史统计口径保留：12条非Docker开放问题，UI-01由队友版本改变后复验关闭；Docker SE-01历史问题排除。覆盖率、变异分数或新工具正常运行不能关闭这些问题。SPEC-Q01在课程单测中仍红；依赖公告和CI/正式提交等另为风险/外部证据项。
-
-| ID | 问题 |
-|---|---|
-| SE-02 | INSTALL与示例配置不足，无法按文档独立启动 |
-| SE-03 | README映射、占位测试引用及旧验证结论未更新 |
-| SE-04 | SPEC缺少架构、认证、页面及安全等必需设计说明 |
-| SE-05 | seed唯一60分钟时段不满足30分钟预约资格 |
-| SE-06 | Application.status的数据库默认Pending未进入迁移 |
-| SLOT-01 | 已接受的极端日期在数据库返回时区下无法读回 |
-| REG-CAND-01 | 候选技能整体替换竞争会合并集合或返回500 |
-| REG-JOB-01 | 职位要求技能的独立替换实现存在同类竞争 |
-| REG-TEXT-01 | 实际NUL被Schema接受，持久化时返回500 |
-| AUTH-01 | 同邮箱并发注册的失败方返回500 |
-| UI-02 | 过期会话注销留下未处理Promise拒绝 |
-| DEL-01 | 仓库原浏览器脚本仍依赖旧Bearer/access_token |
-
-[完整原因与修复后新增计划](findings.json)。原BL-G01/G02仓库测试集成缺口已由a8f3d3a的业务/组件单测整合处理；此前历史报告保留当时状态，不篡改成早已解决。其他业务bug、seed、迁移及Docker均未修复。
 
 ## 运行和索引
 
@@ -218,20 +197,5 @@ Docker 客户端存在，但 desktop-linux 引擎管道不可用，容器 build/
 | [tests/specialized/test_targeted.py](../../tests/specialized/test_targeted.py) | 6 |
 
 [机器可读函数/模块索引](test-inventory.json)。临时数据库/API在所有已验收运行后均已关闭，业务源码/迁移/seed/依赖锁保持基线字节。测试输出没有入库。
-
-## 历史报告
-
-以下副本保留原版本、计数与证据边界；旧本地产物链接改为明确文字标注，未伪装成仓库内可下载文件。最新重放结果以前文为准。
-
-- [spec-env.md](history/spec-env.md)
-- [baseline.md](history/baseline.md)
-- [slots.md](history/slots.md)
-- [booking.md](history/booking.md)
-- [matching.md](history/matching.md)
-- [auth-pages.md](history/auth-pages.md)
-- [gap-completion.md](history/gap-completion.md)
-- [paths-install-seed.md](history/paths-install-seed.md)
-- [unit-integration.md](history/unit-integration.md)
-- [final-findings.md](history/final-findings.md)
 
 真机/Safari、生产多日稳定性、Docker完整交付和课程系统回执仍未验证；策略和CI课程口径仍需团队确认。本次提交没有执行任何业务修复或正式课程递交。
