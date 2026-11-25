@@ -107,12 +107,14 @@ def test_fp_sched_1_management_list_preserves_booking_flag(db, actors, result):
         starts_at=NOW + timedelta(days=1),
         ends_at=NOW + timedelta(days=1, minutes=30),
     )
-    db.exec.return_value = result(rows=[(slot, True)])
+    booking_id, application_id, job_id = uuid4(), uuid4(), uuid4()
+    db.exec.return_value = result(rows=[(slot, booking_id, application_id, job_id, "Interview job", "Candidate")])
     rows = service.list_slots(db, actors[1])
     assert rows[0].id == slot.id and rows[0].is_booked
+    assert (rows[0].job_id, rows[0].job_title, rows[0].application_id, rows[0].applicant_name) == (job_id, "Interview job", application_id, "Candidate")
     query = db.exec.call_args.args[0].compile()
     assert actors[1].id in query.params.values()
-    assert "EXISTS" in str(query)
+    assert "interview_slot.employer_id" in str(query)
 
 
 def prepare_booking(db, actors, result, case="valid"):

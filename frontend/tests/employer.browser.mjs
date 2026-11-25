@@ -1,7 +1,7 @@
 /**
  * 雇主前端浏览器回归：创建独立 PostgreSQL 库，执行迁移并灌入测试数据。
  * 自动启动生产预览与真实后端；结束时停止服务、删除测试库，保留结果与截图。
- * 前置：项目 Python 环境及 backend/.env；在 frontend 执行 npm run build。
+ * 前置：项目 Python 环境、EMPLOYER_TEST_DATABASE_URL；在 frontend 执行 npm run build。
  * 另需 Playwright 和 Chromium，脚本不会自动修改项目依赖。
  * 用法（仓库根目录）：node frontend/tests/employer.browser.mjs
  * UI_PYTHON 指定项目 Python；PLAYWRIGHT_MODULE 可指定 Playwright 入口绝对路径。
@@ -19,6 +19,7 @@ import path from 'node:path'
 const root = fileURLToPath(new URL('../../', import.meta.url))
 const frontend = path.join(root, 'frontend')
 const python = process.env.UI_PYTHON || 'python'
+assert(process.env.EMPLOYER_TEST_DATABASE_URL, 'Set EMPLOYER_TEST_DATABASE_URL to a disposable PostgreSQL instance')
 await access(path.join(frontend, 'dist/index.html')).catch(() => {
   throw new Error('请先在 frontend 执行 npm run build。')
 })
@@ -37,16 +38,14 @@ from pathlib import Path
 from datetime import datetime, timedelta, timezone
 ROOT = Path.cwd()
 sys.path.insert(0, str(ROOT))
-from dotenv import dotenv_values
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
-values = dotenv_values(ROOT / '.env')
+source = make_url(os.environ['EMPLOYER_TEST_DATABASE_URL'])
 manifest_path = Path(os.environ['UI_FIXTURES'])
 if '--cleanup' in sys.argv:
     manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
     name = manifest['database']
     assert re.fullmatch(r'csc4801_ui_[0-9a-f]{12}', name)
-    source = make_url(values['DATABASE_URL'])
     admin = create_engine(source.set(database='postgres'), isolation_level='AUTOCOMMIT')
     with admin.connect() as connection:
         connection.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
@@ -55,7 +54,6 @@ if '--cleanup' in sys.argv:
     raise SystemExit(0)
 name = 'csc4801_ui_' + uuid.uuid4().hex[:12]
 assert re.fullmatch(r'csc4801_ui_[0-9a-f]{12}', name)
-source = make_url(values['DATABASE_URL'])
 admin = create_engine(source.set(database='postgres'), isolation_level='AUTOCOMMIT')
 with admin.connect() as connection:
     connection.execute(text(f'CREATE DATABASE "{name}"'))
@@ -170,7 +168,6 @@ let apiPort = await freePort()
 while (apiPort === uiPort) apiPort = await freePort()
 const base = `http://127.0.0.1:${uiPort}`
 const apiBase = `http://127.0.0.1:${apiPort}`
-const clientOrigin = 'http://127.0.0.1:8000'
 const testEnv = { ...process.env, UI_FIXTURES: fixturesPath, UI_ORIGIN: base, UI_BACKEND_PORT: String(apiPort) }
 let browser, backend, preview
 try {
@@ -178,18 +175,25 @@ try {
   preview = launch(process.execPath, [path.join(frontend, 'node_modules/vite/bin/vite.js'), 'preview', '--host', '127.0.0.1', '--port', String(uiPort), '--strictPort'], frontend, process.env, 'preview')
   await Promise.all([ready(`${apiBase}/openapi.json`, backend), ready(base, preview)])
   const manifest = JSON.parse(await readFile(fixturesPath, 'utf8'))
-  browser = await chromium.launch({ headless: true })
+  browser = await chromium.launch({ headless: true, ...(process.env.CHROME_EXECUTABLE_PATH ? { executablePath: process.env.CHROME_EXECUTABLE_PATH } : {}) })
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } })
+  await context.addInitScript(() => localStorage.setItem('skillmatch.language', 'zh-CN'))
   const page = await context.newPage()
   page.setDefaultTimeout(10000)
   // 请求始终转发到本轮独立后端，故障注入仅用于页面恢复场景。
   const requests = [], errors = [], passed = []
   let fault = null
   page.on('pageerror', error => errors.push(error.message))
-  await context.route(`${clientOrigin}/**`, async route => {
+  await context.route(`${base}/api/**`, async route => {
     const request = route.request()
     const url = new URL(request.url())
-    const entry = { method: request.method(), path: url.pathname, body: request.postDataJSON(), auth: request.headers().authorization }
+    assert.equal(url.origin, base)
+    const pathname = url.pathname.slice('/api'.length)
+    const headers = await request.allHeaders()
+    const entry = { method: request.method(), path: pathname, body: request.postDataJSON(),
+      hasSession: /(?:^|;\s*)session=/.test(headers.cookie || ''),
+      csrfMatches: headers['x-csrf-token'] === decodeURIComponent((headers.cookie || '').split('; ').find(c => c.startsWith('csrf_token='))?.slice(11) || ''),
+      hasBearer: Boolean(headers.authorization) }
     requests.push(entry)
     if (fault && fault.method === entry.method && fault.path === entry.path && fault.remaining > 0) {
       const current = fault
@@ -198,7 +202,7 @@ try {
       if (current.abort) return route.abort('failed')
       if (current.status) return route.fulfill({ status: current.status, contentType: 'application/json', body: JSON.stringify({ detail: current.detail }) })
     }
-    const response = await route.fetch({ url: `${apiBase}${url.pathname}${url.search}` })
+    const response = await route.fetch({ url: `${apiBase}${pathname}${url.search}` })
     await route.fulfill({ response })
   })
   async function check(name, action) {
@@ -216,20 +220,46 @@ try {
     await page.getByRole('button', { name: '登录', exact: true }).click()
     await page.waitForURL('**/navpage')
   }
-  async function api(method, url, token, body) {
-    const response = await fetch(`${apiBase}${url}`, { method, headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined })
+  async function api(method, url, session, body) {
+    const response = await fetch(`${apiBase}${url}`, { method, headers: {
+      ...(session ? { Cookie: session.cookie } : {}),
+      ...(session && !['GET', 'HEAD', 'OPTIONS'].includes(method) ? { 'X-CSRF-Token': session.csrf } : {}),
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+    }, body: body ? JSON.stringify(body) : undefined })
     const value = response.status === 204 ? null : await response.json()
-    return { status: response.status, value }
+    const cookies = response.headers.getSetCookie().map(value => value.split(';')[0])
+    const auth = cookies.some(value => value.startsWith('session=')) ? {
+      cookie: cookies.join('; '),
+      csrf: decodeURIComponent(cookies.find(value => value.startsWith('csrf_token=')).slice('csrf_token='.length)),
+    } : undefined
+    return { status: response.status, value, session: auth }
   }
-  async function tokenFor(email) { return (await api('POST', '/users/login', null, { email, password: 'demo-local-only' })).value.access_token }
+  async function sessionFor(email) {
+    const login = await api('POST', '/users/login', null, { email, password: 'demo-local-only' })
+    assert.equal(login.status, 200)
+    assert(login.session?.cookie && login.session.csrf)
+    return login.session
+  }
   function count(method, url) { return requests.filter(r => r.method === method && r.path === url).length }
   function inject(method, url, status, detail) { fault = { method, path: url, status, detail, remaining: method === 'GET' ? Infinity : 1 } }
-  const token = await tokenFor('demo-employer1@example.com')
-  await api('PATCH','/employer/company',token,{company_name:'Acme Demo Labs',company_description:'Local demo employer one.'})
+  const token = await sessionFor('demo-employer1@example.com')
+  await check('辅助客户端 Cookie 隔离、CSRF 拒绝、注销与会话撤销', async () => {
+    const first = await sessionFor('demo-employer1@example.com')
+    const second = await sessionFor('demo-employer2@example.com')
+    assert.equal((await api('GET', '/users/me', first)).value.email, 'demo-employer1@example.com')
+    assert.equal((await api('GET', '/users/me', second)).value.email, 'demo-employer2@example.com')
+    const before = (await api('GET', '/employer/company', first)).value
+    const rejected = await fetch(`${apiBase}/employer/company`, { method: 'PATCH', headers: { Cookie: first.cookie, 'Content-Type': 'application/json' }, body: JSON.stringify({ version: before.version, company_name: 'Must not save' }) })
+    assert.equal(rejected.status, 403)
+    assert.deepEqual((await api('GET', '/employer/company', first)).value, before)
+    assert.equal((await api('POST', '/users/logout', first)).status, 204)
+    assert.equal((await api('GET', '/users/me', first)).status, 401)
+    assert.equal((await api('GET', '/users/me', second)).status, 200)
+    assert.equal((await api('POST', '/users/logout', second)).status, 204)
+  })
   for (const job of (await api('GET','/employer/jobs',token)).value) {
     if (job.title.startsWith('UI job') || job.title === 'Double submit job' || job.title === '<script>alert(1)</script>') await api('DELETE',`/employer/jobs/${job.id}`,token)
   }
-  await api('PATCH',`/employer/applications/${manifest.aliceApplication}/status`,token,{status:'Interviewing'})
   try {
     await check('未登录访问所有雇主路由均跳登录', async () => {
       for (const route of ['/employer/company','/employer/jobs','/employer/jobs/new',`/employer/jobs/${manifest.backendJob}`,`/employer/jobs/${manifest.backendJob}/edit`]) {
@@ -238,7 +268,7 @@ try {
     })
     await login('demo-employer1@example.com')
     await check('主页雇主入口和公司资料入口', async () => {
-      await page.getByRole('button', { name: '雇主工作流' }).click(); await page.waitForURL('**/employer/jobs')
+      await page.getByRole('link', { name: '雇主工作流' }).click(); await page.waitForURL('**/employer/jobs')
       await textVisible('Backend Engineer')
       await page.getByRole('link', { name: '公司资料', exact: true }).click(); await page.getByLabel('公司名称（必填）').waitFor()
       assert.equal(await page.getByLabel('公司名称（必填）').inputValue(), 'Acme Demo Labs')
@@ -253,16 +283,16 @@ try {
       await page.getByLabel('公司名称（必填）').fill('Acme Demo Labs')
       await page.getByLabel('公司描述', { exact: true }).fill('')
       await page.getByRole('button', { name: '保存公司资料' }).click(); await textVisible('已保存')
-      assert.deepEqual(requests.filter(r=>r.method==='PATCH' && r.path==='/employer/company').at(-1).body, {company_description:''})
+      assert.deepEqual(requests.filter(r=>r.method==='PATCH' && r.path==='/employer/company').at(-1).body, {version:1,company_description:''})
       assert.equal((await api('GET','/employer/company',token)).value.company_description,'')
     })
     await check('公司 422 和网络失败保留输入，可重试', async () => {
       await page.getByLabel('公司名称（必填）').fill('Updated Company')
       inject('PATCH','/employer/company',422,[{loc:['body','company_name'],msg:'Injected validation error'}])
-      await page.getByRole('button',{name:'保存公司资料'}).click(); await alertVisible('body.company_name: Injected validation error')
+      await page.getByRole('button',{name:'保存公司资料'}).click(); await alertVisible('请检查填写内容后重试。')
       assert.equal(await page.getByLabel('公司名称（必填）').inputValue(),'Updated Company')
       fault = {method:'PATCH',path:'/employer/company',abort:true,remaining:1}
-      await page.getByRole('button',{name:'保存公司资料'}).click(); await alertVisible('Failed to fetch')
+      await page.getByRole('button',{name:'保存公司资料'}).click(); await alertVisible('暂时无法连接，请检查网络后重试。')
       assert.equal(await page.getByLabel('公司名称（必填）').inputValue(),'Updated Company')
       fault=null
       await page.getByRole('button',{name:'保存公司资料'}).click(); await textVisible('已保存')
@@ -283,8 +313,11 @@ try {
     await check('职位列表显示字段与最新公司名称', async () => {
       await page.getByRole('link',{name:'职位列表',exact:true}).click(); await textVisible('Backend Engineer')
       const row=page.getByRole('listitem').filter({hasText:'Backend Engineer'})
-      assert.match(await row.innerText(),/Updated Company/); assert.match(await row.innerText(),/python, sql/)
-      assert.equal(await row.locator('time').count(),1)
+      const stored=(await api('GET',`/employer/jobs/${manifest.backendJob}`,token)).value
+      assert.equal(stored.company_name,'Updated Company')
+      assert(Number.isFinite(Date.parse(stored.created_at)))
+      assert.match(await row.innerText(),/Python/); assert.match(await row.innerText(),/SQL/)
+      assert.match(await row.innerText(),/Local demo job with skills python and sql\./)
     })
     await check('新建职位空白标题和描述拦截', async () => {
       await page.getByRole('link',{name:'新建职位',exact:true}).click()
@@ -305,7 +338,7 @@ try {
       const chosen=page.getByRole('list',{name:'已选技能要求'})
       assert.equal(await chosen.getByRole('listitem').count(),2)
       inject('POST','/employer/jobs',422,[{loc:['body','title'],msg:'Test rejection'}])
-      await page.getByRole('button',{name:'保存职位'}).click(); await alertVisible('body.title: Test rejection')
+      await page.getByRole('button',{name:'保存职位'}).click(); await alertVisible('请检查填写内容后重试。')
       assert.equal(await page.getByLabel('标题（必填）').inputValue(),'UI job')
       assert.equal(await chosen.getByRole('listitem').count(),2)
       fault=null
@@ -318,7 +351,7 @@ try {
       assert.equal(await page.getByLabel('标题（必填）').inputValue(),'UI job')
       await page.getByLabel('标题（必填）').fill('UI job edited')
       const editChosen=page.getByRole('list',{name:'已选技能要求'})
-      for (const removeButton of await editChosen.getByRole('button',{name:/^移除 /}).all()) await removeButton.click()
+      while (await editChosen.getByRole('button',{name:/^移除 /}).count()) await editChosen.getByRole('button',{name:/^移除 /}).first().click()
       assert.equal(await editChosen.getByRole('listitem').count(),0)
       await page.getByRole('button',{name:'保存职位'}).click(); await page.waitForURL('**/employer/jobs'); await textVisible('UI job edited')
       assert.deepEqual((await api('GET',`/employer/jobs/${manifest.uiJob}`,token)).value.required_skills,[])
@@ -328,7 +361,7 @@ try {
       await go(`/employer/jobs/${manifest.uiJob}/edit`)
       await page.getByLabel('标题（必填）').waitFor()
       inject('PATCH',`/employer/jobs/${manifest.uiJob}`,422,[{loc:['body','description'],msg:'Edit validation failed'}])
-      await page.getByRole('button',{name:'保存职位'}).click(); await alertVisible('body.description: Edit validation failed')
+      await page.getByRole('button',{name:'保存职位'}).click(); await alertVisible('请检查填写内容后重试。')
       assert.equal(await page.getByLabel('标题（必填）').inputValue(),'UI job edited')
       assert.equal(await page.getByLabel('描述（必填）').inputValue(),'UI description\nsecond line')
       assert.equal(await page.getByRole('list',{name:'已选技能要求'}).getByRole('listitem').count(),0)
@@ -365,44 +398,45 @@ try {
     })
     await check('申请人分数降序、同分姓名与稳定 ID 排序、预约和隐私', async () => {
       await go(`/employer/jobs/${manifest.backendJob}`)
-      await page.getByRole('table').waitFor()
-      const rows=await page.locator('tbody tr').all()
+      await page.locator('.employer-applicant-card').first().waitFor()
+      const rows=await page.locator('.employer-applicant-card').all()
       assert.equal(rows.length,5)
-      assert.deepEqual(await Promise.all(rows.map(r=>r.locator('td').nth(1).innerText())),['100','100','100','50','0'])
-      assert.deepEqual(await Promise.all(rows.slice(0,2).map(r=>r.locator('small').innerText())),['00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000002'])
-      const alice=page.getByRole('row').filter({has:page.getByRole('rowheader',{name:/^Alice/})})
-      assert.match(await alice.innerText(),/UTC/); assert.equal(await alice.locator('time').count(),2)
-      const bob=page.getByRole('row').filter({has:page.getByRole('rowheader',{name:/^Bob/})})
-      assert.equal(await bob.locator('td').last().innerText(),'无')
+      assert.deepEqual(await Promise.all(rows.map(r=>r.locator('.employer-applicant-score strong').evaluate(node=>node.firstChild.textContent))),['100','100','100','50','0'])
+      const ranked=(await api('GET',`/employer/jobs/${manifest.backendJob}/applications`,token)).value; assert.deepEqual(ranked.slice(0,2).map(a=>a.candidate_id),['00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000002']); assert.deepEqual(await Promise.all(rows.map(r=>r.getByRole('heading',{level:3}).evaluate(node=>node.firstChild.textContent))),ranked.map(a=>a.display_name))
+      for (let i=0;i<rows.length;i++) assert.equal(await rows[i].locator('.applicant-email').innerText(),ranked[i].email)
+      const alice=page.locator('.employer-applicant-card').filter({has:page.getByRole('heading',{name:/^Alice/})})
+      assert.match(await page.getByText('按匹配分从高到低排列，面试时间为上海时间（UTC+8）。').innerText(),/UTC\+8/); assert.equal(await alice.locator('time').count(),2)
+      const bob=page.locator('.employer-applicant-card').filter({has:page.getByRole('heading',{name:/^Bob/})})
+      await bob.getByText('未预约',{exact:true}).waitFor()
       assert.doesNotMatch(await page.locator('body').innerText(),/PRIVATE MUST NOT LEAK|Demo resume/)
       await page.screenshot({path:path.join(resultDir,'applicants.png'),fullPage:true})
     })
     await check('固定四种状态且每种保存后立即更新，离开 Interviewing 保留预约', async () => {
-      const alice=page.getByRole('row').filter({has:page.getByRole('rowheader',{name:/^Alice/})})
-      assert.deepEqual(await alice.locator('option').allTextContents(),['Pending','Interviewing','Rejected','Accepted'])
+      const alice=page.locator('.employer-applicant-card').filter({has:page.getByRole('heading',{name:/^Alice/})})
+      assert.deepEqual(await alice.locator('option').allTextContents(),['待处理','面试中','已拒绝','已录用'])
       for (const status of ['Pending','Interviewing','Rejected','Accepted']) {
         await alice.getByRole('combobox').selectOption(status)
         await alice.getByRole('button',{name:'保存状态'}).click()
-        await alice.getByText(`当前状态：${status}`,{exact:true}).waitFor()
+        await alice.getByText(`当前状态：${({Pending:'待处理',Interviewing:'面试中',Rejected:'已拒绝',Accepted:'已录用'})[status]}`,{exact:true}).waitFor()
         assert.equal(await alice.locator('time').count(),2)
       }
       const saved=(await api('GET',`/employer/jobs/${manifest.backendJob}/applications`,token)).value.find(a=>a.application_id===manifest.aliceApplication)
       assert.equal(saved.status,'Accepted'); assert.ok(saved.booking)
     })
     await check('改状态 403/404 显示原消息并保留选择与当前状态', async () => {
-      const alice=page.getByRole('row').filter({has:page.getByRole('rowheader',{name:/^Alice/})})
+      const alice=page.locator('.employer-applicant-card').filter({has:page.getByRole('heading',{name:/^Alice/})})
       const url=`/employer/applications/${manifest.aliceApplication}/status`
       for (const [status,detail] of [[403,'Not the owner of this job'],[404,'Application not found']]) {
         await alice.getByRole('combobox').selectOption('Rejected'); inject('PATCH',url,status,detail)
-        await alice.getByRole('button',{name:'保存状态'}).click(); await alertVisible(detail)
+        await alice.getByRole('button',{name:'保存状态'}).click(); await alertVisible(status===403?'你没有权限执行此操作。':detail==='Application not found'?'找不到该申请。':'删除失败，请重试。')
         assert.equal(await alice.getByRole('combobox').inputValue(),'Rejected')
-        await alice.getByText('当前状态：Accepted',{exact:true}).waitFor()
+        await alice.getByText('当前状态：已录用',{exact:true}).waitFor()
         await alice.getByRole('link',{name:'返回职位列表'}).waitFor()
       }
-      fault=null; await alice.getByRole('button',{name:'保存状态'}).click(); await alice.getByText('当前状态：Rejected',{exact:true}).waitFor()
+      fault=null; await alice.getByRole('button',{name:'保存状态'}).click(); await alice.getByText('当前状态：已拒绝',{exact:true}).waitFor()
     })
     await check('状态保存中仅禁用该行，连续提交只请求一次', async () => {
-      const alice=page.getByRole('row').filter({has:page.getByRole('rowheader',{name:/^Alice/})})
+      const alice=page.locator('.employer-applicant-card').filter({has:page.getByRole('heading',{name:/^Alice/})})
       const url=`/employer/applications/${manifest.aliceApplication}/status`
       let release; const gate=new Promise(resolve=>{release=resolve})
       fault={method:'PATCH',path:url,gate,remaining:1}; const before=count('PATCH',url)
@@ -410,20 +444,20 @@ try {
       await alice.locator('form').evaluate(form=>{form.requestSubmit();form.requestSubmit()})
       await alice.getByRole('button',{name:'保存中...'}).waitFor()
       assert.equal(await alice.getByRole('combobox').isDisabled(),true)
-      assert.equal(await page.getByRole('row').filter({has:page.getByRole('rowheader',{name:/^Bob/})}).getByRole('combobox').isEnabled(),true)
+      assert.equal(await page.locator('.employer-applicant-card').filter({has:page.getByRole('heading',{name:/^Bob/})}).getByRole('combobox').isEnabled(),true)
       assert.equal(count('PATCH',url),before+1)
-      release(); await alice.getByText('当前状态：Interviewing',{exact:true}).waitFor(); fault=null
+      release(); await alice.getByText('当前状态：面试中',{exact:true}).waitFor(); fault=null
     })
     await check('实际他人职位详情与编辑 403，缺失职位 404', async () => {
       for (const suffix of ['', '/edit']) {
-        await go(`/employer/jobs/${manifest.otherJob}${suffix}`); await alertVisible('Not the owner of this job'); await page.getByRole('link',{name:'返回职位列表'}).waitFor()
-        await go(`/employer/jobs/ffffffff-ffff-ffff-ffff-ffffffffffff${suffix}`); await alertVisible('Job not found'); await page.getByRole('link',{name:'返回职位列表'}).waitFor()
+        await go(`/employer/jobs/${manifest.otherJob}${suffix}`); await alertVisible('你没有权限执行此操作。'); await page.getByRole('link',{name:'返回职位列表'}).waitFor()
+        await go(`/employer/jobs/ffffffff-ffff-ffff-ffff-ffffffffffff${suffix}`); await alertVisible('找不到该职位。'); await page.getByRole('link',{name:'返回职位列表'}).waitFor()
       }
     })
     await check('申请人加载失败保留职位，重试可恢复', async () => {
       inject('GET',`/employer/jobs/${manifest.backendJob}/applications`,503,'Applicants temporarily unavailable')
-      await go(`/employer/jobs/${manifest.backendJob}`); await alertVisible('Applicants temporarily unavailable'); await textVisible('Backend Engineer')
-      fault=null; await page.getByRole('button',{name:'重新加载'}).click(); await page.getByRole('table').waitFor()
+      await go(`/employer/jobs/${manifest.backendJob}`); await alertVisible('申请人加载失败，请重试。'); await textVisible('Backend Engineer')
+      fault=null; await page.getByRole('button',{name:'重新加载'}).click(); await page.locator('.employer-applicant-card').first().waitFor()
     })
     await check('有申请和仅面试时段两种删除 409 均保留职位', async () => {
       await go('/employer/jobs'); await textVisible('Backend Engineer')
@@ -438,7 +472,7 @@ try {
       for (const [status,detail] of [[403,'Delete forbidden'],[404,'Delete missing']]) {
         inject('DELETE',`/employer/jobs/${manifest.uiJob}`,status,detail)
         await page.getByRole('listitem').filter({hasText:'UI job edited'}).getByRole('button',{name:'删除',exact:true}).click()
-        await alertVisible(detail); await textVisible('UI job edited')
+        await alertVisible(status===403?'你没有权限执行此操作。':detail==='Application not found'?'找不到该申请。':'删除失败，请重试。'); await textVisible('UI job edited')
       }
       fault=null
     })
@@ -452,14 +486,14 @@ try {
     })
     await check('列表网络失败提示，重新加载恢复', async () => {
       fault={method:'GET',path:'/employer/jobs',abort:true,remaining:Infinity}
-      await go('/employer/jobs'); await alertVisible('Failed to fetch')
+      await go('/employer/jobs'); await alertVisible('暂时无法连接，请检查网络后重试。')
       fault=null; await page.getByRole('button',{name:'重新加载'}).click(); await textVisible('Backend Engineer')
     })
     await check('公司 GET 404 引导创建；公司 GET 失败可重试', async () => {
       inject('GET','/employer/company',404,'Company not found')
-      await go('/employer/company'); await textVisible('Company not found'); await page.getByRole('link',{name:'填写公司资料',exact:true}).waitFor()
+      await go('/employer/company'); await textVisible('找不到公司资料。'); await page.getByRole('link',{name:'填写公司资料',exact:true}).waitFor()
       inject('GET','/employer/company',503,'Company unavailable')
-      await page.reload(); await alertVisible('Company unavailable')
+      await page.reload(); await alertVisible('加载失败，请重试。')
       fault=null; await page.getByRole('button',{name:'重新加载'}).click(); assert.equal(await page.getByLabel('公司名称（必填）').inputValue(),'Updated Company')
     })
     await check('XSS 载荷按纯文本展示且不执行（真实保存和读取）', async () => {
@@ -470,10 +504,10 @@ try {
       assert.equal(await page.locator('main script').count(),0); assert.equal(dialogs,0)
       assert.equal((await api('DELETE',`/employer/jobs/${xss.id}`,token)).status,204)
     })
-    await check('candidate 入口占位，所有雇主页面拒绝且不发送雇主请求', async () => {
+    await check('candidate 入口可用，所有雇主页面拒绝且不发送雇主请求', async () => {
       await go('/navpage'); await page.getByRole('button',{name:'注销'}).click(); await page.waitForURL('**/login')
       await login('demo-alice@example.com')
-      await page.getByRole('button',{name:'候选人工作流'}).click(); await textVisible('候选人工作流尚未实现')
+      await page.getByRole('link',{name:'候选人工作流'}).click(); await page.waitForURL('**/candidate/jobs'); await page.getByRole('heading',{level:1}).waitFor()
       const before=requests.filter(r=>r.path.startsWith('/employer')).length
       for (const route of ['/employer/company','/employer/jobs','/employer/jobs/new',`/employer/jobs/${manifest.backendJob}`,`/employer/jobs/${manifest.backendJob}/edit`]) {
         await go(route); await alertVisible('仅雇主可访问此页面。')
@@ -481,28 +515,28 @@ try {
       assert.equal(requests.filter(r=>r.path.startsWith('/employer')).length,before)
     })
     await check('真实服务端 401/403/404 与非法状态 422', async () => {
-      const candidate=await tokenFor('demo-alice@example.com')
+      const candidate=await sessionFor('demo-alice@example.com')
       assert.equal((await api('GET','/employer/jobs')).status,401)
       assert.equal((await api('GET','/employer/jobs',candidate)).status,403)
       assert.equal((await api('GET',`/employer/jobs/${manifest.otherJob}/applications`,token)).status,403)
-      assert.equal((await api('PATCH',`/employer/jobs/${manifest.otherJob}`,token,{title:'Forbidden'})).status,403)
+      assert.equal((await api('PATCH',`/employer/jobs/${manifest.otherJob}`,token,{version:1,title:'Forbidden'})).status,403)
       assert.equal((await api('DELETE',`/employer/jobs/${manifest.otherJob}`,token)).status,403)
-      assert.equal((await api('PATCH',`/employer/applications/${manifest.aliceApplication}/status`,candidate,{status:'Accepted'})).status,403)
-      assert.equal((await api('PATCH',`/employer/applications/ffffffff-ffff-ffff-ffff-ffffffffffff/status`,token,{status:'Pending'})).status,404)
-      assert.equal((await api('PATCH',`/employer/applications/${manifest.aliceApplication}/status`,token,{status:'Unknown'})).status,422)
+      assert.equal((await api('PATCH',`/employer/applications/${manifest.aliceApplication}/status`,candidate,{version:1,status:'Accepted'})).status,403)
+      assert.equal((await api('PATCH',`/employer/applications/ffffffff-ffff-ffff-ffff-ffffffffffff/status`,token,{version:1,status:'Pending'})).status,404)
+      assert.equal((await api('PATCH',`/employer/applications/${manifest.aliceApplication}/status`,token,{version:1,status:'Unknown'})).status,422)
     })
     await check('无公司账号沿用现有补填页，创建后空职位列表', async () => {
       const email=`ui-blank-${Date.now()}@example.com`
       const created=await api('POST','/users/register',null,{email,password:'demo-local-only',role:'employer'})
-      assert.equal((await api('GET','/employer/company',created.value.access_token)).status,404)
+      assert.equal((await api('GET','/employer/company',created.session)).status,404)
       await go('/navpage'); await page.getByRole('button',{name:'注销'}).click(); await page.waitForURL('**/login')
       await page.locator('input[type=email]').fill(email); await page.locator('input[type=password]').fill('demo-local-only')
       await page.getByRole('button',{name:'登录',exact:true}).click(); await page.waitForURL('**/employer/details')
       await page.getByLabel('公司名称（必填）').fill('New UI company'); await page.getByRole('button',{name:'保存并继续'}).click(); await page.waitForURL('**/navpage')
-      await page.getByRole('button',{name:'雇主工作流'}).click(); await textVisible('暂无职位')
+      await page.getByRole('link',{name:'雇主工作流'}).click(); await textVisible('暂无职位')
     })
-    await check('雇主请求均带 Bearer，浏览器无未处理异常', async () => {
-      assert.ok(requests.filter(r=>r.path.startsWith('/employer')).every(r=>r.auth?.startsWith('Bearer ')))
+    await check('雇主请求携带 Cookie，写请求 CSRF 匹配，浏览器无未处理异常', async () => {
+      const protectedRequests=requests.filter(r=>r.path.startsWith('/employer')); assert(protectedRequests.length>0); assert(protectedRequests.every(r=>r.hasSession&&!r.hasBearer)); assert(protectedRequests.filter(r=>!['GET','HEAD','OPTIONS'].includes(r.method)).every(r=>r.csrfMatches))
       assert.deepEqual(errors,[])
     })
     await writeFile(path.join(resultDir,'results.json'),JSON.stringify({passed:passed.length,checks:passed,errors,backend:apiBase,frontend:base,database:manifest.database},null,2))

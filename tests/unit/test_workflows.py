@@ -24,6 +24,62 @@ from app.employer.schema import (
     JobUpdate,
 )
 from app.users.model import CandidateProfile, EmployerProfile
+from app.users.schema import CandidateProfileCreate, EmployerProfileCreate
+
+
+@pytest.mark.parametrize("field,value,location", [
+    ("display_name", "\x00Leading", ("display_name",)),
+    ("display_name", "Trailing\x00", ("display_name",)),
+    ("resume_text", "\x00", ("resume_text",)),
+    ("resume_text", " text\x00 ", ("resume_text",)),
+    ("skills", ["\x00python", "sql"], ("skills", 0)),
+    ("skills", ["python", "sql\x00"], ("skills", 1)),
+])
+def test_nul_at_text_and_list_boundaries_is_rejected_without_mutating_input(field, value, location):
+    payload = {"display_name": "Valid owner", field: value}
+    with pytest.raises(ValidationError) as caught:
+        CandidateProfileCreate.model_validate(payload)
+    assert caught.value.errors()[0]["loc"] == location
+    assert "NUL" in caught.value.errors()[0]["msg"]
+    assert payload[field] == value
+
+
+def test_other_controls_and_literal_nul_escape_remain_valid_text():
+    text = "Résumé 中文 🙂\nsecond\tline \\u0000 \x01"
+    profile = CandidateProfileCreate(display_name="  Owner  ", resume_text=text)
+    assert profile.display_name == "Owner"
+    assert profile.resume_text == text
+
+
+@pytest.mark.parametrize("schema,payload,field", [
+    (CandidateProfileCreate, {"display_name": "Name"}, "display_name"),
+    (CandidateProfileCreate, {"display_name": "Name"}, "resume_text"),
+    (CandidateProfileCreate, {"display_name": "Name"}, "skills"),
+    (EmployerProfileCreate, {"company_name": "Company"}, "company_name"),
+    (EmployerProfileCreate, {"company_name": "Company"}, "company_description"),
+    (ProfileUpdate, {"version": 1}, "display_name"),
+    (ProfileUpdate, {"version": 1}, "resume_text"),
+    (ProfileUpdate, {"version": 1}, "skills"),
+    (CompanyUpdate, {"version": 1}, "company_name"),
+    (CompanyUpdate, {"version": 1}, "company_description"),
+    (JobCreate, {"title": "Job", "description": "Description"}, "title"),
+    (JobCreate, {"title": "Job", "description": "Description"}, "description"),
+    (JobCreate, {"title": "Job", "description": "Description"}, "required_skills"),
+    (JobUpdate, {"version": 1}, "title"),
+    (JobUpdate, {"version": 1}, "description"),
+    (JobUpdate, {"version": 1}, "required_skills"),
+])
+@pytest.mark.parametrize("bad", [False, True], ids=["unicode-and-literal-escape", "actual-nul"])
+def test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape(schema, payload, field, bad):
+    value = "prefix\x00suffix" if bad else "Résumé 中文 🙂\n\\u0000"
+    supplied = ["python", value] if field in {"skills", "required_skills"} else value
+    data = {**payload, field: supplied}
+    if bad:
+        with pytest.raises(ValidationError) as caught:
+            schema.model_validate(data)
+        assert caught.value.errors()[0]["loc"][0] == field
+    else:
+        assert getattr(schema.model_validate(data), field) == supplied
 
 
 def test_fp_can_1_profile_read_and_partial_replace(db, actors, result):

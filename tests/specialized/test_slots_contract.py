@@ -1,3 +1,4 @@
+from conftest import expected_managed_slot
 from datetime import datetime, timedelta
 import uuid
 
@@ -25,7 +26,7 @@ def test_create_has_exact_duration_utc_ownership_and_persistence(
     )
     assert rows[0]["id"] == slot["id"]
     assert client.get(PATH, headers=owner["headers"]).json() == [
-        {**slot, "is_booked": False}
+        expected_managed_slot(slot, snapshot())
     ]
 
 

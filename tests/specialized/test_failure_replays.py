@@ -2,6 +2,7 @@ import traceback
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import event
 
 from test_replacement_and_text import overlapping_replacements
 
@@ -166,15 +167,24 @@ def test_shared_nul_storage_boundary_with_normal_unicode_control(
 
 
 def test_capture_nul_driver_exception_without_changing_application(
-    client, account, snapshot, evidence
+    client, account, engine, snapshot, evidence
 ):
+    """保留原诊断入口，修后要求在驱动写入前拒绝，原 DataError 日志留存。"""
     from app.main import app
 
     owner = account()
     before = snapshot()
+    writes = []
+
+    def observe(connection, cursor, statement, parameters, context, many):
+        if statement.lstrip().upper().startswith(("INSERT", "UPDATE", "DELETE")):
+            writes.append(statement)
+
+    event.listen(engine, "before_cursor_execute", observe)
+    response = None
     try:
         with TestClient(app, raise_server_exceptions=True) as diagnostic:
-            diagnostic.post(
+            response = diagnostic.post(
                 "/employer/jobs",
                 headers=owner["headers"],
                 json={
@@ -191,12 +201,79 @@ def test_capture_nul_driver_exception_without_changing_application(
         }
     else:
         details = None
+    finally:
+        event.remove(engine, "before_cursor_execute", observe)
     evidence(
-        "nul-exception", {"exception": details, "state_unchanged": snapshot() == before}
+        "nul-exception", {"exception": details, "state_unchanged": snapshot() == before,
+                          "write_attempts": len(writes), "status": response.status_code if response is not None else None}
     )
-    assert details is not None and (
-        "NUL" in details["message"]
-        or "0x00" in details["message"]
-        or "0x00" in details["traceback"]
-    ), details
+    assert details is None, details
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"] == ["body", "title"]
+    assert "NUL" in response.json()["detail"][0]["msg"]
+    assert writes == []
     assert snapshot() == before
+
+
+@pytest.mark.parametrize("target,field", [
+    ("candidate-create", "display_name"), ("candidate-create", "resume_text"),
+    ("candidate-create", "skills"), ("employer-create", "company_name"),
+    ("employer-create", "company_description"), ("candidate-update", "display_name"),
+    ("candidate-update", "resume_text"), ("candidate-update", "skills"),
+    ("company-update", "company_name"), ("company-update", "company_description"),
+    ("job-create", "title"), ("job-create", "description"),
+    ("job-create", "required_skills"), ("job-update", "title"),
+    ("job-update", "description"), ("job-update", "required_skills"),
+])
+def test_nul_rejection_is_atomic_and_same_version_accepts_normal_text(
+    client, account, job, snapshot, evidence, target, field
+):
+    """覆盖创建路径、混合字段更新和列表元素；拒绝后原版本仍可正常保存。"""
+    role = "candidate" if target.startswith("candidate") else "employer"
+    owner = account(role, complete=not target.endswith("create") or target == "job-create")
+    if target == "candidate-create":
+        path, method = "/users/candidate/profile", "POST"
+        payload = {"display_name": "New name", "resume_text": "New résumé", "skills": ["python"]}
+    elif target == "employer-create":
+        path, method = "/users/employer/profile", "POST"
+        payload = {"company_name": "New company", "company_description": "New description"}
+    elif target == "candidate-update":
+        path, method = "/candidate/profile", "PATCH"
+        payload = {"version": 1, "display_name": "Changed name", "resume_text": "Changed résumé", "skills": ["sql"]}
+    elif target == "company-update":
+        path, method = "/employer/company", "PATCH"
+        payload = {"version": 1, "company_name": "Changed company", "company_description": "Changed description"}
+    else:
+        path, method = "/employer/jobs", "POST"
+        payload = {"title": "Changed job", "description": "Changed description", "required_skills": ["sql"]}
+        if target == "job-update":
+            posting = job(owner)
+            path, method = path + "/" + posting["id"], "PATCH"
+            payload["version"] = posting["version"]
+    bad = dict(payload)
+    is_list = field in {"skills", "required_skills"}
+    bad[field] = ["python", "prefix\x00suffix", "sql"] if is_list else "prefix\x00suffix"
+    before = snapshot()
+    rejected = client.request(method, path, headers=owner["headers"], json=bad)
+    assert rejected.status_code == 422, rejected.text
+    assert rejected.json()["detail"][0]["loc"] == ["body", field] + ([1] if is_list else [])
+    assert "NUL" in rejected.json()["detail"][0]["msg"]
+    assert snapshot() == before
+    ordinary = "Résumé 中文 🙂\nLiteral \\u0000 \x01"
+    corrected = dict(payload, **{field: ["python", ordinary, "sql"] if is_list else ordinary})
+    saved = client.request(method, path, headers=owner["headers"], json=corrected)
+    assert saved.status_code == (201 if method == "POST" else 200), saved.text
+    assert saved.json()["version"] == payload.get("version", 0) + 1
+    expected = sorted({value.strip().lower() for value in corrected[field]}) if is_list else ordinary.strip() if field in {"display_name", "company_name", "title"} else ordinary
+    assert saved.json()[field] == expected
+    read_path = (
+        "/candidate/profile" if target == "candidate-create" else
+        "/employer/company" if target == "employer-create" else
+        "/employer/jobs/" + saved.json()["id"] if target == "job-create" else path
+    )
+    readback = client.get(read_path, headers=owner["headers"])
+    assert readback.status_code == 200, readback.text
+    assert readback.json()[field] == expected
+    assert readback.json()["version"] == saved.json()["version"]
+    evidence("nul-atomic-retry", {"target": target, "field": field, "rejected_status": 422,
+                                   "retry_status": saved.status_code, "saved_version": saved.json()["version"]})

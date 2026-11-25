@@ -1,3 +1,4 @@
+from conftest import expected_managed_slot
 from itertools import product
 
 import pytest
@@ -48,7 +49,7 @@ def test_complete_status_transition_relation_with_and_without_booking(
         assert ours.json()[0]["booking"]["booking_id"] == old_booking["booking_id"]
         assert client.get(
             "/employer/interview-slots", headers=data["owner"]["headers"]
-        ).json() == [{**data["slot"], "is_booked": True}]
+        ).json() == [expected_managed_slot(data["slot"], snapshot())]
     attempted = client.post(
         booking_path,
         headers=data["candidate"]["headers"],

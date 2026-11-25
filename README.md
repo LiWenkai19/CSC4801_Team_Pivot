@@ -18,7 +18,9 @@ legacy account tests.
 ## Quick Start
 
 See [INSTALL.md](INSTALL.md), especially [test commands](INSTALL.md#running-unit-tests).
-The complete clean-install/Docker instructions are still outstanding.
+INSTALL includes local configuration, database creation, migration, seed, startup
+and test commands. Current execution evidence and remaining limits are recorded
+in the testing reports; documented Docker commands alone do not prove acceptance.
 
 ## Running Unit Tests
 
@@ -35,6 +37,12 @@ through a pytest bridge. It needs no running database, browser or paid credentia
 `--junitxml=unit-results.xml` may be appended. There is no `xfail`, skip or default
 filter to hide known failures. Any failed assertion or component subprocess gives
 a nonzero exit status.
+
+The complete local-change publication was rechecked on 2026-11-25: **196 unit
+cases passed** on the exact staged source snapshot. This includes the applicant
+email and six-field slot-list fixture updates that were previously local only.
+The two older main failures are resolved by those fixture updates. Current
+verification and historical result boundaries are in [the report](docs/testing/REPORT.md).
 
 The new business tests invoke production functions with session/result doubles;
 unit fixtures reject any real database connection. They prove rule/serialization/

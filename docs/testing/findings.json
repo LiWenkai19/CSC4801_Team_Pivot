@@ -1,6 +1,6 @@
 {
   "historical_final_business_sha": "8569b72ac1d965c252a741f3e62ed71b01f630e7",
-  "open_non_docker_tracking_entries": 10,
+  "open_non_docker_tracking_entries": 1,
   "findings": [
     {
       "id": "SE-02",
@@ -26,6 +26,16 @@
         "status": "still_reproduced_without_business_changes",
         "report": "VERSION_RETEST.md",
         "failure_instances": 3
+      },
+      "status": "local_configuration_repaired_and_verified",
+      "requires_repair": false,
+      "latest_full_retest": {
+        "date": "2026-11-24 Asia/Shanghai",
+        "head": "c39d36bbce554479f4e59f0fc448b21e6f6ca392",
+        "uncommitted_patch": true,
+        "report": "REPORT.md",
+        "results": "full-retest-verification.json",
+        "conclusion": "配置示例、必填配置拒绝、迁移和seed的21项交付检查全部通过；本轮未重新创建全新venv安装，也未验证Docker。"
       }
     },
     {
@@ -47,7 +57,17 @@
       "post_fix_new_tests": [
         "完成文档修订后，从新归档解析每个需求ID→实现→具名测试，实际收集所引用测试，拒绝悬空名称与pass模板。",
         "用可选需求N/A、多个ID合写及跨模块同名测试作新增对照，避免仅靠字符串出现判断完整。"
-      ]
+      ],
+      "status": "mapping_repaired_and_static_verified",
+      "requires_repair": false,
+      "latest_full_retest": {
+        "date": "2026-11-24 Asia/Shanghai",
+        "head": "c39d36bbce554479f4e59f0fc448b21e6f6ca392",
+        "uncommitted_patch": true,
+        "report": "REPORT.md",
+        "results": "full-retest-verification.json",
+        "conclusion": "当前README覆盖全部25个需求ID，64处具名Python测试引用全部存在；旧占位/缺失映射问题不再成立。"
+      }
     },
     {
       "id": "SE-04",
@@ -66,7 +86,17 @@
       "post_fix_new_tests": [
         "规格补齐后，用新增跨角色端到端场景逐步核对条款、API与页面；对新确认的隐私条款建立正反角色判据。",
         "对新旧版本间变化做条款差异检查，确保时间列表、认证形式和事务说明同步到实现。"
-      ]
+      ],
+      "status": "partially_documented_still_open",
+      "requires_repair": true,
+      "latest_full_retest": {
+        "date": "2026-11-24 Asia/Shanghai",
+        "head": "c39d36bbce554479f4e59f0fc448b21e6f6ca392",
+        "uncommitted_patch": true,
+        "report": "REPORT.md",
+        "results": "full-retest-verification.json",
+        "conclusion": "SPEC已补架构、模型、认证和API，但主要页面流程、匹配与安全控制等章节仍有正文缺口；本轮未补写产品设计文档。"
+      }
     },
     {
       "id": "SE-05",
@@ -87,10 +117,27 @@
         "新增已有登录会话、预约及职位改动后再次reset，检查数据/会话/关联都回到所声明演示状态；多雇主时段不得串用。"
       ],
       "latest_retest": {
-        "date": "2026-11-23 Asia/Shanghai",
-        "status": "still_reproduced_without_business_changes",
-        "report": "VERSION_RETEST.md",
-        "failure_instances": 3
+        "date": "2026-11-24 Asia/Shanghai",
+        "status": "fixed_and_verified_in_local_working_tree",
+        "head": "72654ed630dfba73ed1222fd4f4da9cfe3cf9ae2",
+        "uncommitted_patch": true,
+        "report": "REPORT.md",
+        "local_evidence": "workspace tmp/del-seed-20261124/verification.json",
+        "results": {
+          "independent_acceptance_passed": 10,
+          "original_backup_core_cases_failed": 3,
+          "original_file_backup_verified": true,
+          "fallback_needed": false
+        }
+      },
+      "status": "fixed_and_verified_in_local_working_tree",
+      "requires_repair": false,
+      "remedy": "重写seed，保留原账号、固定ID和业务数据组；默认UTC次日10:00共享30分钟时段，支持reference-date固定复现；清空和写入共用事务，失败完整回滚。",
+      "latest_full_retest": {
+        "date": "2026-11-24 Asia/Shanghai",
+        "head": "c39d36bbce554479f4e59f0fc448b21e6f6ca392",
+        "status": "regression_passed",
+        "results": "full-retest-verification.json"
       }
     },
     {
@@ -117,6 +164,16 @@
         "status": "still_reproduced_without_business_changes",
         "report": "VERSION_RETEST.md",
         "failure_instances": 2
+      },
+      "status": "fixed_and_verified_in_local_working_tree",
+      "requires_repair": false,
+      "latest_full_retest": {
+        "date": "2026-11-24 Asia/Shanghai",
+        "head": "c39d36bbce554479f4e59f0fc448b21e6f6ca392",
+        "uncommitted_patch": true,
+        "report": "REPORT.md",
+        "results": "full-retest-verification.json",
+        "conclusion": "本地增量迁移使数据库默认Pending与模型一致；空库/旧库/重复升级、直接SQL及ORM检查通过；未迁移团队数据库。"
       }
     },
     {
@@ -146,6 +203,16 @@
         "status": "still_reproduced_without_business_changes",
         "report": "VERSION_RETEST.md",
         "failure_instances": 1
+      },
+      "status": "new_requests_fixed_legacy_data_limit_retained",
+      "requires_repair": false,
+      "latest_full_retest": {
+        "date": "2026-11-24 Asia/Shanghai",
+        "head": "c39d36bbce554479f4e59f0fc448b21e6f6ca392",
+        "uncommitted_patch": true,
+        "report": "REPORT.md",
+        "results": "full-retest-verification.json",
+        "conclusion": "按最新SPEC拒绝结束时间越过上海时间3000年的新增请求；97项时段测试通过。直接插入的遗留越界记录仍可触发驱动解码失败，不能宣称已迁移清理旧记录。"
       }
     },
     {
@@ -166,7 +233,13 @@
         "初始技能为空、三个更新含清空的组合；技能与仅改简历请求交错，验证独立字段不丢失。"
       ],
       "status": "fixed_and_verified_in_local_working_tree",
-      "repair_report": "VERSION_PROTECTION.md"
+      "repair_report": "VERSION_PROTECTION.md",
+      "latest_full_retest": {
+        "date": "2026-11-24 Asia/Shanghai",
+        "head": "c39d36bbce554479f4e59f0fc448b21e6f6ca392",
+        "status": "regression_passed",
+        "results": "full-retest-verification.json"
+      }
     },
     {
       "id": "REG-JOB-01",
@@ -186,7 +259,13 @@
         "要求替换与title-only更新、初始无要求、三请求和清空组合；更新与允许删除/投递交错。"
       ],
       "status": "fixed_and_verified_in_local_working_tree",
-      "repair_report": "VERSION_PROTECTION.md"
+      "repair_report": "VERSION_PROTECTION.md",
+      "latest_full_retest": {
+        "date": "2026-11-24 Asia/Shanghai",
+        "head": "c39d36bbce554479f4e59f0fc448b21e6f6ca392",
+        "status": "regression_passed",
+        "results": "full-retest-verification.json"
+      }
     },
     {
       "id": "REG-TEXT-01",
@@ -206,7 +285,30 @@
       ],
       "post_fix_new_tests": [
         "NUL首尾及列表中间位置；字面反斜线u0000与真实NUL对照；多行、tab与非BMP合法文本往返。"
-      ]
+      ],
+      "status": "fixed_and_verified_in_local_working_tree",
+      "requires_repair": false,
+      "latest_full_retest": {
+        "date": "2026-11-24 Asia/Shanghai",
+        "head": "c39d36bbce554479f4e59f0fc448b21e6f6ca392",
+        "uncommitted_patch": true,
+        "report": "REPORT.md",
+        "results": "full-retest-verification.json",
+        "conclusion": "队友已修候选人PATCH的姓名、简历和技能NUL校验；首次资料创建、公司与职位等输入仍有13项Schema失败，真实公司/职位API另有5项500复现。"
+      },
+      "repair_files": [
+        "backend/app/users/schema.py",
+        "backend/app/employer/schema.py"
+      ],
+      "latest_repair": {
+        "date": "2026-11-25 Asia/Shanghai",
+        "head": "c39d36bbce554479f4e59f0fc448b21e6f6ca392",
+        "uncommitted_patch": true,
+        "results": "nul-fix-verification.json",
+        "report": "REPORT.md",
+        "remedy": "共享请求文本类型拒绝真实NUL；覆盖首次资料、公司及职位的名称、描述和技能元素，保留原有空白/null/版本及合法文本处理。",
+        "verification": "原13项Schema失败、5项API失败全部通过；新增7项单元边界和16组真实API原子拒绝、重试及重新读取验证。"
+      }
     },
     {
       "id": "AUTH-01",
@@ -226,7 +328,22 @@
       "post_fix_new_tests": [
         "三个正常注册请求竞争同一邮箱，确认恰一成功和两次明确业务拒绝",
         "成功/冲突后同一连接池继续注册新邮箱并登录，确认事务恢复；不把已运行的双请求/不同邮箱对照算修后新增"
-      ]
+      ],
+      "status": "not_a_bug_by_team_decision",
+      "requires_repair": false,
+      "team_decision": {
+        "date": "2026-11-24 Asia/Shanghai",
+        "decision": "用户与队友讨论后决定不作为bug，不进行修复。",
+        "evidence_policy": "保留同邮箱并发注册失败方返回500的历史观测和原断言；不把它列为本轮待修缺陷，也不声称已修复。",
+        "production_code_changed": false
+      },
+      "latest_full_retest": {
+        "date": "2026-11-24 Asia/Shanghai",
+        "head": "c39d36bbce554479f4e59f0fc448b21e6f6ca392",
+        "raw_failure_instances": 4,
+        "classification": "not_a_bug_by_team_decision",
+        "production_code_changed_by_assistant": false
+      }
     },
     {
       "id": "UI-02",
@@ -253,6 +370,16 @@
         "status": "still_reproduced_without_business_changes",
         "report": "VERSION_RETEST.md",
         "failure_instances": 5
+      },
+      "status": "fixed_by_teammate_and_verified",
+      "requires_repair": false,
+      "latest_full_retest": {
+        "date": "2026-11-24 Asia/Shanghai",
+        "head": "c39d36bbce554479f4e59f0fc448b21e6f6ca392",
+        "uncommitted_patch": true,
+        "report": "REPORT.md",
+        "results": "full-retest-verification.json",
+        "conclusion": "队友c39d36b修复；23项聚焦浏览器检查通过，含三个注销入口的成功、过期、网络失败、会话仍有效/已撤销和状态检查失败。"
       }
     },
     {
@@ -275,10 +402,27 @@
         "随机测试API端口和已有8000端口服务同时存在时，核验所有业务请求仅到本轮隔离实例；禁止影响已有服务"
       ],
       "latest_retest": {
-        "date": "2026-11-23 Asia/Shanghai",
-        "status": "still_reproduced_without_business_changes",
-        "report": "VERSION_RETEST.md",
-        "failure_instances": 2
+        "date": "2026-11-24 Asia/Shanghai",
+        "status": "fixed_and_verified_in_local_working_tree",
+        "head": "72654ed630dfba73ed1222fd4f4da9cfe3cf9ae2",
+        "uncommitted_patch": true,
+        "report": "REPORT.md",
+        "local_evidence": "workspace tmp/del-seed-20261124/verification.json",
+        "results": {
+          "candidate_browser_groups_passed": 8,
+          "employer_browser_groups_passed": 30,
+          "actual_helper_probes_passed": 2,
+          "port_8000_canary_hits": 0
+        }
+      },
+      "status": "fixed_and_verified_in_local_working_tree",
+      "requires_repair": false,
+      "remedy": "两份原浏览器脚本迁移到独立Cookie会话和CSRF写请求；同源/api仅转发到本轮随机端口；更新版本字段、当前页面和中英文合同；原辅助函数探针同步验收。",
+      "latest_full_retest": {
+        "date": "2026-11-24 Asia/Shanghai",
+        "head": "c39d36bbce554479f4e59f0fc448b21e6f6ca392",
+        "status": "regression_passed",
+        "results": "full-retest-verification.json"
       }
     }
   ],
@@ -304,8 +448,35 @@
       "base_sha": "5143f1e944cac5b9e19e484320e2684b883b5ab4",
       "remedy": "Parent-row lock with fresh state, mandatory expected version, transactional revision/content update, preserved draft on conflict",
       "report": "VERSION_PROTECTION.md"
+    },
+    {
+      "id": "SE-05",
+      "status": "fixed_and_verified_in_local_working_tree",
+      "date": "2026-11-24 Asia/Shanghai",
+      "remedy": "重写seed，保留原账号、固定ID和业务数据组；默认UTC次日10:00共享30分钟时段，支持reference-date固定复现；清空和写入共用事务，失败完整回滚。",
+      "report": "REPORT.md"
+    },
+    {
+      "id": "DEL-01",
+      "status": "fixed_and_verified_in_local_working_tree",
+      "date": "2026-11-24 Asia/Shanghai",
+      "remedy": "两份原浏览器脚本迁移到独立Cookie会话和CSRF写请求；同源/api仅转发到本轮随机端口；更新版本字段、当前页面和中英文合同；原辅助函数探针同步验收。",
+      "report": "REPORT.md"
     }
   ],
   "historical_open_non_docker_tracking_entries": 12,
-  "count_note": "Historical tracking count 12 minus REG-CAND-01 and REG-JOB-01 verified here; other historical entries were not reclassified as fixed by this patch."
+  "count_note": "2026-11-25已修复并验证REG-TEXT-01；当前仅SE-04的SPEC文档完整性仍需处理。AUTH-01按团队决定不作为bug，Docker及遗留越界日期限制仍按报告单列。历史记录保留。",
+  "team_determined_not_bugs": [
+    "AUTH-01"
+  ],
+  "latest_full_retest": {
+    "head": "c39d36bbce554479f4e59f0fc448b21e6f6ca392",
+    "results": "full-retest-verification.json",
+    "report": "REPORT.md"
+  },
+  "latest_repair": {
+    "date": "2026-11-25 Asia/Shanghai",
+    "id": "REG-TEXT-01",
+    "results": "nul-fix-verification.json"
+  }
 }

@@ -1,0 +1,515 @@
+{
+  "date": "2026-11-24 Asia/Shanghai",
+  "repository": "https://github.com/LiWenkai19/CSC4801_Team_Pivot",
+  "base_before_pull": "72654ed630dfba73ed1222fd4f4da9cfe3cf9ae2",
+  "tested_head": "c39d36bbce554479f4e59f0fc448b21e6f6ca392",
+  "remote_main_confirmed_after_tests": "c39d36bbce554479f4e59f0fc448b21e6f6ca392",
+  "uncommitted_patch": true,
+  "branch": "test-prep-20261121",
+  "upstream_commits": [
+    "c39d36b shanye-not-found fix(auth): confirm session revocation before leaving protected pages",
+    "498d01c shanye-not-found fix(interview): reject slots beyond year 3000",
+    "86712d6 shanye-not-found fix(candidate): reject NUL in profile updates",
+    "50a4d7a mdrakr feat(interview): show applicant email and locate applicant from slot list",
+    "911f841 mdrakr feat(interview): bind booked slots to jobs and show applicant/job links",
+    "0f6ca91 mdrakr feat(candidate): link brand back to navpage",
+    "198e9c3 mdrakr fix(start): prefer repository .venv before system python"
+  ],
+  "functional": {
+    "slots": {
+      "tests": 97,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 97,
+      "failed_cases": []
+    },
+    "booking": {
+      "tests": 121,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 121,
+      "failed_cases": []
+    },
+    "matching": {
+      "tests": 86,
+      "failures": 5,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 81,
+      "failed_cases": [
+        {
+          "file": "tests.specialized.test_failure_replays",
+          "name": "test_shared_nul_storage_boundary_with_normal_unicode_control[company-description]"
+        },
+        {
+          "file": "tests.specialized.test_failure_replays",
+          "name": "test_shared_nul_storage_boundary_with_normal_unicode_control[job-update-description]"
+        },
+        {
+          "file": "tests.specialized.test_replacement_and_text",
+          "name": "test_unrepresentable_nul_text_is_validation_error_not_server_error[title]"
+        },
+        {
+          "file": "tests.specialized.test_replacement_and_text",
+          "name": "test_unrepresentable_nul_text_is_validation_error_not_server_error[description]"
+        },
+        {
+          "file": "tests.specialized.test_replacement_and_text",
+          "name": "test_unrepresentable_nul_text_is_validation_error_not_server_error[required_skills]"
+        }
+      ]
+    },
+    "auth": {
+      "tests": 42,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 38,
+      "failed_cases": [
+        {
+          "file": "tests.specialized.test_auth_contracts",
+          "name": "test_concurrent_same_email_registration_returns_business_rejection[candidate]"
+        },
+        {
+          "file": "tests.specialized.test_auth_contracts",
+          "name": "test_concurrent_same_email_registration_returns_business_rejection[employer]"
+        },
+        {
+          "file": "tests.specialized.test_auth_replays",
+          "name": "test_duplicate_registration_new_database_with_driver_evidence[roles0]"
+        },
+        {
+          "file": "tests.specialized.test_auth_replays",
+          "name": "test_duplicate_registration_new_database_with_driver_evidence[roles1]"
+        }
+      ]
+    },
+    "targeted": {
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 26,
+      "failed_cases": []
+    },
+    "remaining": {
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 23,
+      "failed_cases": []
+    }
+  },
+  "functional_counts": {
+    "tests": 395,
+    "passed": 386,
+    "failures": 9,
+    "errors": 0,
+    "skipped": 0
+  },
+  "team_accepted_auth_failures": 4,
+  "remaining_functional_product_failure_instances": 5,
+  "unit": {
+    "tests": 189,
+    "failures": 13,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 176,
+    "failed_cases": [
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-CandidateProfileCreate-payload0-display_name]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-CandidateProfileCreate-payload1-resume_text]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-CandidateProfileCreate-payload2-skills]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-EmployerProfileCreate-payload3-company_name]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-EmployerProfileCreate-payload4-company_description]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-CompanyUpdate-payload8-company_name]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-CompanyUpdate-payload9-company_description]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-JobCreate-payload10-title]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-JobCreate-payload11-description]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-JobCreate-payload12-required_skills]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-JobUpdate-payload13-title]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-JobUpdate-payload14-description]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-JobUpdate-payload15-required_skills]"
+      }
+    ]
+  },
+  "unit_initial": {
+    "tests": 189,
+    "failures": 15,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 174,
+    "failed_cases": [
+      {
+        "file": "tests.unit.test_matching",
+        "name": "test_fp_match_1_employer_ties_use_name_then_stable_id"
+      },
+      {
+        "file": "tests.unit.test_scheduling",
+        "name": "test_fp_sched_1_management_list_preserves_booking_flag"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-CandidateProfileCreate-payload0-display_name]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-CandidateProfileCreate-payload1-resume_text]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-CandidateProfileCreate-payload2-skills]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-EmployerProfileCreate-payload3-company_name]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-EmployerProfileCreate-payload4-company_description]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-CompanyUpdate-payload8-company_name]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-CompanyUpdate-payload9-company_description]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-JobCreate-payload10-title]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-JobCreate-payload11-description]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-JobCreate-payload12-required_skills]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-JobUpdate-payload13-title]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-JobUpdate-payload14-description]"
+      },
+      {
+        "file": "tests.unit.test_workflows",
+        "name": "test_persisted_text_distinguishes_nul_from_unicode_and_literal_escape[actual-nul-JobUpdate-payload15-required_skills]"
+      }
+    ]
+  },
+  "backend": {
+    "tests": 233,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 233,
+    "failed_cases": []
+  },
+  "seed": {
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 10,
+    "failed_cases": []
+  },
+  "browser": {
+    "version_conflicts": {
+      "checks": 12,
+      "passed": 12,
+      "failed": 0,
+      "source": "all-first/version-conflicts.json"
+    },
+    "editor_updates": {
+      "checks": 36,
+      "passed": 36,
+      "failed": 0,
+      "source": "all-first/editor-update-results.json"
+    },
+    "auth_checks": {
+      "checks": 37,
+      "passed": 37,
+      "failed": 0,
+      "source": "all-first/auth_browser_checks-results.json"
+    },
+    "auth_focused": {
+      "checks": 23,
+      "passed": 23,
+      "failed": 0,
+      "source": "all-first/auth_browser_focused-results.json"
+    },
+    "helper_probes": {
+      "checks": 2,
+      "passed": 2,
+      "failed": 0,
+      "source": "all-first/probe_existing_helpers-existing-browser-probes-results.json"
+    },
+    "cross_browser": {
+      "checks": 78,
+      "passed": 78,
+      "failed": 0,
+      "source": "all-first/cross-browser-results.json"
+    },
+    "followup": {
+      "checks": 9,
+      "passed": 9,
+      "failed": 0,
+      "source": "all-first/browser_followup-results.json"
+    },
+    "smoke": {
+      "checks": 6,
+      "passed": 6,
+      "failed": 0,
+      "source": "all-first/frontend-results.json"
+    },
+    "changed_pages": {
+      "checks": 21,
+      "passed": 21,
+      "failed": 0,
+      "source": "changed-pages-final/frontend-final-results.json"
+    }
+  },
+  "browser_counts": {
+    "checks": 224,
+    "passed": 224,
+    "failed": 0
+  },
+  "legacy_browser": {
+    "candidate": {
+      "groups": 8,
+      "errors": []
+    },
+    "employer": {
+      "groups": 30,
+      "errors": []
+    }
+  },
+  "rendering": {
+    "render-contract-results.json": {
+      "checks": 6,
+      "passed": 6
+    },
+    "all-render-results.json": {
+      "checks": 30,
+      "passed": 30
+    }
+  },
+  "delivery": {
+    "passed": 21,
+    "failed": 0
+  },
+  "performance": {
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 4,
+    "failed_cases": []
+  },
+  "coverage": {
+    "covered_lines": 1086,
+    "num_statements": 1113,
+    "percent_covered": 96.18029029793736,
+    "percent_covered_display": "96",
+    "missing_lines": 27,
+    "excluded_lines": 0,
+    "percent_statements_covered": 97.57412398921834,
+    "percent_statements_covered_display": "98",
+    "num_branches": 196,
+    "num_partial_branches": 21,
+    "covered_branches": 173,
+    "missing_branches": 23,
+    "percent_branches_covered": 88.26530612244898,
+    "percent_branches_covered_display": "88"
+  },
+  "coverage_scope": "Only actual current-head functional and performance executions; no historical data inherited; excludes unit/integration/browser coverage.",
+  "readme_mapping": {
+    "requirements": 25,
+    "mapped": 25,
+    "named_test_references": 64,
+    "missing_requirements": [],
+    "missing_named_tests": []
+  },
+  "static_checks": {
+    "frontend_lint_exit_code": 0,
+    "frontend_existing_warnings": 3,
+    "business_and_unit_ruff_exit_code": 0,
+    "legacy_harness_ruff_baseline_F401": 10,
+    "legacy_harness_ruff_current_F401": 9,
+    "pip_check_exit_code": 0
+  },
+  "docker": {
+    "executed": false,
+    "reason": "Docker client installed; desktop-linux engine pipe unavailable; no build/start result claimed."
+  },
+  "preserved_local_files": {
+    ".env.example": true,
+    "INSTALL.md": true,
+    "README.md": true,
+    "backend/scripts/seed_demo.py": true,
+    "backend/tests/candidate/test_version_migration.py": true,
+    "frontend/tests/candidate.browser.mjs": true,
+    "frontend/tests/specialized/probe_existing_helpers.mjs": true,
+    "tests/unit/test_workflows.py": true,
+    "backend/alembic/versions/9d6e1a4b2c30_default_application_status.py": true
+  },
+  "production_app_matches_upstream": true,
+  "cleanup": {
+    "all-first": {
+      "pg_stopped": true,
+      "business_source_changes": []
+    },
+    "functional": {
+      "pg_stopped": true,
+      "business_source_changes": []
+    },
+    "functional-final": {
+      "pg_stopped": true,
+      "business_source_changes": []
+    },
+    "performance": {
+      "pg_stopped": true,
+      "business_source_changes": []
+    },
+    "delivery-final": {
+      "pg_stopped": true,
+      "business_source_changes": []
+    },
+    "changed-pages-final": {
+      "pg_stopped": true,
+      "business_source_changes": []
+    },
+    "merged-main-full": {
+      "pg_stopped": true
+    },
+    "merged-main-employer-final": {
+      "pg_stopped": true
+    },
+    "merged-main-employer-verified": {
+      "pg_stopped": true
+    }
+  },
+  "evidence_location": "local workspace tmp/full-retest-20261124 and tmp/del-seed-20261124/merged-main-*",
+  "acceptance_note": "Raw AUTH-01 failures retained and accepted by team decision. NUL schema/API failures remain real open findings; no skip/xfail or changed product logic.",
+  "mutation": {
+    "sampled_score": 1.0,
+    "denominator": "killed + survived; equivalent/invalid excluded",
+    "source_restored": true,
+    "sample_limit": "Eight hand-selected local mutations, not whole-program mutation adequacy; no changes to original repository",
+    "samples": [
+      {
+        "id": "M01-floor-round",
+        "status": "killed",
+        "equivalent_reason": null,
+        "known_non_equivalent": true
+      },
+      {
+        "id": "M02-intersection-union",
+        "status": "killed",
+        "equivalent_reason": null,
+        "known_non_equivalent": true
+      },
+      {
+        "id": "M03-empty-requirements",
+        "status": "killed",
+        "equivalent_reason": null,
+        "known_non_equivalent": true
+      },
+      {
+        "id": "M04-drop-trim",
+        "status": "killed",
+        "equivalent_reason": null,
+        "known_non_equivalent": true
+      },
+      {
+        "id": "M05-equal-time-allowed",
+        "status": "killed",
+        "equivalent_reason": null,
+        "known_non_equivalent": true
+      },
+      {
+        "id": "M06-duration-31",
+        "status": "killed",
+        "equivalent_reason": null,
+        "known_non_equivalent": true
+      },
+      {
+        "id": "M07-role-comparison",
+        "status": "killed",
+        "equivalent_reason": null,
+        "known_non_equivalent": true
+      },
+      {
+        "id": "ME01-redundant-int",
+        "status": "equivalent",
+        "equivalent_reason": "int of an existing Python int quotient preserves every output in the specified domain",
+        "known_non_equivalent": false
+      }
+    ]
+  },
+  "soak": {
+    "budget_seconds": 360,
+    "actual_seconds": 360.22,
+    "cycles": 1011,
+    "write_delete_pairs": 101,
+    "active_jobs": 1,
+    "soft_deleted_jobs": 101,
+    "read_statuses": {
+      "200": 4044
+    },
+    "read_latency": {
+      "count": 4044,
+      "min_ms": 14.999999664723873,
+      "median_ms": 46.99999978765845,
+      "p95_ms": 77.99999974668026,
+      "max_ms": 157.00000012293458
+    },
+    "final_pool_checked_out": 0,
+    "note": "Bounded local TestClient/real PostgreSQL exercise; not production long-term stability, throughput or capacity proof; memory/latency observational without SLA"
+  }
+}

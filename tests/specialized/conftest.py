@@ -11,6 +11,29 @@ from sqlalchemy import text
 from sqlmodel import Session, SQLModel, create_engine
 
 FROZEN = datetime(2030, 5, 1, tzinfo=timezone.utc)
+
+
+def expected_managed_slot(slot, state):
+    """Derive the management DTO independently from the raw SQL snapshot."""
+    stored = next(row for row in state["interview_slot"] if row["id"] == slot["id"])
+    booking = next((row for row in state["booking"] if row["slot_id"] == slot["id"]), None)
+    result = dict(slot, is_booked=booking is not None, job_id=stored["job_id"], job_title=None,
+                  application_id=None, applicant_name=None)
+    if booking is not None:
+        application = next(row for row in state["application"] if row["id"] == booking["application_id"])
+        job = next(row for row in state["job"] if row["id"] == application["job_id"])
+        profile = next(row for row in state["candidate_profile"] if row["user_id"] == application["candidate_id"])
+        result.update(job_id=job["id"], job_title=job["title"], application_id=application["id"], applicant_name=profile["display_name"])
+    return result
+
+
+def expected_slots_with_booking_jobs(before, bookings):
+    """Only booked slots may gain the exact job of their validated application."""
+    jobs = {row["id"]: row["job_id"] for row in before["application"]}
+    assignments = {row["slot_id"]: jobs[row["application_id"]] for row in bookings}
+    return [dict(row, job_id=assignments.get(row["id"], row["job_id"])) for row in before["interview_slot"]]
+
+
 OUT = Path(os.environ.get("SLOT_AUDIT_OUT", "."))
 if os.environ.get("CSC4801_ISOLATED_AUDIT") != "1":
     raise RuntimeError(

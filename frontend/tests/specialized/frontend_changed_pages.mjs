@@ -33,9 +33,9 @@ try{
     return {link_box:box};
    });
    await employer.page.goto(base+`/employer/jobs/${job.id}`);
-   const card=name=>employer.page.locator('li.employer-applicant-card').filter({has:employer.page.getByRole('heading',{name,exact:true})});
+   const card=name=>employer.page.locator(`#application-${name==='Revision Candidate A'?first.application_id:second.application_id}`);
    await check(engine,'latest-applicant-card-status-isolation',async()=>{
-    await card('Revision Candidate A').getByRole('heading',{name:'Revision Candidate A',exact:true}).waitFor();
+    await card('Revision Candidate A').locator('h3').waitFor();
     assert.equal(await card('Revision Candidate A').locator('.employer-applicant-score strong').innerText(),'50 / 100');
     await card('Revision Candidate A').getByRole('combobox').selectOption('Interviewing');await card('Revision Candidate A').getByRole('button',{name:'保存状态',exact:true}).click();
     await card('Revision Candidate A').getByText('状态已保存',{exact:true}).waitFor();
@@ -58,6 +58,27 @@ try{
     booking=(await api(candidate,'GET','/candidate/applications')).find(a=>a.application_id===first.application_id).booking;assert.equal(booking.slot_id,slot.id);
     return {browser_timezone:'America/New_York',display_timezone:'Asia/Shanghai',booking};
    });
+   await check(engine,'latest-booked-slot-links-email-and-brand-navigation',async()=>{
+    const managed=(await api(employer,'GET','/employer/interview-slots')).find(row=>row.id===slot.id);
+    assert.equal(managed.job_id,job.id);assert.equal(managed.job_title,job.title);
+    assert.equal(managed.application_id,first.application_id);assert.equal(managed.applicant_name,'Revision Candidate A');
+    assert.equal(managed.is_booked,true);
+    await employer.page.goto(base+'/employer/interview-slots');
+    const jobLink=employer.page.getByRole('link',{name:`申请职位：${job.title}`,exact:true});
+    await jobLink.waitFor();assert.equal(await jobLink.getAttribute('href'),`/employer/jobs/${job.id}`);
+    await jobLink.click();await employer.page.waitForURL(`**/employer/jobs/${job.id}`);
+    await card('Revision Candidate A').locator('.applicant-email').waitFor();
+    assert.equal(await card('Revision Candidate A').locator('.applicant-email').innerText(),candidate.email);
+    assert.equal(await card('Revision Candidate A').locator('h3').evaluate(node=>node.firstChild.textContent),'Revision Candidate A');
+    await employer.page.goto(base+'/employer/interview-slots');
+    const applicantLink=employer.page.getByRole('link',{name:'申请人：Revision Candidate A',exact:true});
+    const target=`/employer/jobs/${job.id}#application-${first.application_id}`;
+    assert.equal(await applicantLink.getAttribute('href'),target);await applicantLink.click();
+    await employer.page.waitForURL('**'+target);await card('Revision Candidate A').waitFor();
+    const box=await card('Revision Candidate A').boundingBox();assert(box&&box.y>=0&&box.y<900);
+    await candidate.page.locator('a.brand[href="/navpage"]').click();await candidate.page.waitForURL('**/navpage');
+    return {job_id:job.id,application_id:first.application_id,email:candidate.email,scroll_box:box};
+   });
    await check(engine,'latest-applicant-booking-and-390-layout',async()=>{
     await employer.page.reload();await card('Revision Candidate A').locator('time').first().waitFor();assert.equal(await card('Revision Candidate A').locator('time').count(),2);
     assert.equal(await card('Revision Candidate B').locator('time').count(),0);
@@ -65,7 +86,7 @@ try{
     const geometries=[];
     for(const width of [1280,390]){
      await employer.page.setViewportSize({width,height:900});assert(await employer.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-     const heading=await card('Revision Candidate A').getByRole('heading',{name:'Revision Candidate A',exact:true}).boundingBox(), score=await card('Revision Candidate A').locator('.employer-applicant-score').boundingBox();
+     const heading=await card('Revision Candidate A').locator('h3').boundingBox(), score=await card('Revision Candidate A').locator('.employer-applicant-score').boundingBox();
      assert(heading&&score&&heading.x+heading.width<=score.x+1);geometries.push({width,heading,score});
     }
     await employer.page.screenshot({path:path.join(process.env.UI_OUT,`latest-applicant-${engine}-390.png`),fullPage:true});

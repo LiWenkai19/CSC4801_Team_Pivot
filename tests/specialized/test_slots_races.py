@@ -1,3 +1,4 @@
+from conftest import expected_managed_slot, expected_slots_with_booking_jobs
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from threading import Event
@@ -190,15 +191,15 @@ def test_real_database_schedules_preserve_contract(
             row["application_id"] == data["application_id"]
             and row["slot_id"] == data["slot"]["id"]
         )
-        assert after["interview_slot"] == before["interview_slot"]
+        assert after["interview_slot"] == expected_slots_with_booking_jobs(before, after["booking"])
         if kind == "book-before-reject":
             assert after["application"][0]["status"] == "Rejected"
         else:
             assert after["application"] == before["application"]
         assert client.get(PATH, headers=data["owner"]["headers"]).json() == (
-            [{**data["slot"], "is_booked": True}]
+            [expected_managed_slot(data["slot"], snapshot())]
             + (
-                [{**extra, "is_booked": False}]
+                [expected_managed_slot(extra, snapshot())]
                 if kind == "one-application-two-slots"
                 else []
             )

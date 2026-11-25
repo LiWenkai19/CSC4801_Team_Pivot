@@ -119,10 +119,16 @@ def main():
             cwd,
             20,
         )
+        diagnostic = Path(result["log"]).read_text(encoding="utf-8")
+        valid_configuration_boundary = (
+            result["exit_code"] != 0
+            and all(name in diagnostic for name in ("APP_NAME", "DATABASE_URL", "Field required"))
+            and "ModuleNotFoundError" not in diagnostic
+        ) if kind == "no-env" else result["exit_code"] == 0
         record(
             "INSTALL-" + kind + "-import",
-            result["exit_code"] == 0,
-            "Following the documented install/example configuration permits application import",
+            valid_configuration_boundary,
+            "Missing required settings are explicitly rejected; documented example configuration permits import",
             {"exit_code": result["exit_code"], "log": result["log"]},
             "SE-02",
             "文档未给出APP_NAME/DATABASE_URL配置；根.env.example仍为旧SQLite示例，Settings读取当前目录.env后仍缺必填项。",
@@ -409,7 +415,7 @@ def main():
             "SE-05",
             "唯一seed时段仍为60分钟，不满足预约严格30分钟要求；当前时段仍未来，失败不是过期或接口故障。",
         )
-        # Rejected original-seed booking must remain atomic, even though demo fails.
+        # The shared seed supports one winner; the later candidate must get 409.
         for who in ["alice", "bob"]:
             before = snapshot(engine)
             client = apis[who]
@@ -421,10 +427,23 @@ def main():
                 json={"slot_id": str(fixed_id("slot-backend"))},
             )
             after = snapshot(engine)
+            expected_status = 201 if who == "alice" else 409
+            expected_booking = {
+                "application_id": appid,
+                "slot_id": str(fixed_id("slot-backend")),
+            }
+            storage_ok = (
+                len(after["rows"]["booking"]) == 1
+                and all(after["rows"]["booking"][0][key] == uuid.UUID(value)
+                        for key, value in expected_booking.items())
+            ) if who == "alice" else (
+                before["semantic_sha256"] == after["semantic_sha256"]
+                and response.json().get("detail") == "Slot already booked"
+            )
             record(
                 "SEED-original-booking-" + who,
-                response.status_code == 201,
-                "Documented seed supports actual eligible booking",
+                response.status_code == expected_status and storage_ok,
+                "Alice books the shared seed slot (201); Bob is rejected (409) without state changes",
                 {
                     "status": response.status_code,
                     "body": response.json(),
@@ -442,24 +461,23 @@ def main():
             json={"starts_at": "2031-06-01T02:00:00Z"},
         )
         assert fresh.status_code == 201
-        positive = all(
-            any(
-                row["id"] == fresh.json()["id"]
-                for row in apis[who]
-                .get(
-                    "/candidate/applications/"
-                    + str(fixed_id("app-" + who + "-backend"))
-                    + "/slots"
-                )
-                .json()
-            )
-            for who in ["alice", "bob"]
+        alice_slots = apis["alice"].get(
+            "/candidate/applications/" + str(fixed_id("app-alice-backend")) + "/slots"
+        )
+        bob_slots = apis["bob"].get(
+            "/candidate/applications/" + str(fixed_id("app-bob-backend")) + "/slots"
+        )
+        positive = (
+            alice_slots.status_code == 409
+            and alice_slots.json().get("detail") == "Application already booked"
+            and bob_slots.status_code == 200
+            and any(row["id"] == fresh.json()["id"] for row in bob_slots.json())
         )
         record(
             "SEED-separate-valid-slot-control",
             positive,
-            "A separately created valid fixture is visible to both eligible candidates",
-            {"visible_to_both": positive, "seed_script_changed": False},
+            "The new slot is visible to unbooked Bob; Alice's existing booking prevents a second selection",
+            {"alice_status": alice_slots.status_code, "bob_status": bob_slots.status_code},
         )
     finally:
         for client in reversed(clients):
@@ -490,6 +508,11 @@ def main():
                 getattr(getattr(e, "orig", None), "diag", None), "column_name", None
             ),
         }
+    with engine.begin() as connection:
+        raw_status = connection.execute(
+            text("SELECT status FROM application WHERE id=:id"), {"id": identifier}
+        ).scalar_one_or_none()
+        connection.execute(text("DELETE FROM application WHERE id=:id"), {"id": identifier})
     with Session(engine) as db:
         row = employers.Application(candidate_id=candidate_id, job_id=posting_id)
         db.add(row)
@@ -500,9 +523,9 @@ def main():
         db.commit()
     record(
         "MIGRATION-default-raw-insert-vs-ORM",
-        raw_error is None,
+        raw_error is None and raw_status == orm_status == "Pending",
         "Database default promised by model applies when status omitted; ordinary ORM still defaults Pending",
-        {"raw_insert_error": raw_error, "orm_status": orm_status},
+        {"raw_insert_error": raw_error, "raw_status": raw_status, "orm_status": orm_status},
         "SE-06",
         "数据库未提供模型声明的默认值，省略status的直接写入违反非空；ORM自身赋Pending仍成功，影响范围分别记录。",
     )

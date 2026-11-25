@@ -1,3 +1,4 @@
+from conftest import expected_managed_slot
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from threading import Barrier
@@ -43,7 +44,7 @@ def test_booked_status_transitions_preserve_new_managed_flag(
     )
     assert updated.status_code == 200 and updated.json()["status"] == after
     listed = client.get("/employer/interview-slots", headers=owner["headers"])
-    assert listed.status_code == 200 and listed.json() == [dict(slot, is_booked=True)]
+    assert listed.status_code == 200 and listed.json() == [expected_managed_slot(slot, snapshot())]
     assert snapshot()["booking"] == before_state["booking"]
     assert snapshot()["interview_slot"] == before_state["interview_slot"]
     ours = client.get(
@@ -91,7 +92,7 @@ def test_new_managed_list_owner_time_flags_legacy_duration_and_sort(
     }
 
 
-def test_ordinary_create_list_new_schema_round_trip(client, account):
+def test_ordinary_create_list_new_schema_round_trip(client, account, snapshot):
     owner = account()
     made = client.post(
         "/employer/interview-slots",
@@ -100,7 +101,7 @@ def test_ordinary_create_list_new_schema_round_trip(client, account):
     )
     assert made.status_code == 201
     assert client.get("/employer/interview-slots", headers=owner["headers"]).json() == [
-        dict(made.json(), is_booked=False)
+        expected_managed_slot(made.json(), snapshot())
     ]
 
 

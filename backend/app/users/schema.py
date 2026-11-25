@@ -1,13 +1,25 @@
 import uuid
 from typing import Annotated, Any
 
-from pydantic import EmailStr, StrictInt, StringConstraints, model_validator
+from pydantic import AfterValidator, EmailStr, StrictInt, StringConstraints, model_validator
 from sqlmodel import Field, SQLModel
 
 from app.users.model import Role
 
 
-NonBlankName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+def _reject_nul(value: str) -> str:
+    """在写库前拒绝 PostgreSQL 文本列无法保存的 NUL 字符。"""
+    if "\x00" in value:
+        raise ValueError("Text cannot contain NUL characters")
+    return value
+
+
+DatabaseText = Annotated[str, AfterValidator(_reject_nul)]
+NonBlankName = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1),
+    AfterValidator(_reject_nul),
+]
 ResourceVersion = Annotated[StrictInt, Field(gt=0)]
 
 
@@ -48,8 +60,8 @@ class CandidateProfileCreate(SQLModel):
     """首次填写候选人资料；只要求显示名称，简历和技能可以后补。"""
 
     display_name: NonBlankName
-    resume_text: str = ""
-    skills: list[str] = Field(default_factory=list)
+    resume_text: DatabaseText = ""
+    skills: list[DatabaseText] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod
@@ -66,7 +78,7 @@ class EmployerProfileCreate(SQLModel):
     model_config = {"extra": "forbid"}
 
     company_name: NonBlankName
-    company_description: str = ""
+    company_description: DatabaseText = ""
 
     @model_validator(mode="before")
     @classmethod

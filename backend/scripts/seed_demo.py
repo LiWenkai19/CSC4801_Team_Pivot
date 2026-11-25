@@ -1,20 +1,20 @@
-"""重置并写入本地演示数据；演示凭据仅限本地使用，不得用于任何真实环境。
+"""原子重置本地演示库；演示凭据仅限本地，不得用于真实环境。
 
-用法（在 backend 目录）：python scripts/seed_demo.py
-会清空当前配置库的全部业务表后重建演示数据，仅供本地演示与验收。
+在 backend 目录执行 python scripts/seed_demo.py。默认生成 UTC 次日 10:00 的
+共享 30 分钟时段；可用 --reference-date YYYY-MM-DD 固定基准日期复现。
+相同基准日期生成相同业务数据（密码使用随机盐）；历史日期可能产生过期时段。
+命令清空配置库的全部业务数据及会话，请只对本地演示库执行。
 """
 
+import argparse
 import sys
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 
 BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
-
-# 本地演示密码；README 与输出中均标注仅限本地演示。
 DEMO_PASSWORD = "demo-local-only"
-
 TABLES = (
     "booking",
     "application",
@@ -22,6 +22,7 @@ TABLES = (
     "interview_slot",
     "job",
     "candidate_skill",
+    "user_session",
     "candidate_profile",
     "employer_profile",
     '"user"',
@@ -29,26 +30,24 @@ TABLES = (
 
 
 def fixed_id(name: str) -> uuid.UUID:
-    """生成确定性 ID，重复执行后演示数据可预测。"""
+    """保留既有固定 ID，兼容演示链接与测试。"""
     return uuid.uuid5(uuid.NAMESPACE_URL, f"symanage-seed/{name}")
 
 
+def slot_start(reference_date: date) -> datetime:
+    """以 UTC 日期安排次日时段，避免写死日历日期后过期。"""
+    return datetime.combine(reference_date + timedelta(days=1), time(10), timezone.utc)
+
+
 def reset_tables(session) -> None:
-    """清空业务表并重置自增序列；外键依赖由 CASCADE 一并处理。"""
+    """在调用方事务内清空数据，不提前提交；失败时清空也会回滚。"""
     from sqlalchemy import text
 
     session.execute(text(f"TRUNCATE {', '.join(TABLES)} RESTART IDENTITY CASCADE"))
-    session.commit()
 
 
-def build_seed_rows() -> list[list]:
-    """组装演示账户、公司资料、技能、职位、申请与面试时段。
-
-    按外键依赖分组返回（组间无跨组外键）：账户 → 角色资料 → 候选人技能 →
-    职位 → 职位技能 → 面试时段 → 申请。数据覆盖 FP-MATCH-1 四个打分示例
-    （100/50/0/空要求=100）、四种申请状态，以及两名 Interviewing 候选人
-    竞争同一空闲时段。
-    """
+def build_seed_rows(reference_date: date | None = None) -> list[list]:
+    """按外键顺序组装数据；不写库，保留原函数的分组返回合同。"""
     from app.employer.model import (
         Application,
         ApplicationStatus,
@@ -65,41 +64,31 @@ def build_seed_rows() -> list[list]:
     )
     from app.users.security import hash_password
 
+    reference_date = (
+        reference_date
+        if reference_date is not None
+        else datetime.now(timezone.utc).date()
+    )
+    starts_at = slot_start(reference_date)
+    timestamp = datetime.combine(reference_date, time(), timezone.utc)
     password_hash = hash_password(DEMO_PASSWORD)
-
+    accounts = [
+        ("employer-1", "demo-employer1@example.com", Role.Employer),
+        ("employer-2", "demo-employer2@example.com", Role.Employer),
+        ("alice", "demo-alice@example.com", Role.Candidate),
+        ("bob", "demo-bob@example.com", Role.Candidate),
+        ("carol", "demo-carol@example.com", Role.Candidate),
+    ]
     users = [
         User(
-            id=fixed_id("employer-1"),
-            email="demo-employer1@example.com",
+            id=fixed_id(key),
+            email=email,
             hashed_password=password_hash,
-            role=Role.Employer,
-        ),
-        User(
-            id=fixed_id("employer-2"),
-            email="demo-employer2@example.com",
-            hashed_password=password_hash,
-            role=Role.Employer,
-        ),
-        User(
-            id=fixed_id("alice"),
-            email="demo-alice@example.com",
-            hashed_password=password_hash,
-            role=Role.Candidate,
-        ),
-        User(
-            id=fixed_id("bob"),
-            email="demo-bob@example.com",
-            hashed_password=password_hash,
-            role=Role.Candidate,
-        ),
-        User(
-            id=fixed_id("carol"),
-            email="demo-carol@example.com",
-            hashed_password=password_hash,
-            role=Role.Candidate,
-        ),
+            role=role,
+            created_at=timestamp,
+        )
+        for key, email, role in accounts
     ]
-
     profiles = [
         EmployerProfile(
             user_id=fixed_id("employer-1"),
@@ -111,149 +100,146 @@ def build_seed_rows() -> list[list]:
             company_name="Beta Demo Studio",
             company_description="Local demo employer two.",
         ),
-        CandidateProfile(
-            user_id=fixed_id("alice"),
-            display_name="Alice",
-            resume_text="Demo resume for Alice.",
-        ),
-        CandidateProfile(
-            user_id=fixed_id("bob"),
-            display_name="Bob",
-            resume_text="Demo resume for Bob.",
-        ),
-        CandidateProfile(
-            user_id=fixed_id("carol"),
-            display_name="Carol",
-            resume_text="Demo resume for Carol.",
-        ),
+        *[
+            CandidateProfile(
+                user_id=fixed_id(name.lower()),
+                display_name=name,
+                resume_text=f"Demo resume for {name}.",
+            )
+            for name in ("Alice", "Bob", "Carol")
+        ],
     ]
-
-    # 技能名已按 CHECK 约束要求归一化（去空白、小写）。
     skills = [
-        CandidateSkill(candidate_id=fixed_id("alice"), name="python"),
-        CandidateSkill(candidate_id=fixed_id("alice"), name="sql"),
-        CandidateSkill(candidate_id=fixed_id("bob"), name="python"),
-        CandidateSkill(candidate_id=fixed_id("carol"), name="rust"),
+        CandidateSkill(candidate_id=fixed_id(who), name=skill)
+        for who, skill in [
+            ("alice", "python"),
+            ("alice", "sql"),
+            ("bob", "python"),
+            ("carol", "rust"),
+        ]
     ]
-
+    job_specs = [
+        (
+            "job-backend",
+            "employer-1",
+            "Backend Engineer",
+            "Local demo job with skills python and sql.",
+            ["python", "sql"],
+        ),
+        (
+            "job-data-entry",
+            "employer-2",
+            "Data Entry Clerk",
+            "Local demo job with skills typing and excel.",
+            ["typing", "excel"],
+        ),
+        (
+            "job-general",
+            "employer-1",
+            "General Assistant",
+            "Local demo job with no required skills.",
+            [],
+        ),
+    ]
     jobs = [
         Job(
-            id=fixed_id("job-backend"),
-            employer_id=fixed_id("employer-1"),
-            title="Backend Engineer",
-            description="Local demo job with skills python and sql.",
-        ),
-        Job(
-            id=fixed_id("job-data-entry"),
-            employer_id=fixed_id("employer-2"),
-            title="Data Entry Clerk",
-            description="Local demo job with skills typing and excel.",
-        ),
-        Job(
-            id=fixed_id("job-general"),
-            employer_id=fixed_id("employer-1"),
-            title="General Assistant",
-            description="Local demo job with no required skills.",
-        ),
+            id=fixed_id(key),
+            employer_id=fixed_id(owner),
+            title=title,
+            description=description,
+            created_at=timestamp,
+            updated_at=timestamp,
+        )
+        for key, owner, title, description, _ in job_specs
     ]
-
     job_skills = [
-        JobSkill(job_id=fixed_id("job-backend"), name="python"),
-        JobSkill(job_id=fixed_id("job-backend"), name="sql"),
-        JobSkill(job_id=fixed_id("job-data-entry"), name="typing"),
-        JobSkill(job_id=fixed_id("job-data-entry"), name="excel"),
+        JobSkill(job_id=fixed_id(key), name=skill)
+        for key, _, _, _, required in job_specs
+        for skill in required
     ]
-
-    # 四种状态各至少一条：Alice/Bob 对 Backend Engineer 均为 Interviewing。
-    applications = [
-        Application(
-            id=fixed_id("app-alice-backend"),
-            candidate_id=fixed_id("alice"),
-            job_id=fixed_id("job-backend"),
-            status=ApplicationStatus.Interviewing,
-        ),
-        Application(
-            id=fixed_id("app-bob-backend"),
-            candidate_id=fixed_id("bob"),
-            job_id=fixed_id("job-backend"),
-            status=ApplicationStatus.Interviewing,
-        ),
-        Application(
-            id=fixed_id("app-carol-backend"),
-            candidate_id=fixed_id("carol"),
-            job_id=fixed_id("job-backend"),
-            status=ApplicationStatus.Rejected,
-        ),
-        Application(
-            id=fixed_id("app-alice-general"),
-            candidate_id=fixed_id("alice"),
-            job_id=fixed_id("job-general"),
-            status=ApplicationStatus.Accepted,
-        ),
-        Application(
-            id=fixed_id("app-bob-general"),
-            candidate_id=fixed_id("bob"),
-            job_id=fixed_id("job-general"),
-            status=ApplicationStatus.Pending,
-        ),
-    ]
-
-    # 固定起止时间保证演示数据可重复；时段留空不预约，供两名 Interviewing 候选人竞争。
     slots = [
         InterviewSlot(
             id=fixed_id("slot-backend"),
             employer_id=fixed_id("employer-1"),
-            job_id=fixed_id("job-backend"),
-            starts_at=datetime(2026, 12, 1, 10, 0, tzinfo=timezone.utc),
-            ends_at=datetime(2026, 12, 1, 11, 0, tzinfo=timezone.utc),
-        ),
+            starts_at=starts_at,
+            ends_at=starts_at + timedelta(minutes=30),
+        )
     ]
-
+    app_specs = [
+        ("alice", "backend", ApplicationStatus.Interviewing),
+        ("bob", "backend", ApplicationStatus.Interviewing),
+        ("carol", "backend", ApplicationStatus.Rejected),
+        ("alice", "general", ApplicationStatus.Accepted),
+        ("bob", "general", ApplicationStatus.Pending),
+    ]
+    applications = [
+        Application(
+            id=fixed_id(f"app-{who}-{job}"),
+            candidate_id=fixed_id(who),
+            job_id=fixed_id("job-" + job),
+            status=status,
+            created_at=timestamp,
+            updated_at=timestamp,
+        )
+        for who, job, status in app_specs
+    ]
     return [users, profiles, skills, jobs, job_skills, slots, applications]
 
 
-def print_demo_summary() -> None:
-    """打印演示凭据（标注仅限本地）并复核 FP-MATCH-1 四个示例分数。"""
+def print_demo_summary(starts_at: datetime | None = None) -> None:
+    """标出演示凭据、时段与匹配示例，不将命令成功当作预约测试。"""
     from app.employer.matching import match_score
 
     print("Local demo data seeded. Credentials are LOCAL/DEMO ONLY:")
-    print("  employer1: demo-employer1@example.com / " + DEMO_PASSWORD)
-    print("  employer2: demo-employer2@example.com / " + DEMO_PASSWORD)
-    print("  alice:     demo-alice@example.com / " + DEMO_PASSWORD)
-    print("  bob:       demo-bob@example.com / " + DEMO_PASSWORD)
-    print("  carol:     demo-carol@example.com / " + DEMO_PASSWORD)
-    examples = (
+    for who in ("employer1", "employer2", "alice", "bob", "carol"):
+        print(f"  {who}: demo-{who}@example.com / {DEMO_PASSWORD}")
+    if starts_at is not None:
+        print(
+            f"Shared 30-minute slot: {starts_at.isoformat()} (UTC); Alice and Bob are Interviewing."
+        )
+    for candidate, required, expected in (
         (["python", "sql"], ["python", "sql"], 100),
         (["python"], ["python", "sql"], 50),
         (["rust"], ["python", "sql"], 0),
         (["anything"], [], 100),
+    ):
+        print(
+            f"match_score({candidate}, {required}) = {match_score(candidate, required)} (expect {expected})"
+        )
+
+
+def main(argv: list[str] | None = None) -> int:
+    """构建数据后，在同一事务中重置与写入，失败时保留原数据。"""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--reference-date", type=date.fromisoformat, help="固定 UTC 基准日期 YYYY-MM-DD"
     )
-    for candidate, required, expected in examples:
-        actual = match_score(candidate, required)
-        print(f"match_score({candidate}, {required}) = {actual} (expect {expected})")
-
-
-def main() -> int:
-    """按配置连接本地库，清空业务表后写入演示数据。"""
+    args = parser.parse_args(argv)
+    reference_date = (
+        args.reference_date
+        if args.reference_date is not None
+        else datetime.now(timezone.utc).date()
+    )
+    try:
+        slot_start(reference_date)
+    except OverflowError:
+        parser.error("reference-date must leave room for the next day's slot")
     from sqlmodel import Session
-
     from app.db.session import engine
 
     try:
-        with Session(engine) as session:
+        groups = build_seed_rows(reference_date)
+        with Session(engine) as session, session.begin():
             reset_tables(session)
-            # 按外键依赖分组写入，组间 flush 保证被引用行先行落库。
-            for group in build_seed_rows():
+            for group in groups:
                 session.add_all(group)
                 session.flush()
-            session.commit()
     except Exception as error:
-        print(f"Seed failed: {error}")
+        print(f"Seed failed; reset rolled back: {error}", file=sys.stderr)
         return 1
     finally:
         engine.dispose()
-
-    print_demo_summary()
+    print_demo_summary(slot_start(reference_date))
     return 0
 
 

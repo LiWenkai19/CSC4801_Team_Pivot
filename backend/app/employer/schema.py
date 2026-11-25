@@ -8,7 +8,7 @@ from pydantic import AfterValidator, ConfigDict, field_validator
 from sqlmodel import Field, SQLModel
 
 from app.employer.model import ApplicationStatus
-from app.users.schema import NonBlankName, ResourceVersion
+from app.users.schema import DatabaseText, NonBlankName, ResourceVersion
 
 
 def _require_non_blank(value: str) -> str:
@@ -18,7 +18,7 @@ def _require_non_blank(value: str) -> str:
     return value
 
 
-NonBlankText = Annotated[str, AfterValidator(_require_non_blank)]
+NonBlankText = Annotated[DatabaseText, AfterValidator(_require_non_blank)]
 
 
 class RequestSchema(SQLModel):
@@ -55,7 +55,7 @@ class CompanyUpdate(PartialUpdateSchema):
 
     version: ResourceVersion
     company_name: NonBlankName | None = None
-    company_description: str | None = None
+    company_description: DatabaseText | None = None
 
 
 class JobCreate(RequestSchema):
@@ -63,7 +63,7 @@ class JobCreate(RequestSchema):
 
     title: NonBlankName
     description: NonBlankText
-    required_skills: list[str] = Field(default_factory=list)
+    required_skills: list[DatabaseText] = Field(default_factory=list)
 
 
 class JobUpdate(PartialUpdateSchema):
@@ -72,7 +72,7 @@ class JobUpdate(PartialUpdateSchema):
     version: ResourceVersion
     title: NonBlankName | None = None
     description: NonBlankText | None = None
-    required_skills: list[str] | None = None
+    required_skills: list[DatabaseText] | None = None
 
 
 class JobPublic(SQLModel):

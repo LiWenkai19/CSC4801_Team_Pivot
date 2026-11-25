@@ -1,3 +1,4 @@
+from conftest import expected_managed_slot
 from datetime import timedelta
 import uuid
 
@@ -76,7 +77,7 @@ def test_booking_removes_availability_and_blocks_delete_with_full_snapshot(
     owner = data["owner"]
     before = snapshot()
     assert client.get(PATH, headers=owner["headers"]).json() == [
-        {**data["slot"], "is_booked": True}
+        expected_managed_slot(data["slot"], snapshot())
     ]
     another = client.delete(PATH + "/" + data["slot"]["id"], headers=owner["headers"])
     assert (
@@ -140,7 +141,7 @@ def test_all_four_verified_status_changes_preserve_booking_and_unavailability(
             and state["interview_slot"] == fixed["interview_slot"]
         )
         assert client.get(PATH, headers=data["owner"]["headers"]).json() == [
-            {**data["slot"], "is_booked": True}
+            expected_managed_slot(data["slot"], snapshot())
         ]
         deletion = client.delete(
             PATH + "/" + data["slot"]["id"], headers=data["owner"]["headers"]

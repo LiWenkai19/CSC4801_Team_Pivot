@@ -74,7 +74,8 @@ async function freePort() {
     return port
 }
 const uiPort = await freePort()
-const apiPort = await freePort()
+let apiPort = await freePort()
+while (apiPort === uiPort) apiPort = await freePort()
 const base = `http://127.0.0.1:${uiPort}`
 const apiBase = `http://127.0.0.1:${apiPort}`
 const env = { ...process.env, UI_MANIFEST: manifest, UI_ORIGIN: base, UI_API_PORT: String(apiPort) }
@@ -97,20 +98,33 @@ async function ready(url, child) {
 }
 async function stop(child, name) {
     if (!child) return
-    if (child.exitCode === null && child.signalCode === null) {
+    if (child.exitCode === null && child.signalCode === null && child.pid) {
         const exited = once(child, 'exit')
         child.kill()
         await exited
     }
     await writeFile(path.join(output, `${name}.log`), child.log)
 }
-async function api(method, pathname, token, body) {
+async function api(method, pathname, session, body) {
     const response = await fetch(`${apiBase}${pathname}`, {
-        method, headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) },
+        method, headers: {
+            ...(session ? { Cookie: session.cookie } : {}),
+            ...(session && !['GET', 'HEAD', 'OPTIONS'].includes(method) ? { 'X-CSRF-Token': session.csrf } : {}),
+            ...(body ? { 'Content-Type': 'application/json' } : {}),
+        },
         body: body ? JSON.stringify(body) : undefined,
     })
     assert(response.ok, `${method} ${pathname}: ${response.status}`)
-    return response.json()
+    if (response.status === 204) return null
+    const value = await response.json()
+    if (pathname === '/users/login' || pathname === '/users/register') {
+        const cookies = response.headers.getSetCookie().map(value => value.split(';')[0])
+        value.session = {
+            cookie: cookies.join('; '),
+            csrf: decodeURIComponent(cookies.find(value => value.startsWith('csrf_token=')).slice('csrf_token='.length)),
+        }
+    }
+    return value
 }
 const passed = [], errors = []
 let backend, preview, browser
@@ -118,20 +132,23 @@ try {
     backend = launch(python, ['-u', '-c', backendSource], path.join(root, 'backend'))
     preview = launch(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', String(uiPort), '--strictPort'], path.join(root, 'frontend'))
     await Promise.all([ready(`${apiBase}/openapi.json`, backend), ready(base, preview)])
-    browser = await chromium.launch({ headless: true, ...(process.env.UI_BROWSER_CHANNEL ? { channel: process.env.UI_BROWSER_CHANNEL } : {}) })
+    browser = await chromium.launch({ headless: true, ...(process.env.UI_BROWSER_CHANNEL ? { channel: process.env.UI_BROWSER_CHANNEL } : {}), ...(process.env.CHROME_EXECUTABLE_PATH ? { executablePath: process.env.CHROME_EXECUTABLE_PATH } : {}) })
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, colorScheme: 'light' })
+    await context.addInitScript(() => localStorage.setItem('skillmatch.language', 'zh-CN'))
     const page = await context.newPage()
     page.setDefaultTimeout(10000)
     page.on('pageerror', error => errors.push(error.message))
     page.on('dialog', async dialog => { errors.push(`Unexpected dialog: ${dialog.message()}`); await dialog.dismiss() })
     let fault = null
-    await context.route('http://127.0.0.1:8000/**', async route => {
+    await context.route(`${base}/api/**`, async route => {
         const url = new URL(route.request().url())
-        if (fault === url.pathname) {
+        assert.equal(url.origin, base)
+        const pathname = url.pathname.slice('/api'.length)
+        if (fault === pathname) {
             fault = null
             return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ detail: 'Temporarily unavailable' }) })
         }
-        const response = await route.fetch({ url: `${apiBase}${url.pathname}${url.search}` })
+        const response = await route.fetch({ url: `${apiBase}${pathname}${url.search}` })
         await route.fulfill({ response })
     })
     async function check(name, action) { await action(); passed.push(name); console.log(`PASS ${name}`) }
@@ -145,7 +162,22 @@ try {
         await page.waitForURL('**/navpage')
     }
     const payload = '<script>alert(1)</script>'
-    let candidateToken, targetJob, applicationId
+    let candidateSession, targetJob, applicationId
+    await check('Cookie 会话、CSRF、角色隔离和注销后的会话失效', async () => {
+        const alice = await api('POST', '/users/login', null, { email: 'demo-alice@example.com', password: 'demo-local-only' })
+        const bob = await api('POST', '/users/login', null, { email: 'demo-bob@example.com', password: 'demo-local-only' })
+        assert.equal((await api('GET', '/users/me', alice.session)).id, alice.user.id)
+        assert.notEqual(alice.user.id, bob.user.id)
+        const rejected = await fetch(`${apiBase}/candidate/profile`, { method: 'PATCH', headers: { Cookie: alice.session.cookie, 'Content-Type': 'application/json' }, body: JSON.stringify({ version: 1, resume_text: 'Must not save' }) })
+        assert.equal(rejected.status, 403)
+        assert.equal((await api('GET', '/candidate/profile', alice.session)).resume_text, 'Demo resume for Alice.')
+        const wrongRole = await fetch(`${apiBase}/employer/jobs`, { headers: { Cookie: alice.session.cookie } })
+        assert.equal(wrongRole.status, 403)
+        await api('POST', '/users/logout', alice.session)
+        assert.equal((await fetch(`${apiBase}/users/me`, { headers: { Cookie: alice.session.cookie } })).status, 401)
+        assert.equal((await api('GET', '/users/me', bob.session)).id, bob.user.id)
+        await api('POST', '/users/logout', bob.session)
+    })
     await check('注册、技能建议与自定义标签、首次保存返回主页', async () => {
         await go('/register')
         await page.locator('input[type=email]').fill(`candidate-${Date.now()}@example.com`)
@@ -155,24 +187,25 @@ try {
         await page.waitForURL('**/candidate/details')
         await page.getByLabel('显示名称（必填）').fill('测试候选人')
         await page.getByLabel('简历（选填）').fill(payload)
-        await page.getByLabel('搜索或输入技能').fill('py')
+        await page.getByLabel('搜索并添加技能').fill('py')
         await page.getByRole('button', { name: 'Python', exact: true }).click()
-        await page.getByLabel('搜索或输入技能').fill('自定义技能')
-        await page.getByLabel('搜索或输入技能').press('Enter')
+        await page.getByLabel('搜索并添加技能').fill('自定义技能')
+        await page.getByLabel('搜索并添加技能').press('Enter')
         await page.getByRole('button', { name: '保存并继续' }).click()
         await page.waitForURL('**/navpage')
-        candidateToken = await page.evaluate(() => localStorage.getItem('token'))
-        const profile = await api('GET', '/candidate/profile', candidateToken)
+        const cookies = await context.cookies(base)
+        candidateSession = { cookie: cookies.map(c => `${c.name}=${c.value}`).join('; '), csrf: cookies.find(c => c.name === 'csrf_token').value }
+        const profile = await api('GET', '/candidate/profile', candidateSession)
         assert.deepEqual(profile.skills, ['python', '自定义技能'])
         assert.equal(profile.resume_text, payload)
     })
     await check('真实推荐、故障重试与无重复投递', async () => {
         fault = '/candidate/jobs'
-        await page.getByRole('button', { name: '候选人工作流', exact: true }).click()
-        await visible('Temporarily unavailable')
+        await page.getByRole('link', { name: '候选人工作流', exact: true }).click()
+        await visible('职位加载失败。')
         await page.getByRole('button', { name: '重新加载' }).click()
         await page.getByRole('heading', { name: 'Backend Engineer', exact: true }).waitFor()
-        const jobs = await api('GET', '/candidate/jobs', candidateToken)
+        const jobs = await api('GET', '/candidate/jobs', candidateSession)
         assert.deepEqual(jobs.map(row => row.match_score), [100, 50, 0])
         targetJob = jobs.find(row => row.title === 'Backend Engineer')
         await page.getByRole('link', { name: 'Backend Engineer', exact: true }).click()
@@ -180,7 +213,7 @@ try {
         await visible('你已申请该职位，请勿重复申请。')
         await page.reload()
         await page.getByRole('button', { name: '已申请', exact: true }).waitFor()
-        const applications = await api('GET', '/candidate/applications', candidateToken)
+        const applications = await api('GET', '/candidate/applications', candidateSession)
         assert.equal(applications.length, 1)
         assert.equal(applications[0].status, 'Pending')
         applicationId = applications[0].application_id
@@ -188,22 +221,22 @@ try {
     await check('编辑资料持久化、待添加技能阻止保存、纯文本 XSS', async () => {
         await page.getByRole('link', { name: '我的资料', exact: true }).click()
         await page.getByLabel('显示名称（必填）').fill('更新后的候选人')
-        await page.getByLabel('搜索或输入技能').fill('sql')
+        await page.getByLabel('搜索并添加技能').fill('sql')
         await page.getByRole('button', { name: '保存资料', exact: true }).click()
-        assert.equal((await api('GET', '/candidate/profile', candidateToken)).display_name, '测试候选人')
+        assert.equal((await api('GET', '/candidate/profile', candidateSession)).display_name, '测试候选人')
         await page.getByRole('button', { name: 'SQL', exact: true }).click()
         await page.getByRole('button', { name: '保存资料', exact: true }).click()
         await visible('资料已保存，职位推荐会使用最新技能。')
         await page.reload()
         assert.equal(await page.getByLabel('简历（选填）').inputValue(), payload)
         assert.equal(await page.locator('main script').count(), 0)
-        assert((await api('GET', '/candidate/profile', candidateToken)).skills.includes('sql'))
+        assert((await api('GET', '/candidate/profile', candidateSession)).skills.includes('sql'))
         await page.screenshot({ path: path.join(output, 'profile-desktop.png'), fullPage: true })
     })
     await check('职位描述按纯文本渲染，SQL 元字符保持为内容', async () => {
         const employer = await api('POST', '/users/login', null, { email: 'demo-employer1@example.com', password: 'demo-local-only' })
         const title = "Text safety '; DROP TABLE job; --"
-        const posting = await api('POST', '/employer/jobs', employer.access_token, { title, description: payload, required_skills: [] })
+        const posting = await api('POST', '/employer/jobs', employer.session, { title, description: payload, required_skills: [] })
         await go(`/candidate/jobs/${posting.id}`)
         await page.getByRole('heading', { name: title, exact: true }).waitFor()
         await visible(payload)
@@ -211,37 +244,37 @@ try {
     })
     await check('申请状态同步、预约冲突恢复、双方可见且状态变化保留预约', async () => {
         const employer = await api('POST', '/users/login', null, { email: 'demo-employer1@example.com', password: 'demo-local-only' })
-        await api('PATCH', `/employer/applications/${applicationId}/status`, employer.access_token, { status: 'Interviewing' })
+        await api('PATCH', `/employer/applications/${applicationId}/status`, employer.session, { version: (await api('GET', `/candidate/applications/${applicationId}`, candidateSession)).version, status: 'Interviewing' })
         await page.getByRole('link', { name: '我的申请', exact: true }).click()
         await visible('申请状态：面试中')
         await page.getByRole('button', { name: '加载可预约时段' }).click()
-        const slots = await api('GET', `/candidate/applications/${applicationId}/slots`, candidateToken)
+        const slots = await api('GET', `/candidate/applications/${applicationId}/slots`, candidateSession)
         assert(slots.length > 0)
         await page.getByLabel('选择面试时段（上海时间）').selectOption(slots[0].id)
         // Bob 抢先预约，当前页面持有过期选择，必须处理真实 409。
         const bob = await api('POST', '/users/login', null, { email: 'demo-bob@example.com', password: 'demo-local-only' })
-        const bobApplications = await api('GET', '/candidate/applications', bob.access_token)
+        const bobApplications = await api('GET', '/candidate/applications', bob.session)
         const bobInterview = bobApplications.find(row => row.status === 'Interviewing')
-        await api('POST', `/candidate/applications/${bobInterview.application_id}/booking`, bob.access_token, { slot_id: slots[0].id })
+        await api('POST', `/candidate/applications/${bobInterview.application_id}/booking`, bob.session, { slot_id: slots[0].id })
         await page.getByRole('button', { name: '确认预约' }).click()
         await visible('该时段已被预约，请重新加载并选择其他时段。')
         await page.getByRole('button', { name: '加载可预约时段' }).click()
-        const remaining = await api('GET', `/candidate/applications/${applicationId}/slots`, candidateToken)
-        assert.equal(remaining.length, 1)
+        const remaining = await api('GET', `/candidate/applications/${applicationId}/slots`, candidateSession)
+        assert.equal(remaining.length, slots.length - 1); assert(!remaining.some(slot => slot.id === slots[0].id))
         await page.getByLabel('选择面试时段（上海时间）').selectOption(remaining[0].id)
         await page.getByRole('button', { name: '确认预约' }).click()
         await page.getByText('面试已预约：', { exact: false }).waitFor()
-        const self = await api('GET', `/candidate/applications/${applicationId}`, candidateToken)
+        const self = await api('GET', `/candidate/applications/${applicationId}`, candidateSession)
         assert.equal(self.booking.slot_id, remaining[0].id)
-        const changed = await api('GET', `/candidate/applications/${bobInterview.application_id}`, bob.access_token)
-        const applicants = await api('GET', `/employer/jobs/${targetJob.id}/applications`, employer.access_token)
+        const changed = await api('GET', `/candidate/applications/${bobInterview.application_id}`, bob.session)
+        const applicants = await api('GET', `/employer/jobs/${targetJob.id}/applications`, employer.session)
         assert.equal(applicants.find(row => row.application_id === bobInterview.application_id).booking.booking_id, changed.booking.booking_id)
         // 当前候选人再投递其他职位；已有申请状态仍按服务端返回展示。
         await page.screenshot({ path: path.join(output, 'applications-desktop.png'), fullPage: true })
         await login('demo-bob@example.com')
         await go('/candidate/applications')
         await page.getByText('面试已预约：', { exact: false }).waitFor()
-        await api('PATCH', `/employer/applications/${bobInterview.application_id}/status`, employer.access_token, { status: 'Accepted' })
+        await api('PATCH', `/employer/applications/${bobInterview.application_id}/status`, employer.session, { version: changed.version, status: 'Accepted' })
         await page.getByRole('button', { name: '刷新申请', exact: true }).click()
         await visible('申请状态：已录用')
         await page.getByText('面试已预约：', { exact: false }).waitFor()

@@ -1,3 +1,4 @@
+from conftest import expected_slots_with_booking_jobs
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 import importlib.util
@@ -184,7 +185,7 @@ def test_three_simultaneously_waiting_requests_have_exactly_one_booking(
     assert len(after["booking"]) == 1
     assert (
         after["application"] == before["application"]
-        and after["interview_slot"] == before["interview_slot"]
+        and after["interview_slot"] == expected_slots_with_booking_jobs(before, after["booking"])
         and after["job"] == before["job"]
     )
     for response in responses:

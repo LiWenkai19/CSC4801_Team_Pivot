@@ -1,3 +1,4 @@
+from conftest import expected_slots_with_booking_jobs
 from datetime import timedelta
 from itertools import product
 import uuid
@@ -115,7 +116,7 @@ def test_full_booking_eligibility_decision_table(
         )
         assert (
             after["application"] == before["application"]
-            and after["interview_slot"] == before["interview_slot"]
+            and after["interview_slot"] == expected_slots_with_booking_jobs(before, after["booking"])
         )
         ours = client.get(
             f"/candidate/applications/{data['application_id']}",

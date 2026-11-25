@@ -40,7 +40,32 @@ python -m pip install -r requirements.txt -e "./backend[dev]"
 The image ships demo defaults only; no real credential is baked into it.
 Override any of them with `docker run -e NAME=value`.
 
+For local development, `APP_NAME` and `DATABASE_URL` have **no application
+defaults**. Settings reads `.env` in the command's working directory. From the
+repository root, copy the example without overwriting an existing configuration:
+
+```powershell
+if (!(Test-Path backend/.env)) { Copy-Item .env.example backend/.env }
+```
+
+On POSIX: `test -f backend/.env || cp .env.example backend/.env`.
+Edit `backend/.env` to match your local PostgreSQL instance. The supplied URL
+contains only synthetic demo credentials. `.env` must not be committed.
+
 ## Database Setup and Migrations
+
+For a fresh local PostgreSQL installation, create the demo role and database
+once, using the administrative account configured by your installer:
+
+```sh
+psql -h 127.0.0.1 -U postgres -c "CREATE ROLE skillmatch LOGIN PASSWORD 'local-demo-only';"
+psql -h 127.0.0.1 -U postgres -c "CREATE DATABASE skillmatch OWNER skillmatch;"
+```
+
+These commands target the local development database. Existing installations
+should use their own credentials/database and must not recreate or reset them.
+The additional `9d6e1a4b2c30` migration sets the missing `application.status`
+database default to `Pending` without rewriting existing application states.
 
 The edit-version release adds migration `7b2c9d4e6f10` after
 `5a1d3c7e9b20`, then `8c3d0e5f7a21` for company profiles and application status.
@@ -65,6 +90,16 @@ Creation requests must not supply version. New database migration checks are in
 test databases. The local repair validation did not migrate a shared/development DB.
 
 ## Demo Data and Reset Command
+
+Without Docker, from the repository root run the following **only against a
+disposable demo database** configured in `backend/.env`; it deletes all business
+records and sessions in that database:
+
+```sh
+cd backend
+python scripts/seed_demo.py
+cd ..
+```
 
 One documented command resets and reseeds the application database. With the
 container running (see "Docker Startup"):
@@ -145,6 +180,22 @@ published to the host, so it cannot collide with a locally installed server.
 
 ## Local Development
 
+After configuring the local database and running migrations, install the
+frontend dependencies with `npm --prefix frontend ci`. Start these in separate
+terminals from the repository root:
+
+```sh
+cd backend
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+```sh
+npm --prefix frontend run dev -- --host 127.0.0.1
+```
+
+Open [the local UI](http://127.0.0.1:5173/). Keep the same host name for UI
+requests so the session and CSRF cookies use the same origin.
+
 Without Docker: activate a Python 3.12 environment, install
 `pip install -r requirements.txt`, make sure a PostgreSQL server is running and
 `backend/.env` contains `APP_NAME` and `DATABASE_URL`, then from the repository
@@ -189,7 +240,7 @@ To inspect the three component results alone:
 node --test frontend/tests/rendering.unit.mjs
 ```
 
-After the company/status version extension the complete unit command passes **157
+After the text-validation and fixture updates the complete unit command passes **196
 tests** (exit 0), including strict versions, stale-write rejection and no-op
 semantics. The old employer-privacy test already passes after teammate commit
 `5143f1e`. No skip/xfail/filter is used. See the
@@ -221,7 +272,7 @@ python tests/run_tests.py --integration
 
 These are synthetic local example settings, not real credentials; configure local
 authentication for the disposable database separately. This complete legacy suite
-was verified with 229 passing cases on isolated PostgreSQL16.4 (account tests use
+was verified with 241 passing cases on isolated PostgreSQL16.4 (account tests use
 their own in-memory SQLite). Failure also returns nonzero. The runner requires
 both explicit URLs and never starts/stops an existing database service.
 
@@ -279,3 +330,19 @@ Firefox and WebKit. Old company/status scripts must include their loaded version
 refresh old tabs after deploying the coordinated database/backend/frontend update.
 
 ## Troubleshooting
+
+- Missing `APP_NAME`/`DATABASE_URL`: confirm `backend/.env` exists and run
+  backend commands from `backend/`, or explicitly export both variables. An
+  unconfigured import is expected to fail; no shared database is selected silently.
+- Connection refused or authentication failed: check the PostgreSQL service,
+  port, role, password and database in `DATABASE_URL`. The default local example
+  uses port 5432; tests create their own disposable clusters on random ports.
+- Missing tables/columns: run `python -m alembic upgrade head` in `backend/`
+  against the intended database. Refresh old editor tabs after the coordinated
+  migration/backend/frontend update.
+- UI API requests fail: ensure the backend is on port 8000 and use the Vite URL
+  above. Local HTTP requires `COOKIE_SECURE=false`; HTTPS deployment requires true.
+- Tests cannot import packages: activate the environment where requirements were
+  installed. Browser suites separately need their locked test dependencies and
+  installed browser engines, as documented in `tests/specialized/README.md`.
+- An expired login requires signing in again. Resetting seed also removes sessions.
