@@ -106,7 +106,7 @@ behavior/documentation rather than treating a named test as proof of compliance.
 | FP-SEC-2 | `backend/app/users/service.py::get_user_by_email`; SQLAlchemy bound queries | `tests/unit/test_auth.py::test_fp_sec_2_email_is_a_bound_value` compiles the actual query and checks separate bound parameters; no SQL text is executed. |
 | FP-SEC-3 | `frontend/src/components/skills/SkillTagPicker.tsx`; React text rendering | `tests/unit/test_rendering.py::test_fp_sec_3_actual_component_escapes_required_text` runs `frontend/tests/rendering.unit.mjs`: actual component SSR of the required script string, ordinary Unicode/quotes, and label association. This is not a full browser/security proof. |
 | FP-SEC-4 | `tests/unit/conftest.py`; isolated existing integration fixtures | Unit tests prohibit Engine.connect, use session doubles and synthetic data; component tests render locally. Integration tests use disposable PG and isolated SQLite. Historical secret/lock audits remain supplementary; not a universal secrets guarantee. |
-| FP-PROC-1 | `SPEC.md`, module plans | SPEC covers architecture, data models, authorization, API routes, UI workflows, matching, booking, and security controls. |
+| FP-PROC-1 | `SPEC.md` | SPEC covers architecture, data models, authorization, API routes, UI workflows, matching, booking, and security controls. |
 | FP-DOC-1 | `INSTALL.md`, `tests/run_tests.py` | The guide documents Docker build, startup, migrations, seeding, and test commands, plus the local development setup. |
 | FP-DOC-2 | `README.md` | This table covers all 25 IDs with named functional tests. The table records evidence and outstanding failures, not universal requirement fulfillment. |
 | FP-DOC-3 | `backend/scripts/seed_demo.py` | The existing script resets the configured database (from backend: `python scripts/seed_demo.py`). Prior semantic snapshot checks passed, but its 60-minute slot does not meet the required 30-minute shared booking demo; not repaired here. |
@@ -187,8 +187,6 @@ claimed. Historical reports retain their original versions and results.
 - [Installation and test commands](INSTALL.md)
 - [Product requirements](docs/REQUIREMENTS.md)
 - [Living specification](SPEC.md)
-- [Candidate integration notes](docs/completed/CANDIDATE_REBUILD.md) (historical; older test
-  counts/import limitations there are not current validation results)
 - [Business unit tests](tests/unit/)
 - [Component rendering unit tests](frontend/tests/rendering.unit.mjs)
 - [Existing API/database regression](backend/tests/)

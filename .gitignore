@@ -8,7 +8,37 @@ backend/.env
 # ===== AI 工具指令与本地配置（所有目录） =====
 .agents/
 .agent/
+.claude/
+.claude.json
+.codex/
+.kilo/
+[Aa][Gg][Ee][Nn][Tt].[Mm][Dd]
+[Aa][Gg][Ee][Nn][Tt][Ss].[Mm][Dd]
+[Aa][Gg][Ee][Nn][Tt][Ss].override.[Mm][Dd]
+[Cc][Ll][Aa][Uu][Dd][Ee].[Mm][Dd]
+[Cc][Ll][Aa][Uu][Dd][Ee].local.[Mm][Dd]
 backend/data/
+
+# ===== Agent 技能包与技能定义 =====
+/skills/
+**/.*/**/skills/
+[Ss][Kk][Ii][Ll][Ll].[Mm][Dd]
+
+# ===== 本地工作文档与模板 =====
+/docs/*
+!/docs/README.md
+!/docs/REQUIREMENTS.md
+!/docs/DOCKER.md
+!/docs/PEER_REVIEW.md
+!/docs/testing/
+* 中文翻译.md
+/backend/alembic/README
+/backend/app/**/PLAN.md
+/backend/app/**/PROGRESS.md
+/backend/app/**/REQUIREMENTS.md
+/frontend/PROGRESS.md
+/frontend/README.md
+/frontend/src/**/REQUIREMENTS.md
 
 # ===== Python =====
 # Python 字节码缓存目录
