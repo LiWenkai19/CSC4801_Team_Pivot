@@ -19,7 +19,7 @@ legacy account tests.
 
 Build and start the single-container environment using the Docker guide, then load the demo data and run the unit tests. For development against a local PostgreSQL server, follow the local setup instructions. [Docker build](INSTALL.md#docker-build) · [Docker startup and test commands](INSTALL.md#docker-startup) · [Local development](INSTALL.md#local-development)
 
-The local setup covers configuration, database creation, migrations, seeding, startup, and tests. See the [testing report](docs/testing/REPORT.md) for execution evidence and remaining limits.
+The local setup covers configuration, database creation, migrations, seeding, startup, and tests.
 
 ## Running Unit Tests
 
@@ -40,8 +40,7 @@ a nonzero exit status.
 The complete local-change publication was rechecked on 2026-11-25: **196 unit
 cases passed** on the exact staged source snapshot. This includes the applicant
 email and six-field slot-list fixture updates that were previously local only.
-The two older main failures are resolved by those fixture updates. Current
-verification and historical result boundaries are in [the report](docs/testing/REPORT.md).
+The two older main failures are resolved by those fixture updates.
 
 The new business tests invoke production functions with session/result doubles;
 unit fixtures reject any real database connection. They prove rule/serialization/
@@ -58,11 +57,10 @@ instance; see INSTALL. It runs the complete existing `backend/tests` suite,
 including in-memory SQLite account tests. Both commands belong to the regression
 evidence; integration/browser demonstrations do not replace required unit tests.
 
-## Specialized Regression and Test Reports
+## Specialized Regression
 
 The previously local exploratory suites and their portable tools are now in
-[tests/specialized](tests/specialized/README.md); historical/browser/SSR evidence
-and current migration results are in [docs/testing/REPORT.md](docs/testing/REPORT.md).
+[tests/specialized](tests/specialized/README.md).
 There are 21 specialized Python files and 10 browser/SSR modules, separate from
 course unit tests. Use their managed entry, which creates a new loopback PG
 cluster and keeps artifacts outside the repository:
@@ -128,7 +126,7 @@ frontend together. Company/status PATCH requests now require the loaded strict
 positive version, with the same 409 conflict contract as profile/job updates.
 New/create, booking and delete contracts are preserved. Existing records receive
 version 1 without resetting data. See [INSTALL](INSTALL.md) and the
-[extension verification report](docs/testing/EDITOR_VERSIONS.md).
+[editor workflow tests](frontend/tests/specialized/editor_update_checks.mjs).
 
 Additional requirement-to-test mapping:
 
@@ -178,9 +176,7 @@ claimed. Historical reports retain their original versions and results.
   failures** (including the 12 version-conflict scenarios above); **36 SSR** and
   **4 performance** checks passed. Original mutation samples detected 7/7
   non-equivalent changes; non-Docker delivery retained 13 passes/8 known failures.
-  See the [follow-up report](docs/testing/VERSION_RETEST.md) for failed-case causes,
-  test-tool adaptations and the bounded six-minute soak evidence.
-- The baseline recorded text-storage failures, the demo seed slot duration, and migration default drift. Later changes reject NUL characters in candidate profile edits and set an upper bound on interview slot dates. [Version repair report](docs/testing/VERSION_PROTECTION.md) · [Current API specification](SPEC.md#api-routes-or-server-actions)
+- The baseline recorded text-storage failures, the demo seed slot duration, and migration default drift. Later changes reject NUL characters in candidate profile edits and set an upper bound on interview slot dates. [Current API specification](SPEC.md#api-routes-or-server-actions)
 
 ## Document Index
 
@@ -191,10 +187,7 @@ claimed. Historical reports retain their original versions and results.
 - [Component rendering unit tests](frontend/tests/rendering.unit.mjs)
 - [Existing API/database regression](backend/tests/)
 - [Specialized test suites and runners](tests/specialized/README.md)
-- [Four-editor version protection verification](docs/testing/EDITOR_VERSIONS.md)
-- [Consolidated and historical test reports](docs/testing/REPORT.md)
+- [Four-editor version protection tests](frontend/tests/specialized/editor_update_checks.mjs)
 
-The consolidated report and rewritten historical report copies are committed in
-`docs/testing`. Raw logs, database directories, screenshots, dependency installations
-and synthetic session values remain local artifacts. The current version repair
-is documented separately from the historical test-only reports.
+Detailed historical test reports and internal defect inventories are kept with
+local test artifacts, including raw logs, database directories and screenshots.

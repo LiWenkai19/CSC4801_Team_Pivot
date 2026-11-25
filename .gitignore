@@ -30,7 +30,7 @@ backend/data/
 !/docs/REQUIREMENTS.md
 !/docs/DOCKER.md
 !/docs/PEER_REVIEW.md
-!/docs/testing/
+/tests/specialized/provenance.json
 * 中文翻译.md
 /backend/alembic/README
 /backend/app/**/PLAN.md

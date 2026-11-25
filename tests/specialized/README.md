@@ -121,18 +121,13 @@ not a new whole-system coverage claim. No exclusions hide known failures.
 
 Historical port-baseline evidence: functional369 pass/24 fail, browser149 pass/8 fail,
 SSR36 pass, delivery13 pass/8 fail. These original counts and the then-failing
-privacy-contract test belong to that baseline, not the current repaired checkout. See
-[the consolidated report](../../docs/testing/REPORT.md),
-[failure causes and post-fix plans](../../docs/testing/failed-cases.json), and
-[source provenance](provenance.json). These results are for the recorded baseline
-plus the test-only migration, not an assurance about future main commits.
+privacy-contract test belong to the port baseline.
 
 Current edit-version follow-up: browser169 (161 passed/8 known failures), SSR36
 passed, performance4 passed including the complete 360-second budget, original
 non-equivalent mutation samples7/7 detected, non-Docker delivery13 passed/8 known
-failures. The browser total includes the 12 version-conflict scenarios. See
-[VERSION_RETEST.md](../../docs/testing/VERSION_RETEST.md) for exactly which rerun
-replaces each first attempt; repeated executions are not added to accepted totals.
+failures. The browser total includes the 12 version-conflict scenarios and counts
+each accepted scenario once.
 SSR uses the real LanguageProvider and required props, browser selectors follow
 the current accessible names, and catalogue inventory must be nonempty. None of
 these adaptations suppresses product exceptions or changes rendering expressions.
@@ -146,7 +141,6 @@ patched. Old employer-list assertions were migrated because current SPEC retains
 booked future slots and returns is_booked; candidate availability still excludes
 them. Current ApplicantCard markup/Shanghai time and workspace heading are used.
 WebKit keyboard checks compare equivalent native control types and initial focus.
-Historical SHA/results remain separate in docs/testing/history.
 
 No Docker execution, production/live-target probing, credential validation,
 deployment or business repair is performed by these test entrypoints.
@@ -169,4 +163,4 @@ an exploitable app path, and a scanner hit is not automatically a real secret.
 These optional external-tool commands were not re-executed merely by copying the
 historical reports. Always redact credentials/personal data before publication.
 
-The four-editor extension is documented in [EDITOR_VERSIONS.md](../../docs/testing/EDITOR_VERSIONS.md). `editor_update_checks.mjs` runs 24 engine/language/editor scenarios plus 12 real company/status double-tab scenarios covering same-version checks, draft preservation, failed reads, cancelled/confirmed reloads, real 409 saves, pending skill queries and independent applicant cards. It captures the submitted versions; it never refreshes a stale PATCH body in the API helper.
+`editor_update_checks.mjs` runs 24 engine/language/editor scenarios plus 12 real company/status double-tab scenarios covering same-version checks, draft preservation, failed reads, cancelled/confirmed reloads, real 409 saves, pending skill queries and independent applicant cards. It captures the submitted versions; it never refreshes a stale PATCH body in the API helper.
