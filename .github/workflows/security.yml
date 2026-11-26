@@ -1,0 +1,115 @@
+name: Security scans
+
+# FP-SEC-4 (no real secrets) and dependency hygiene get their own workflow so
+# a security regression is visible without coupling it to the grading CI.
+# The gitleaks binary is downloaded directly (no marketplace action and no
+# licence key), pinned by version, and verified against a recorded SHA-256.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly, Monday 04:17 UTC.  Scheduled runs use the default branch.
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
+  GITLEAKS_VERSION: "8.30.1"
+  # sha256 of gitleaks_8.30.1_linux_x64.tar.gz from the release's
+  # gitleaks_8.30.1_checksums.txt.
+  GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+  PIP_AUDIT_VERSION: "2.10.1"
+
+jobs:
+  # Full-history secret scan.  The allowlist in .gitleaks.toml is limited to
+  # documented false positives (SHA-256 manifests and synthetic test keys).
+  gitleaks:
+    name: Secret scan (full history)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pinned gitleaks and verify checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          url="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          curl --fail --silent --show-error --location --proto '=https' \
+            --output "${archive}" "${url}"
+          echo "${GITLEAKS_SHA256}  ${archive}" | sha256sum --check --strict -
+          tar --extract --gzip --file "${archive}" gitleaks
+          test "$(./gitleaks version)" = "${GITLEAKS_VERSION}"
+
+      - name: Scan full history for secrets
+        run: ./gitleaks git . --redact=100 --no-banner --exit-code 1
+
+  # pip-audit resolves requirements.lock in an isolated environment, then
+  # checks every resolved package against the PyPI advisory database.
+  # P12b removed the unused starter packages and upgraded the remaining
+  # advisory ranges; the one accepted advisory (pytest's local /tmp issue) is
+  # handled explicitly on the audit command below.  See
+  # docs/advanced_testing/SECURITY_SCANS.md.
+  pip-audit:
+    name: Python dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements.lock
+
+      - name: Install pinned pip-audit
+        run: >-
+          python -m pip install --disable-pip-version-check
+          "pip-audit==${PIP_AUDIT_VERSION}"
+
+      - name: Audit locked Python dependencies
+        # Accepted risk: PYSEC-2026-1845 only affects the pytest test runner.
+        # The issue is UNIX /tmp local-permission handling; the CI runner is
+        # ephemeral, and the production image does not run pytest.
+        run: >-
+          pip-audit -r requirements.lock --strict
+          --ignore-vuln PYSEC-2026-1845
+
+  # Production frontend dependencies only.  npm ci is run with --no-audit so
+  # the explicit audit command below is the single gate and reports once.
+  npm-audit:
+    name: Frontend dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm --prefix frontend ci --no-audit --no-fund
+
+      - name: Audit production dependencies
+        run: npm --prefix frontend audit --omit=dev --audit-level=high
