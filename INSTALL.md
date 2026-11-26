@@ -286,10 +286,11 @@ npm --prefix frontend ci
 python tests/run_tests.py
 ```
 
-Python 3.12.4 and Node 24.16.0 were used for the recorded validation. Use a Node
-version satisfying the frontend lockfile/toolchain (Vite declares
-`^20.19.0 || >=22.12.0`). If Node is not on PATH, set `NODE_BINARY` to its executable.
-No new frontend test dependency or package-lock change is required.
+The current suite was re-run on 2026-11-26 with Python 3.14.4 and Node 24.15.0;
+CI uses Python 3.12 and Node 22. Use a Node version satisfying the frontend
+lockfile/toolchain (Vite declares `^20.19.0 || >=22.12.0`). If Node is not on
+PATH, set `NODE_BINARY` to its executable. No new frontend test dependency or
+package-lock change is required.
 
 The single Python command runs the complete business/schema/component unit suite
 non-interactively; a failing test, missing Node/dependency, or renderer failure
@@ -310,10 +311,10 @@ To inspect the three component results alone:
 node --test frontend/tests/rendering.unit.mjs
 ```
 
-After the text-validation and fixture updates the complete unit command passes **196
-tests** (exit 0), including strict versions, stale-write rejection and no-op
-semantics. The old employer-privacy test already passes after teammate commit
-`5143f1e`. No skip/xfail/filter is used.
+The complete unit command passes **252 tests** (exit 0) on 2026-11-26,
+including strict versions, stale-write rejection and no-op semantics. The old
+employer-privacy test already passes after teammate commit `5143f1e`. No
+skip/xfail/filter is used.
 
 ### Existing PostgreSQL/API regression (separate from unit tests)
 
@@ -340,10 +341,11 @@ python tests/run_tests.py --integration
 ```
 
 These are synthetic local example settings, not real credentials; configure local
-authentication for the disposable database separately. This complete legacy suite
-was verified with 241 passing cases on isolated PostgreSQL16.4 (account tests use
-their own in-memory SQLite). Failure also returns nonzero. The runner requires
-both explicit URLs and never starts/stops an existing database service.
+authentication for the disposable database separately. On 2026-11-26 this
+complete suite passed **241 cases** on an isolated PostgreSQL 17.6 temporary
+cluster (Docker and CI use PostgreSQL 15; account tests use their own in-memory
+SQLite). Failure also returns nonzero. The runner requires both explicit URLs
+and never starts/stops an existing database service.
 
 Do not use bare root-level `pytest` as the documented entry: automatic collection
 also finds legacy API/PG tests with different setup requirements. Use the two
@@ -393,6 +395,46 @@ inside the disposable cluster.
 The browser extension checks all four editors in Chinese/English on Chromium,
 Firefox and WebKit. Old company/status scripts must include their loaded version;
 refresh old tabs after deploying the coordinated database/backend/frontend update.
+
+## Advanced test suite (optional)
+
+`tests/advanced/` contains the optional advanced verification layer
+(property-based, stateful, LTL, Z3/formal, differential, mutation, OpenAPI
+fuzzing, metamorphic, LLM blind experiment, security scans and coverage). It is
+**not a course-required command**: the required command remains
+`python tests/run_tests.py`, and the advanced tools are not installed in the
+Docker image.
+
+Install its separate pinned dependencies in addition to the application
+requirements, then run from the repository root:
+
+```sh
+python -m pip install -r requirements.txt -r tests/advanced/requirements.txt
+python tests/advanced/run.py list
+python tests/advanced/run.py fast
+python tests/advanced/run.py all --out <new empty directory outside the checkout>
+```
+
+`list` prints the discovered modes and their `SLOW`/`NEEDS_DB` markers; `fast`
+runs every non-SLOW mode; `all` also runs the SLOW `mutation`, `apifuzz` and
+`coverage` modes. Modes marked `NEEDS_DB` need a disposable PostgreSQL instance:
+either set `PG_BIN` to a PostgreSQL 15 server-tools directory (containing
+`initdb`, `pg_ctl` and `postgres`) so the runner creates and deletes its own
+loopback cluster, or set `ADVANCED_PG_URL` to a disposable PostgreSQL service.
+Only loopback hosts are accepted; never point either setting at a shared or
+production database. On Windows:
+
+```powershell
+$env:PG_BIN = "C:\tools\pgsql\bin"
+python tests/advanced/run.py fast --out "$env:TEMP\advanced"
+```
+
+`--out` must be a new or empty directory **outside** the checkout; the runner
+writes `summary.json`, per-mode `result.json`/`run.log`/`junit.xml` and mode
+evidence there, and refuses to overwrite existing evidence. The full technique
+list, measured results, limitations and self-check records are in
+[ADVANCED_REPORT.md](docs/advanced_testing/ADVANCED_REPORT.md); runner and
+fixture details are in [tests/advanced/README.md](tests/advanced/README.md).
 
 ## Troubleshooting
 
