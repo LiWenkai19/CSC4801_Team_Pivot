@@ -281,6 +281,8 @@ traces = read_traces(out_dir)   # list[list[Event]]
 | `booked:<application>:<slot>` | 申请与时段已绑定预约 | `booked:a1:s1` |
 | `available:<slot>` | 时段空闲（候选人的可用列表里可见） | `available:s1` |
 | `deleted:<slot>` | 时段已被删除（若需要显式记录） | `deleted:s1` |
+| `slot:<slot>` | 时段存在 | `slot:s1` |
+| `new_booking:<application>` | 本步新建了预约（仅当步出现） | `new_booking:a1` |
 
 约定：`props` 表示**该步完成后的状态切片**，不是增量；每一步应写出所有需要被
 LTL 检查的相关真命题（至少覆盖该模式性质里出现的原子）。同一个原子在一个
