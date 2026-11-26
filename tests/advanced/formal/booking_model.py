@@ -63,6 +63,15 @@ initial state and the transition relation and handed to Z3.  ``unsat`` means
 no path of at most ``k`` steps violates it; ``sat`` yields a concrete
 counterexample trace that :meth:`BookingBMC.trace` renders as readable text.
 
+The same transition relation also supports a k-induction proof (k = 1).  A
+one-step instance with ``include_initial=False`` exposes the arbitrary
+``(S, a, S')`` transition; :meth:`BookingBMC.invariant` gives the candidate
+state invariant ``Inv = B1 ∧ (booked -> exists)`` and
+:meth:`BookingBMC.booking_persists` the auxiliary one-step property that lifts
+B3's state form to its temporal reading.  ``test_booking_bmc.py`` checks the
+base case, the inductive step and the single-step properties B2/B4, and
+records a rejected invariant-strengthening attempt.
+
 The ``Variant`` flags are deliberate deviations from the implemented guards.
 They exist only for negative controls: they show that the solver does find a
 counterexample when a guard is removed, so the ``unsat`` results above are
@@ -254,6 +263,13 @@ class BookingBMC:
     constraints; nothing is solved until :meth:`check` or :meth:`solve` is
     called.  Every query builds a fresh solver so proofs and counterexample
     searches cannot influence each other.
+
+    ``include_initial=False`` omits the initial-state constraints, which turns
+    a one-step instance into the arbitrary ``(S, a, S')`` transition used by
+    the k-induction obligations in :meth:`invariant` / :meth:`booking_persists`
+    and by ``test_booking_bmc.py``.  The guards and effects are the same code
+    path as the bounded model, so the induction proof is about exactly the
+    transition relation the bounded checks explore.
     """
 
     def __init__(
@@ -261,11 +277,13 @@ class BookingBMC:
         *,
         steps: int = STEPS,
         variant: Variant = Variant(),
+        include_initial: bool = True,
     ) -> None:
         if steps < 1:
             raise ValueError("steps must be a positive integer")
         self.steps = steps
         self.variant = variant
+        self.include_initial = include_initial
 
         self.status = {
             app: [
@@ -292,9 +310,15 @@ class BookingBMC:
             z3.Const(f"action_{t}", _ACTION_SORT) for t in range(steps)
         ]
 
-        self.constraints: list[z3.BoolRef] = []
-        self._add_initial_state()
+        self.initial_constraints: list[z3.BoolRef] = []
+        self.transition_constraints: list[z3.BoolRef] = []
+        if include_initial:
+            self._add_initial_state()
         self._add_transitions()
+        self.constraints = [
+            *self.initial_constraints,
+            *self.transition_constraints,
+        ]
 
     # -- transition relation ------------------------------------------
 
@@ -308,29 +332,95 @@ class BookingBMC:
         """
 
         for app in APPS:
-            self.constraints.append(
+            self.initial_constraints.append(
                 self.status[app][0] == STATUS_CONST[INITIAL_STATUS]
             )
-            self.constraints.append(
+            self.initial_constraints.append(
                 self.booking_of_app[app][0] == BOOKING_CONST["none"]
             )
         for slot in SLOTS:
-            self.constraints.append(self.slot_exists[slot][0])
+            self.initial_constraints.append(self.slot_exists[slot][0])
 
     def _add_transitions(self) -> None:
         for t in range(self.steps):
             for app in APPS:
-                self.constraints.append(
+                self.transition_constraints.append(
                     self.status[app][t + 1] == self._next_status(app, t)
                 )
-                self.constraints.append(
+                self.transition_constraints.append(
                     self.booking_of_app[app][t + 1] == self._next_booking(app, t)
                 )
             for slot in SLOTS:
-                self.constraints.append(
+                self.transition_constraints.append(
                     self.slot_exists[slot][t + 1]
                     == self._next_slot_exists(slot, t)
                 )
+
+    # -- state invariant for the k-induction proof --------------------
+
+    def slot_exclusive_at(self, t: int) -> z3.BoolRef:
+        """B1 at one state: at most one application holds each slot."""
+
+        claims = []
+        for slot in SLOTS:
+            holders = [
+                self.booking_of_app[app][t] == BOOKING_CONST[slot]
+                for app in APPS
+            ]
+            claims.append(z3.AtMost(*holders, 1))
+        return z3.And(*claims)
+
+    def booked_slot_exists_at(self, t: int) -> z3.BoolRef:
+        """State form of B3: ``booking_of_app[a] = s -> slot_exists[s]``."""
+
+        claims = []
+        for app in APPS:
+            for slot in SLOTS:
+                claims.append(
+                    z3.Implies(
+                        self.booking_of_app[app][t]
+                        == BOOKING_CONST[slot],
+                        self.slot_exists[slot][t],
+                    )
+                )
+        return z3.And(*claims)
+
+    def invariant(self, t: int = 0) -> z3.BoolRef:
+        """The k-induction invariant ``Inv(S_t)``.
+
+        ``Inv = B1 ∧ (booked -> exists)`` is the candidate proposed by the
+        task.  It is inductive for the unmodified transition relation, so no
+        strengthening was needed; ``test_booking_bmc.py`` also records the
+        rejected attempt to fold B2's state form into it.
+        """
+
+        return z3.And(
+            self.slot_exclusive_at(t), self.booked_slot_exists_at(t)
+        )
+
+    def booking_persists(self, t: int = 0) -> z3.BoolRef:
+        """Auxiliary one-step property: a booking is never cleared.
+
+        ``Inv`` only says "a booked slot exists *now*".  To lift that to B3's
+        temporal reading ("a slot booked at ``t`` exists at every ``t' >= t``")
+        the booking must also survive every transition.  The transition
+        relation only writes ``booking_of_app`` through a successful ``book``,
+        whose guard requires ``none``; this obligation makes that explicit so
+        the lifting argument does not silently rely on the encoding.  It is a
+        single-step property, not part of the state invariant.
+        """
+
+        return z3.And(
+            *[
+                z3.Implies(
+                    self.booking_of_app[app][t]
+                    != BOOKING_CONST["none"],
+                    self.booking_of_app[app][t + 1]
+                    == self.booking_of_app[app][t],
+                )
+                for app in APPS
+            ]
+        )
 
     def _next_status(self, app: str, t: int) -> z3.ExprRef:
         """Apply the selected ``set_status`` action; nothing else touches it."""
@@ -453,15 +543,9 @@ class BookingBMC:
     def _slot_exclusive(self) -> z3.BoolRef:
         """B1: at every step, at most one application holds a given slot."""
 
-        claims = []
-        for t in range(self.steps + 1):
-            for slot in SLOTS:
-                holders = [
-                    self.booking_of_app[app][t] == BOOKING_CONST[slot]
-                    for app in APPS
-                ]
-                claims.append(z3.AtMost(*holders, 1))
-        return z3.And(*claims)
+        return z3.And(
+            *[self.slot_exclusive_at(t) for t in range(self.steps + 1)]
+        )
 
     def _booking_requires_interviewing(self) -> z3.BoolRef:
         """B2: a booking is only created by a guarded ``book`` step.
@@ -584,17 +668,29 @@ class BookingBMC:
         state within the bound; ``sat`` carries the counterexample model.
         """
 
-        return self._query(z3.Not(self.property(name)))
+        return self._run(self.constraints, z3.Not(self.property(name)))
 
     def solve(self, *extra: z3.BoolRef) -> CheckResult:
-        """Satisfiability query used by the reachability witnesses."""
+        """Satisfiability query over the full (initial + transition) system."""
 
-        return self._query(*extra)
+        return self._run(self.constraints, *extra)
 
-    def _query(self, *goal: z3.BoolRef) -> CheckResult:
+    def solve_initial(self, *extra: z3.BoolRef) -> CheckResult:
+        """Satisfiability query over the initial-state constraints only.
+
+        The k-induction base case is ``Initial(S_0) ∧ ¬Inv(S_0)``: no
+        transition is involved, so the transition constraints must not be
+        conjoined (they would be satisfiable regardless of ``Inv``).
+        """
+
+        return self._run(self.initial_constraints, *extra)
+
+    def _run(
+        self, base: list[z3.BoolRef], *goal: z3.BoolRef
+    ) -> CheckResult:
         solver = z3.Solver()
         solver.set("timeout", QUERY_TIMEOUT_MS)
-        solver.add(*self.constraints, *goal)
+        solver.add(*base, *goal)
         started = time.perf_counter()
         result = solver.check()
         seconds = time.perf_counter() - started

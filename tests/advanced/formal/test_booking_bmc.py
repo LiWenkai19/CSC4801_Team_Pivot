@@ -19,6 +19,14 @@ that violates it:
 * The reachability tests show that booking, deletion and a status change of a
   booked application actually occur on some path; without them an
   over-constrained model could make B1-B4 vacuously true.
+* The **k-induction** section (k = 1) lifts B1-B4 from "no counterexample
+  within six steps" to "holds for any number of steps".  It checks the base
+  case, the inductive step for the state invariant
+  ``Inv = B1 ∧ (booked -> exists)``, the single-step properties B2/B4, and
+  the auxiliary persistence property that lifts B3's state form to its
+  temporal reading.  A rejected strengthening attempt and a negative control
+  on the N1 variant document the propose → check → counterexample → repair
+  loop.
 
 ``sat`` is not a bug report about the application: it is a counterexample to
 the *model*.  The model is only as good as the guard-to-code table, and the
@@ -28,6 +36,7 @@ report states that limitation explicitly.
 from __future__ import annotations
 
 import pytest
+import z3
 
 import booking_model
 
@@ -466,3 +475,281 @@ def test_booking_survives_a_reachable_status_change(request):
         "\nbooking + status change witness:\n"
         + booking_model.format_trace(rows),
     )
+
+
+# -- k-induction (k = 1): B1-B4 for an arbitrary number of steps ---------
+
+
+def _one_step(variant=None) -> booking_model.BookingBMC:
+    """One arbitrary ``(S, a, S')`` transition, without the initial state.
+
+    ``include_initial=False`` is what makes the inductive step universally
+    quantified over states: S may be any state, not only a reachable one.
+    """
+
+    return booking_model.BookingBMC(
+        steps=1,
+        variant=variant or booking_model.Variant(),
+        include_initial=False,
+    )
+
+
+def _invariant_holds_on_state(state: dict) -> bool:
+    """Independent evaluation of ``Inv`` on a concrete trace state.
+
+    Reproduces ``B1 ∧ (booked -> exists)`` in plain Python, so the negative
+    controls do not ask the encoding whether the encoding is right.
+    """
+
+    bookings = state["booking_of_app"]
+    for slot in booking_model.SLOTS:
+        holders = [
+            app for app in booking_model.APPS if bookings[app] == slot
+        ]
+        if len(holders) > 1:
+            return False
+    for app in booking_model.APPS:
+        slot = bookings[app]
+        if slot != "none" and not state["slot_exists"][slot]:
+            return False
+    return True
+
+
+def _booked_implies_interviewing(bmc, t: int) -> z3.BoolRef:
+    """The rejected strengthening: B2's state form as an invariant."""
+
+    return z3.And(
+        *[
+            z3.Implies(
+                bmc.booking_of_app[app][t]
+                != booking_model.BOOKING_CONST["none"],
+                bmc.status[app][t]
+                == booking_model.STATUS_CONST["Interviewing"],
+            )
+            for app in booking_model.APPS
+        ]
+    )
+
+
+def _booked_implies_interviewing_holds(state: dict) -> bool:
+    return all(
+        state["status"][app] == "Interviewing"
+        for app in booking_model.APPS
+        if state["booking_of_app"][app] != "none"
+    )
+
+
+def _record_result(
+    record_id: str,
+    kind: str,
+    title: str,
+    result,
+    *,
+    requirement: str = "",
+    variant: str = "unmodified",
+) -> dict:
+    record = {
+        "id": record_id,
+        "kind": kind,
+        "title": title,
+        "requirement": requirement,
+        "variant": variant,
+        "steps": 1,
+        "result": result.status,
+        "seconds": round(result.seconds, 6),
+    }
+    RECORDS.append(record)
+    return record
+
+
+def _expect_unsat(record_id: str, result) -> None:
+    detail = ""
+    if result.is_sat:
+        detail = f"; counterexample model: {result.model}"
+    elif result.reason is not None:
+        detail = f"; reason: {result.reason}"
+    assert result.status == "unsat", (
+        f"{record_id}: expected unsat, got {result.status}{detail}"
+    )
+    assert result.seconds < QUERY_TIME_LIMIT_SECONDS, (
+        f"{record_id}: query took {result.seconds:.3f}s "
+        f"(limit {QUERY_TIME_LIMIT_SECONDS}s)"
+    )
+
+
+# {Initial(S_0)}  {Inv(S_0)}
+def test_induction_base_initial_state_satisfies_invariant():
+    """Base case: the fixed initial state satisfies ``Inv`` (k = 1)."""
+
+    base = booking_model.BookingBMC(steps=1)
+    result = base.solve_initial(z3.Not(base.invariant(0)))
+    _record_result(
+        "IND-base",
+        "induction_base",
+        "the initial state satisfies Inv",
+        result,
+        requirement="Inv base case",
+    )
+    _expect_unsat("IND-base", result)
+
+
+# {Inv(S) ∧ Trans(S, a, S')}  {Inv(S')}
+def test_induction_step_preserves_invariant():
+    """Inductive step: every transition from an ``Inv`` state keeps ``Inv``.
+
+    The state S is arbitrary (``include_initial=False``); the action is a free
+    enum value, so the query covers all 15 actions.
+    """
+
+    step = _one_step()
+    result = step.solve(step.invariant(0), z3.Not(step.invariant(1)))
+    _record_result(
+        "IND-step",
+        "induction_step",
+        "Inv(S) and one transition imply Inv(S')",
+        result,
+        requirement="Inv inductive step",
+    )
+    _expect_unsat("IND-step", result)
+
+
+def test_induction_rejects_booked_interviewing_strengthening(request):
+    """L13 propose → check → counterexample → repair.
+
+    Strengthening ``Inv`` with B2's state form (``booked -> Interviewing``)
+    is tempting but false: FP-SCHED-2/B4 explicitly allows a booked
+    application to leave ``Interviewing``.  Z3 must find that state and the
+    test prints it; the final invariant therefore keeps B2 as a single-step
+    property instead.
+    """
+
+    step = _one_step()
+    premise = z3.And(
+        step.invariant(0), _booked_implies_interviewing(step, 0)
+    )
+    claim = z3.And(
+        step.invariant(1), _booked_implies_interviewing(step, 1)
+    )
+    result = step.solve(premise, z3.Not(claim))
+    record = _record_result(
+        "IND-strengthen-rejected",
+        "rejected_candidate",
+        "Inv plus (booked -> Interviewing) is not inductive",
+        result,
+        requirement="k-induction strengthening attempt",
+    )
+    assert result.status == "sat", (
+        "the strengthened invariant was expected to fail; if it is inductive "
+        "the model or the documentation is out of date"
+    )
+    assert result.model is not None
+    rows = step.trace(result.model)
+    record["trace"] = rows
+    record["trace_text"] = booking_model.format_trace(rows)
+    _emit(
+        request,
+        "\nrejected strengthening counterexample (Inv + B2 state):\n"
+        + record["trace_text"],
+    )
+    assert _invariant_holds_on_state(rows[0]["state"])
+    assert _booked_implies_interviewing_holds(rows[0]["state"])
+    assert _invariant_holds_on_state(rows[1]["state"])
+    assert not _booked_implies_interviewing_holds(rows[1]["state"])
+
+
+# {Inv(S) ∧ Trans(S, a, S')}  {B2(S, a, S')}
+def test_induction_b2_is_a_single_step_property():
+    """B2 holds on every single step from an ``Inv`` state."""
+
+    step = _one_step()
+    result = step.solve(step.invariant(0), z3.Not(step.property("B2")))
+    _record_result(
+        "IND-B2",
+        "single_step",
+        "B2 holds on one transition from any Inv state",
+        result,
+        requirement="FP-SCHED-2",
+    )
+    _expect_unsat("IND-B2", result)
+
+
+# {Inv(S) ∧ Trans(S, a, S')}  {B4(S, a, S')}
+def test_induction_b4_is_a_single_step_property():
+    """B4 holds on every single step from an ``Inv`` state."""
+
+    step = _one_step()
+    result = step.solve(step.invariant(0), z3.Not(step.property("B4")))
+    _record_result(
+        "IND-B4",
+        "single_step",
+        "B4 holds on one transition from any Inv state",
+        result,
+        requirement="FP-SCHED-2 / FP-EMP-3",
+    )
+    _expect_unsat("IND-B4", result)
+
+
+# {Inv(S) ∧ Trans(S, a, S')}  {booking[a](S) = none ∨ booking[a](S') = booking[a](S)}
+def test_induction_booking_persists_across_one_step():
+    """Auxiliary step property: no action clears an existing booking.
+
+    ``Inv`` alone gives only "booked -> exists now".  With persistence, a
+    booking made at ``t`` is still present at every later ``t'``, so the
+    invariant applies there too and B3's temporal reading follows by a
+    meta-induction on time.
+    """
+
+    step = _one_step()
+    result = step.solve(step.invariant(0), z3.Not(step.booking_persists(0)))
+    _record_result(
+        "IND-persist",
+        "single_step",
+        "a booking is never cleared by one transition",
+        result,
+        requirement="B3 lifting to the temporal reading",
+    )
+    _expect_unsat("IND-persist", result)
+
+
+def test_induction_n1_relaxed_slot_guard_breaks_the_step(request):
+    """Negative control: without the slot-free guard ``Inv`` is not inductive.
+
+    Reproduces the ``allow_booking_taken_slot`` variant used by N1 on the
+    arbitrary-state transition.  The trace must show a state that satisfies
+    ``Inv`` and, after one ``book``, violates B1.
+    """
+
+    step = _one_step(booking_model.Variant(allow_booking_taken_slot=True))
+    result = step.solve(step.invariant(0), z3.Not(step.invariant(1)))
+    record = _record_result(
+        "IND-N1",
+        "negative_control",
+        "without the slot-free guard Inv is not inductive",
+        result,
+        requirement="propose/check/repair self-check",
+        variant=step.variant.describe(),
+    )
+    assert result.status == "sat", (
+        "expected a state that satisfies Inv but breaks it in one step"
+    )
+    assert result.model is not None
+    rows = step.trace(result.model)
+    record["trace"] = rows
+    record["trace_text"] = booking_model.format_trace(rows)
+    _emit(
+        request,
+        "\ninduction counterexample under N1 variant "
+        "(Inv state, one step breaks B1):\n" + record["trace_text"],
+    )
+    assert _invariant_holds_on_state(rows[0]["state"])
+    assert not _invariant_holds_on_state(rows[1]["state"])
+    action = rows[0]["action"]["raw"]
+    assert action.startswith("book_"), action
+    booked_app, booked_slot = _book_target(action)
+    other_app = next(
+        app for app in booking_model.APPS if app != booked_app
+    )
+    assert rows[0]["state"]["booking_of_app"][other_app] == booked_slot
+    assert rows[0]["state"]["booking_of_app"][booked_app] == "none"
+    assert rows[1]["state"]["booking_of_app"][booked_app] == booked_slot
+    assert rows[1]["state"]["booking_of_app"][other_app] == booked_slot
