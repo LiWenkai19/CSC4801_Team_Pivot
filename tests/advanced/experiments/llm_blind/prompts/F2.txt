@@ -1,0 +1,76 @@
+You are the test-generation agent in a blind experiment (course Lecture 14,
+Exercises 1 and 3). You have been given exactly two inputs: this prompt and the
+contract file `tests/advanced/experiments/llm_blind/contracts/F2.md`. Work from the
+contract only.
+
+HARD RULES
+- Do NOT open any file under `backend/app/` (production implementation), and do
+  NOT open `tests/unit/test_scheduling.py`, `tests/unit/test_workflows.py`, or any
+  existing test of `book`.
+- You MAY read and import the harness helper
+  `tests/advanced/experiments/llm_blind/generated/session_double.py` (it is a test
+  double, not the implementation) and `tests/advanced/experiments/llm_blind/generated/conftest.py`.
+- Do NOT execute `book` or run pytest; the experiment owner runs the generated
+  tests after freezing them in a commit. Running them would leak implementation
+  behaviour into the generation step.
+- Do NOT modify production code, contracts, prompts, helpers, or any file other
+  than the single output file named below.
+- Use only the Python standard library and pytest.
+
+TASK
+Write `tests/advanced/experiments/llm_blind/generated/test_F2.py` containing
+pytest tests for `app.candidate.service.book`, imported exactly as
+
+    from app.candidate.service import book, NotFoundError, ForbiddenError, ConflictError
+
+The signature is:
+
+    def book(session: Session, user: User, application_id: uuid.UUID, slot_id: uuid.UUID) -> BookingPublic
+
+PROCEDURE (follow the order)
+1. Map FP-SCHED-2 and FP-SCHED-3 from the contract to valid, boundary, and
+   invalid partitions. Put the partition map in a module docstring or comment
+   block.
+2. For every scenario, construct the state explicitly and calculate the expected
+   outcome from the contract, including the arithmetic for the 30-minute duration
+   and the future/past timestamps. Do not call `book` to discover expectations.
+   Use fixed, timezone-aware timestamps (for example 2099 and 2020) rather than
+   “now + 1 day”.
+3. Check the exact exception class: `pytest.raises(ConflictError)`,
+   `pytest.raises(ForbiddenError)`, `pytest.raises(NotFoundError)`; a bare
+   `ValueError` is not acceptable. Assert the fixed message where the contract
+   gives one.
+4. **For every rejected call** (Lecture 14 slide 26), snapshot the whole relevant
+   state before the call and assert afterwards:
+   - `session.commit` was not called;
+   - no `Booking` was persisted (`session.add` did not receive a `Booking`, and the
+     object graph has no new booking);
+   - `slot.job_id`, `application.status` and `application.version` are unchanged;
+   - if the function staged a write or attempted a commit, `session.rollback` was
+     called. Do not assert a rollback for a pure validation rejection that stages
+     nothing.
+5. Cover all success and rejection conditions in the contract: eligible success;
+   pending/rejected/accepted status; wrong candidate; missing application; missing
+   slot; missing job; slot in the past; 29-minute and 31-minute durations; slot
+   already booked; slot reserved for another job; commit raising
+   `sqlalchemy.exc.IntegrityError` → rollback + `ConflictError("Slot already booked")`.
+6. For the success case assert the exact observable outcome: returned
+   `BookingPublic` fields, `slot.job_id` set to the application's job, exactly one
+   `Booking` added with the right IDs, and one commit.
+7. List every ambiguity you had to resolve at the top of the file.
+8. Make the file self-contained apart from the provided helper.
+
+RECOMMENDED SESSION SETUP
+`from session_double import make_session` and read its docstring/signature. Build
+the entities as real SQLModel instances (not `MagicMock`s) when the attributes are
+read by the service, so status comparisons are real enum comparisons. The helper
+accepts the application, slot and job objects and optional existing bookings. If
+you build your own `MagicMock(spec=Session)`, make every result chain empty by
+default (`.first()`, `.one_or_none()`, `.all()`, `.scalars().first()`) and configure
+`get`/`exec` side effects by object rather than by call order.
+
+OUTPUT
+Write only the file `tests/advanced/experiments/llm_blind/generated/test_F2.py`.
+Reply with a short summary: partitions covered, the three hand-calculated expected
+values, which state snapshots you assert, and the ambiguities you recorded. Do not
+paste the whole file back.

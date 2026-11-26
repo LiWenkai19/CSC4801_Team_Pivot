@@ -1,0 +1,1274 @@
+{
+  "attribution": [
+    {
+      "actual": "collection error, 0 tests executed",
+      "category": "generation error",
+      "expected": "pytest collects the parametrized rows",
+      "function": "F1",
+      "id": "F1-collection",
+      "production_bug": false,
+      "resolution": "removed the extra id; expected values untouched (commit 467a6f2)",
+      "symptom": "In test_empty_list_boundaries: 9 parameter sets specified, with different number of ids: 10"
+    },
+    {
+      "actual": "the generated _make_user() built a User without role; the service correctly enforced its role guard",
+      "category": "generation error (test setup)",
+      "expected": "the contract's authenticated candidate User has role=Role.Candidate",
+      "function": "F2",
+      "id": "F2-role-setup",
+      "production_bug": false,
+      "resolution": "set role=Role.Candidate in _make_user(); expected values untouched (commit 467a6f2)",
+      "symptom": "app.users.service.CandidateRoleRequiredError: Candidate role required in all 19 cases"
+    },
+    {
+      "actual": "the double injected IntegrityError without the concurrent winner row; after rollback the service found no conflicting booking and re-raised the unclassified IntegrityError",
+      "category": "generation/harness gap + contract ambiguity",
+      "expected": "the contract says a commit IntegrityError is reported as ConflictError('Slot already booked')",
+      "function": "F2",
+      "id": "F2-integrity-winner",
+      "production_bug": false,
+      "resolution": "the double now exposes the late concurrent winner; the service then raises ConflictError('Slot already booked') (commit e76641f)",
+      "symptom": "IntegrityError re-raised instead of ConflictError('Slot already booked')"
+    },
+    {
+      "actual": "explicit skip, not a hidden failure",
+      "category": "documented contract gap",
+      "expected": "contract defines no behaviour",
+      "function": "F1",
+      "id": "F1-out-of-contract",
+      "production_bug": false,
+      "resolution": "recorded as ambiguity A1; no assertion added",
+      "symptom": "1 skipped test: out-of-contract inputs (None / bare str / non-str elements)"
+    }
+  ],
+  "branch": "test/P10",
+  "comparison": {
+    "F1": {
+      "generated": {
+        "cases": 94,
+        "skipped": 1,
+        "test_functions": 22
+      },
+      "generated_unique_partitions": [
+        "empty candidate with non-empty required",
+        "both lists empty",
+        "whitespace-only required",
+        "order/duplicate invariance",
+        "Unicode and symbols",
+        "str.lower vs casefold",
+        "exact int type and 0..100 range",
+        "input non-mutation"
+      ],
+      "handwritten": {
+        "direct_match_score_cases": 5,
+        "file_cases": 8,
+        "test_functions": 4
+      },
+      "handwritten_unique_partitions": [
+        "recommendation ranking and tie-breakers",
+        "job-field preservation and active-job filter"
+      ],
+      "unique_finding": "generated tests alone kill the dropped-trim mutant; the handwritten normalization case mixes spaced and unspaced copies in one candidate list, so it cannot observe the missing strip"
+    },
+    "F2": {
+      "generated": {
+        "cases": 19,
+        "test_functions": 16
+      },
+      "generated_unique_partitions": [
+        "missing job",
+        "slot reserved for another job",
+        "29- and 31-minute durations",
+        "Rejected/Accepted statuses",
+        "check-order precedence"
+      ],
+      "handwritten": {
+        "book_specific_cases": 13,
+        "file_cases": 32,
+        "other_slot_and_route_cases": 19
+      },
+      "handwritten_unique_partitions": [
+        "available-slot filtering",
+        "generic SQLAlchemyError rollback",
+        "HTTP route status mapping",
+        "application-already-booked route message",
+        "unclassified IntegrityError re-raise"
+      ],
+      "unique_finding": "generated tests alone kill the missing-job-check mutant"
+    },
+    "F3": {
+      "generated": {
+        "cases": 11
+      },
+      "generated_unique_partitions": [
+        "closing tag",
+        "mixed-case tag",
+        "literal entity",
+        "metacharacter-only names",
+        "empty list",
+        "tag-like text",
+        "attribute breakout"
+      ],
+      "handwritten": {
+        "node_cases": 3,
+        "pytest_wrappers": 1
+      },
+      "handwritten_unique_partitions": [
+        "label/input id association"
+      ]
+    }
+  },
+  "description": "LLM-generated tests from contracts, generated before implementation review",
+  "experiment": "P10 llm_blind",
+  "finished_at": "2026-11-26T02:09:40.180968+00:00",
+  "frozen_run": {
+    "artifact_dir": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-llm-blind-20261126-100242",
+    "commit": "c0859d0208fd5c20c2fa90e786538db8f6732bb8",
+    "summary": {
+      "F1": {
+        "cases": 1,
+        "failed": 1,
+        "note": "pytest collection error, 9 parameter sets / 10 ids",
+        "passed": 0
+      },
+      "F2": {
+        "cases": 19,
+        "failed": 19,
+        "note": "all blocked by CandidateRoleRequiredError (synthetic user had no role)",
+        "passed": 0
+      },
+      "F3": {
+        "cases": 11,
+        "failed": 0,
+        "passed": 11
+      }
+    }
+  },
+  "generated_files": {
+    "F1": "tests\\advanced\\experiments\\llm_blind\\generated\\test_F1.py",
+    "F2": "tests\\advanced\\experiments\\llm_blind\\generated\\test_F2.py",
+    "F3": "tests\\advanced\\experiments\\llm_blind\\generated\\test_F3.mjs"
+  },
+  "git_status": " M tests/advanced/experiments/llm_blind/mutation/run_mutants.py\n M tests/advanced/experiments/llm_blind/run_experiment.py\n?? tests/advanced/experiments/llm_blind/mutation/mutants.py\n?? tests/advanced/experiments/llm_blind/mutation/results.json\n?? tests/advanced/experiments/llm_blind/results.json\n",
+  "mutation": {
+    "baseline_green": true,
+    "definition": "killed = at least one test in the suite fails under the injected mutant; baseline for every suite is green",
+    "generated": {
+      "killed": 5,
+      "tested": 5
+    },
+    "handwritten": {
+      "killed": 3,
+      "tested": 5
+    },
+    "results_file": "tests/advanced/experiments/llm_blind/mutation/results.json",
+    "survivors_only_in_handwritten": [
+      "F1_M3_drop_trim",
+      "F2_M5_skip_missing_job_check"
+    ]
+  },
+  "node": "C:\\Program Files\\nodejs\\node.EXE",
+  "node_modules": "D:\\Study\\Y4 - CSC4801\\final_project\\app\\frontend\\node_modules",
+  "protocol": {
+    "final_run_commit": "e76641feaecb3d17a8a46912e596916409d59cf6",
+    "freeze_policy": "The generated files were committed before the experiment owner ran them or reviewed the implementations.",
+    "frozen_generated_commit": "c0859d0208fd5c20c2fa90e786538db8f6732bb8",
+    "generation": "Contracts were written by the experiment owner from docs/REQUIREMENTS.md, SPEC.md and the target signatures. Three independent generator subagents received only their contract, prompt, target import path and the test harness; they were forbidden to open backend/app, frontend/src or existing tests, and to execute the target before the freeze.",
+    "post_freeze_repairs": [
+      {
+        "commit": "467a6f279365fb6d2190d3436e83bc7ce83603d6",
+        "reason": "F1 parametrize ids count (10 ids for 9 rows); F2 synthetic User lacked role=Role.Candidate. No expected value changed."
+      },
+      {
+        "commit": "e76641feaecb3d17a8a46912e596916409d59cf6",
+        "reason": "F2 IntegrityError test did not expose the concurrent winner after rollback; harness gained late_slot_bookings. No expected value changed."
+      }
+    ]
+  },
+  "python": "3.14.4",
+  "python_executable": "D:\\Study\\Y4 - CSC4801\\final_project\\app\\.venv\\Scripts\\python.exe",
+  "runs": {
+    "F1": {
+      "cases": [
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_fp_match_1_required_examples[full-overlap-100]",
+          "seconds": 0.002,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_fp_match_1_required_examples[partial-overlap-50]",
+          "seconds": 0.001,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_fp_match_1_required_examples[disjoint-0]",
+          "seconds": 0.001,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_fp_match_1_required_examples[empty-required-100]",
+          "seconds": 0.001,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_fp_match_1_normalisation_example",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_empty_list_boundaries[empty-and-empty-100]",
+          "seconds": 0.001,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_empty_list_boundaries[empty-candidate-required-1]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_empty_list_boundaries[empty-candidate-required-2]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_empty_list_boundaries[empty-candidate-required-3]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_empty_list_boundaries[empty-required-nonempty-candidate-100]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_empty_list_boundaries[empty-required-3-skills-100]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_empty_list_boundaries[both-whitespace-only-100]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_empty_list_boundaries[whitespace-candidate-real-required-0]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_empty_list_boundaries[whitespace-only-required-100]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_candidate_covers_required[single-skill]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_candidate_covers_required[two-skills]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_candidate_covers_required[three-skills]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_candidate_covers_required[superset-of-required-2]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_candidate_covers_required[superset-of-required-1]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_candidate_covers_required[duplicated-but-complete]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_denominator_is_required_count_not_candidate_count",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_numerator_counts_only_required_skills",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n3-k0-0]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n3-k1-33]",
+          "seconds": 0.001,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n3-k2-66]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n3-k3-100]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n4-k1-25]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n4-k2-50]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n4-k3-75]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n6-k1-16]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n6-k5-83]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n7-k1-14]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n7-k6-85]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n8-k3-37]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n9-k4-44]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n9-k8-88]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n11-k1-9]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n11-k10-90]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n12-k5-41]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n12-k11-91]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n13-k12-92]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n200-k1-0]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding[n200-k199-99]",
+          "seconds": 0.001,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[3-1-33]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[3-2-66]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[6-1-16]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[6-5-83]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[7-1-14]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[7-6-85]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[8-1-12]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[8-3-37]",
+          "seconds": 0.001,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[9-1-11]",
+          "seconds": 0.001,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[9-4-44]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[9-8-88]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[11-1-9]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[11-10-90]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[12-5-41]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[13-12-92]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[16-1-6]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[16-15-93]",
+          "seconds": 0.001,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[40-1-2]",
+          "seconds": 0.001,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[40-39-97]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[100-1-1]",
+          "seconds": 0.001,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[100-99-99]",
+          "seconds": 0.001,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[200-1-0]",
+          "seconds": 0.001,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_floor_rounding_sweep[200-199-99]",
+          "seconds": 0.001,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_normalisation_whitespace_case_duplicates[strip-spaces]",
+          "seconds": 0.001,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_normalisation_whitespace_case_duplicates[strip-tab-newline]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_normalisation_whitespace_case_duplicates[strip-and-partial]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_normalisation_whitespace_case_duplicates[case-mixed-in-one-list]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_normalisation_whitespace_case_duplicates[case-both-lists]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_normalisation_whitespace_case_duplicates[case-partial]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_normalisation_whitespace_case_duplicates[dup-required]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_normalisation_whitespace_case_duplicates[dup-candidate]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_normalisation_whitespace_case_duplicates[dup-partial]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_normalisation_whitespace_case_duplicates[empty-strings]",
+          "seconds": 0.001,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_normalisation_whitespace_case_duplicates[empty-strings-2]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_normalisation_whitespace_case_duplicates[whitespace-entries]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_normalisation_whitespace_case_duplicates[whitespace-entries-2]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_normalisation_whitespace_case_duplicates[combined-noise]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_normalisation_whitespace_case_duplicates[combined-noise-partial]",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_normalisation_equivalence_same_score",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_input_order_invariance",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_duplicate_invariance",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_unicode_skills_are_matched_verbatim",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_unicode_mixed_with_ascii_partial",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_symbol_skills_are_lowercased",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_lower_is_not_casefold",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_internal_whitespace_is_preserved",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_return_type_is_exactly_int",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_return_range_on_boundary_inputs",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_inputs_are_not_mutated",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": null,
+          "name": "test_repeated_calls_are_deterministic",
+          "seconds": 0.0,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F1",
+          "file": "",
+          "message": "Contract F1 does not define behaviour for None, a bare str, or non-str elements (ambiguity A1); nothing is asserted.",
+          "name": "test_out_of_contract_inputs_are_undefined",
+          "seconds": 0.001,
+          "status": "skipped"
+        }
+      ],
+      "command": [
+        "D:\\Study\\Y4 - CSC4801\\final_project\\app\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "D:\\Study\\Y4 - CSC4801\\final_project\\wt-P10\\tests\\advanced\\experiments\\llm_blind\\generated\\test_F1.py",
+        "-v",
+        "--rootdir",
+        "D:\\Study\\Y4 - CSC4801\\final_project\\wt-P10",
+        "-p",
+        "no:cacheprovider",
+        "--junitxml=C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-llm-blind-final2-20261126-100934\\F1-junit.xml"
+      ],
+      "exit_code": 0,
+      "function": "app.employer.matching.match_score",
+      "junit": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-llm-blind-final2-20261126-100934\\F1-junit.xml",
+      "kind": "pytest",
+      "log": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-llm-blind-final2-20261126-100934\\F1.log",
+      "seconds": 2.269,
+      "summary": {
+        "cases": 94,
+        "failed": 0,
+        "passed": 93,
+        "skipped": 1
+      },
+      "test_file": "tests\\advanced\\experiments\\llm_blind\\generated\\test_F1.py"
+    },
+    "F2": {
+      "cases": [
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_s1_eligible_booking_succeeds",
+          "seconds": 0.037,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_slot_already_reserved_for_the_same_job_is_eligible",
+          "seconds": 0.006,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_s2_status_other_than_interviewing_is_conflict[pending]",
+          "seconds": 0.003,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_s2_status_other_than_interviewing_is_conflict[rejected]",
+          "seconds": 0.004,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_s2_status_other_than_interviewing_is_conflict[accepted]",
+          "seconds": 0.004,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_s3_application_of_another_candidate_is_forbidden",
+          "seconds": 0.003,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_missing_application_is_not_found",
+          "seconds": 0.003,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_missing_slot_is_not_found_with_message",
+          "seconds": 0.005,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_missing_job_is_not_found_with_message",
+          "seconds": 0.005,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_slot_of_another_employer_is_forbidden",
+          "seconds": 0.004,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_slot_starting_in_the_past_is_conflict",
+          "seconds": 0.005,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_slot_duration_other_than_thirty_minutes_is_conflict[29-minutes]",
+          "seconds": 0.005,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_slot_duration_other_than_thirty_minutes_is_conflict[31-minutes]",
+          "seconds": 0.004,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_application_already_booked_is_conflict",
+          "seconds": 0.003,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_slot_already_booked_is_conflict",
+          "seconds": 0.004,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_slot_reserved_for_another_job_is_conflict",
+          "seconds": 0.004,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_commit_integrity_error_rolls_back_and_reports_slot_already_booked",
+          "seconds": 0.006,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_precedence_wrong_candidate_beats_wrong_status",
+          "seconds": 0.003,
+          "status": "passed"
+        },
+        {
+          "classname": "tests.advanced.experiments.llm_blind.generated.test_F2",
+          "file": "",
+          "message": null,
+          "name": "test_precedence_application_booking_beats_missing_slot",
+          "seconds": 0.004,
+          "status": "passed"
+        }
+      ],
+      "command": [
+        "D:\\Study\\Y4 - CSC4801\\final_project\\app\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "D:\\Study\\Y4 - CSC4801\\final_project\\wt-P10\\tests\\advanced\\experiments\\llm_blind\\generated\\test_F2.py",
+        "-v",
+        "--rootdir",
+        "D:\\Study\\Y4 - CSC4801\\final_project\\wt-P10",
+        "-p",
+        "no:cacheprovider",
+        "--junitxml=C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-llm-blind-final2-20261126-100934\\F2-junit.xml"
+      ],
+      "exit_code": 0,
+      "function": "app.candidate.service.book",
+      "junit": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-llm-blind-final2-20261126-100934\\F2-junit.xml",
+      "kind": "pytest",
+      "log": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-llm-blind-final2-20261126-100934\\F2.log",
+      "seconds": 2.429,
+      "summary": {
+        "cases": 19,
+        "failed": 0,
+        "passed": 19,
+        "skipped": 0
+      },
+      "test_file": "tests\\advanced\\experiments\\llm_blind\\generated\\test_F2.py"
+    },
+    "F3": {
+      "cases": [
+        {
+          "classname": "test",
+          "file": "D:\\Study\\Y4 - CSC4801\\final_project\\wt-P10\\tests\\advanced\\experiments\\llm_blind\\generated\\test_F3.mjs",
+          "message": null,
+          "name": "F3 H1: <script> payload becomes escaped text, never raw markup",
+          "seconds": 0.007343,
+          "status": "passed"
+        },
+        {
+          "classname": "test",
+          "file": "D:\\Study\\Y4 - CSC4801\\final_project\\wt-P10\\tests\\advanced\\experiments\\llm_blind\\generated\\test_F3.mjs",
+          "message": null,
+          "name": "F3 H2: a literal closing script tag cannot appear",
+          "seconds": 0.00093,
+          "status": "passed"
+        },
+        {
+          "classname": "test",
+          "file": "D:\\Study\\Y4 - CSC4801\\final_project\\wt-P10\\tests\\advanced\\experiments\\llm_blind\\generated\\test_F3.mjs",
+          "message": null,
+          "name": "F3 H3: mixed-case HTML is escaped despite display normalisation",
+          "seconds": 0.000766,
+          "status": "passed"
+        },
+        {
+          "classname": "test",
+          "file": "D:\\Study\\Y4 - CSC4801\\final_project\\wt-P10\\tests\\advanced\\experiments\\llm_blind\\generated\\test_F3.mjs",
+          "message": null,
+          "name": "F3 H4: a double quote cannot break out of an attribute",
+          "seconds": 0.00086,
+          "status": "passed"
+        },
+        {
+          "classname": "test",
+          "file": "D:\\Study\\Y4 - CSC4801\\final_project\\wt-P10\\tests\\advanced\\experiments\\llm_blind\\generated\\test_F3.mjs",
+          "message": null,
+          "name": "F3 H5: ampersand is escaped exactly once",
+          "seconds": 0.0007,
+          "status": "passed"
+        },
+        {
+          "classname": "test",
+          "file": "D:\\Study\\Y4 - CSC4801\\final_project\\wt-P10\\tests\\advanced\\experiments\\llm_blind\\generated\\test_F3.mjs",
+          "message": null,
+          "name": "F3 H6: literal entity text is escaped, not decoded",
+          "seconds": 0.000671,
+          "status": "passed"
+        },
+        {
+          "classname": "test",
+          "file": "D:\\Study\\Y4 - CSC4801\\final_project\\wt-P10\\tests\\advanced\\experiments\\llm_blind\\generated\\test_F3.mjs",
+          "message": null,
+          "name": "F3 B1: empty value renders without a selected tag or exception",
+          "seconds": 0.000679,
+          "status": "passed"
+        },
+        {
+          "classname": "test",
+          "file": "D:\\Study\\Y4 - CSC4801\\final_project\\wt-P10\\tests\\advanced\\experiments\\llm_blind\\generated\\test_F3.mjs",
+          "message": null,
+          "name": "F3 B2: a single-character skill is preserved",
+          "seconds": 0.000592,
+          "status": "passed"
+        },
+        {
+          "classname": "test",
+          "file": "D:\\Study\\Y4 - CSC4801\\final_project\\wt-P10\\tests\\advanced\\experiments\\llm_blind\\generated\\test_F3.mjs",
+          "message": null,
+          "name": "F3 B3: metacharacter-only names are escaped",
+          "seconds": 0.002975,
+          "status": "passed"
+        },
+        {
+          "classname": "test",
+          "file": "D:\\Study\\Y4 - CSC4801\\final_project\\wt-P10\\tests\\advanced\\experiments\\llm_blind\\generated\\test_F3.mjs",
+          "message": null,
+          "name": "F3 V1: ordinary Unicode and several skills survive as visible text",
+          "seconds": 0.000785,
+          "status": "passed"
+        },
+        {
+          "classname": "test",
+          "file": "D:\\Study\\Y4 - CSC4801\\final_project\\wt-P10\\tests\\advanced\\experiments\\llm_blind\\generated\\test_F3.mjs",
+          "message": null,
+          "name": "F3 V2: tag-like ordinary text becomes one text node, not an element",
+          "seconds": 0.000561,
+          "status": "passed"
+        }
+      ],
+      "command": [
+        "C:\\Program Files\\nodejs\\node.EXE",
+        "--test",
+        "--test-reporter=junit",
+        "--test-reporter-destination=C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-llm-blind-final2-20261126-100934\\F3-junit.xml",
+        "D:\\Study\\Y4 - CSC4801\\final_project\\wt-P10\\tests\\advanced\\experiments\\llm_blind\\generated\\test_F3.mjs"
+      ],
+      "exit_code": 0,
+      "function": "SkillTagPicker HTML escaping",
+      "junit": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-llm-blind-final2-20261126-100934\\F3-junit.xml",
+      "kind": "node",
+      "log": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-llm-blind-final2-20261126-100934\\F3.log",
+      "seconds": 0.558,
+      "summary": {
+        "cases": 11,
+        "failed": 0,
+        "passed": 11,
+        "skipped": 0
+      },
+      "test_file": "tests\\advanced\\experiments\\llm_blind\\generated\\test_F3.mjs"
+    }
+  },
+  "seed": 4801,
+  "self_checks": {
+    "f3_negative_control": "mutation/f3_selfcheck.mjs applies the same escaping assertions to the real render (passes) and to a dangerouslySetInnerHTML render of the same payload (rejected).",
+    "harness_correction": "An earlier matrix showed spurious 'past' failures because the mutant used a copied globals dict; executing into the real module globals removed the artifact. The committed matrix is the corrected run.",
+    "mutation": "Five deliberately injected faults (source-level mutants) turn the generated suite red without modifying production code; all four baseline suite runs are green."
+  },
+  "sha": "e76641feaecb3d17a8a46912e596916409d59cf6",
+  "started_at": "2026-11-26T02:09:34.923320+00:00"
+}
