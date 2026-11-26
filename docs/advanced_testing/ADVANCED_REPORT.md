@@ -2,15 +2,15 @@
 
 > 本文件由 [`tests/advanced/report.py`](../../tests/advanced/report.py) 从本次运行的 JSON / JUnit 产物自动生成。**不要手工修改数字**；改测试或改实现后重新运行生成命令即可。
 
-- 源码版本：`f28b27974352cd121d0a3f64ac7f859f098301f1`（分支 `test/P11`）
-- 运行完成时间：2026-11-26T06:27:00.359497+00:00
-- 生成时间：2026-11-26T08:49:15+00:00
-- 产物目录：`D:\Study\Y4 - CSC4801\_evidence\P11\final-all-3`
+- 源码版本：`c7c8a3e4680ac988387705046909252e6b78599a`（分支 `test/P11`）
+- 运行完成时间：2026-11-26T09:28:38.590392+00:00
+- 生成时间：2026-11-26T09:33:52+00:00
+- 产物目录：`D:\Study\Y4 - CSC4801\_evidence\P11\ci-artifact-45789235155`
 - 确定性：`PYTHONHASHSEED=4801`，Hypothesis `derandomize=True`，`random.Random(4801)`；所有规模有上限。
 
 ## 1. 一页摘要
 
-本报告汇总本仓库在必测单元套件（`python tests/run_tests.py`）之外叠加的 13 项高级测试与验证技术：运行器基线、属性测试、有状态模型、有限轨迹 LTL、Z3 规格证明、有界模型检验与归纳、差分测试、变异测试、OpenAPI 属性模糊、蜕变/内蜕变、LLM 盲测实验、安全扫描和覆盖率汇总。本次 `run.py all` 请求 9 个模式，9 个 exit 0；模式自身耗时合计 1121.9s。合并覆盖率为 98.76% statements / 96.97% branches；单元套件分支覆盖 94.44%，CI 门槛取 `90%`。
+本报告汇总本仓库在必测单元套件（`python tests/run_tests.py`）之外叠加的 13 项高级测试与验证技术：运行器基线、属性测试、有状态模型、有限轨迹 LTL、Z3 规格证明、有界模型检验与归纳、差分测试、变异测试、OpenAPI 属性模糊、蜕变/内蜕变、LLM 盲测实验、安全扫描和覆盖率汇总。本次 `run.py all` 请求 9 个模式，9 个 exit 0；模式自身耗时合计 1149.2s。合并覆盖率为 98.85% statements / 96.97% branches；单元套件分支覆盖 94.44%，CI 门槛取 `90%`。
 
 所有证据都写在 checkout 之外的一次性目录；数据库是 `initdb` 新建的 loopback 临时集群（CI 中由 `postgres:15` service 提供并逐库创建/删除），测试进程不访问外网、不读 `backend/.env` 的真实值。数字来自下面的产物 JSON，正文中的“亮点/局限”引用对应详细文档中的具体反例、表格与自检记录。
 
@@ -30,21 +30,21 @@
 | P9 蜕变/内蜕变 | L12 slides 29–41 | 5 条蜕变工作流 + 5 条防护层 + 2 个自检 | I2 5 轮一致；自检全部变红 | [INTRAMORPHIC.md](INTRAMORPHIC.md) |
 | P10 LLM 盲测 | L14 Exercise 1/3 | 生成 124 个 case；5 个手写变异体 | 123 passed / 1 skipped / 0 failed；生成 5/5 vs 手写 3/5 | [LLM_TEST_EXPERIMENT.md](LLM_TEST_EXPERIMENT.md) |
 | P12 依赖与密钥扫描 | L14 安全 | 全历史 69 commits；12 个唯一 advisory | 0 泄露；0 待处理 advisory（1 条有理由接受） | [SECURITY_SCANS.md](SECURITY_SCANS.md) |
-| P11 覆盖率与汇总 | L12 覆盖率 | 5 组套件；1,045 statements | combined 98.76% statements / 96.97% branches；unit branch gate 90% | 本报告 |
+| P11 覆盖率与汇总 | L12 覆盖率 | 5 组套件；1,126 statements | combined 98.85% statements / 96.97% branches；unit branch gate 90% | 本报告 |
 
 ### 1.2 模式回执与 JUnit 统计
 
 | 模式 | 用例 | 通过 | 失败 | 跳过 | 回执 | 耗时 |
 | --- | --- | --- | --- | --- | --- | --- |
-| smoke | 2 | 2 | 0 | 0 | exit 0 | 5.58s |
-| stateful | 1 | 1 | 0 | 0 | exit 0 | 43.29s |
-| ltl | 235 | 235 | 0 | 0 | exit 0 | 47.28s |
-| formal | 36 | 36 | 0 | 0 | exit 0 | 4.91s |
-| differential | 4 | 4 | 0 | 0 | exit 0 | 26.27s |
-| intramorphic | 14 | 14 | 0 | 0 | exit 0 | 12.47s |
-| apifuzz | — | — | — | — | exit 0 | 18.68s |
-| mutation | — | — | — | — | exit 0 | 766.41s |
-| coverage | — | — | — | — | exit 0 | 197.00s |
+| smoke | 2 | 2 | 0 | 0 | exit 0 | 2.91s |
+| stateful | 1 | 1 | 0 | 0 | exit 0 | 19.36s |
+| ltl | 235 | 235 | 0 | 0 | exit 0 | 23.43s |
+| formal | 36 | 36 | 0 | 0 | exit 0 | 3.44s |
+| differential | 4 | 4 | 0 | 0 | exit 0 | 11.93s |
+| intramorphic | 14 | 14 | 0 | 0 | exit 0 | 7.36s |
+| apifuzz | — | — | — | — | exit 0 | 10.37s |
+| mutation | — | — | — | — | exit 0 | 935.20s |
+| coverage | — | — | — | — | exit 0 | 135.22s |
 
 > 入口型（`entry.py`）模式没有 pytest JUnit；它们的用例数/请求数在各自一节从业务 JSON 读取。`run.py` 的模式回执来自 `<out>/<mode>/result.json`。
 
@@ -75,10 +75,10 @@
 | 指标 | 值 | 产物 |
 | --- | --- | --- |
 | 发现的模式数 | 9 | `summary.json` |
-| 一次性 PG 启动 | yes | `summary.json` |
-| PG 模式 | disposable | `summary.json` |
-| 模式总耗时 | 1121.90s | `summary.json` |
-| git 工作区干净 | no | `summary.json` |
+| 一次性 PG 启动 | no | `summary.json` |
+| PG 模式 | external | `summary.json` |
+| 模式总耗时 | 1149.23s | `summary.json` |
+| git 工作区干净 | yes | `summary.json` |
 
 **亮点**：模式由目录自动发现（`entry.py` 或 pytest、`SLOW`、`NEEDS_DB` 三个标记），新增模式不需要改 `run.py` 或 CI；`run.py` 用 `initdb` 在随机端口新建仅 loopback、trust 认证的临时集群，结束后删除；`--out` 必须在 checkout 外且新目录/空目录，避免把含合成会话令牌的日志提交进仓库；`support/pg.py::validate_loopback_url` 拒绝非 loopback 主机。
 
@@ -184,15 +184,15 @@
 
 | ID | 标题 | 结果 | 单次查询 |
 | --- | --- | --- | --- |
-| `T1` | 0 <= score <= 100 | unsat | 0.013170s |
-| `T2` | k = n -> score = 100 and k = 0 -> score = 0 | unsat | 0.003056s |
-| `T3` | floor definition: score*n <= 100k < (score+1)*n | unsat | 0.006057s |
-| `T4` | k1 <= k2 -> score(k1) <= score(k2) for the same n | unsat | 0.008484s |
-| `T5` | score = 100 iff R subset C | unsat | 0.004984s |
-| `T6` | adding x not in R to C leaves the score unchanged | unsat | 0.015014s |
-| `T7` | n = 2 and k = 1 -> score = 50 | unsat | 0.000633s |
-| `N1` | floor(100k/n) = round_half_up(100k/n) | sat | 0.018224s |
-| `N2` | score = floor(100*|C∩R| / |C|) | sat | 0.009322s |
+| `T1` | 0 <= score <= 100 | unsat | 0.001484s |
+| `T2` | k = n -> score = 100 and k = 0 -> score = 0 | unsat | 0.001617s |
+| `T3` | floor definition: score*n <= 100k < (score+1)*n | unsat | 0.003307s |
+| `T4` | k1 <= k2 -> score(k1) <= score(k2) for the same n | unsat | 0.004558s |
+| `T5` | score = 100 iff R subset C | unsat | 0.002927s |
+| `T6` | adding x not in R to C leaves the score unchanged | unsat | 0.010041s |
+| `T7` | n = 2 and k = 1 -> score = 50 | unsat | 0.000329s |
+| `N1` | floor(100k/n) = round_half_up(100k/n) | sat | 0.016777s |
+| `N2` | score = floor(100*|C∩R| / |C|) | sat | 0.006130s |
 
 **亮点**：每个测试上方用 Hoare 三元组写 `{P} C {Q}`，并与 FP-MATCH-1 条款逐条对应；T1–T7 的否定全部 `unsat`，N1 的 floor/round 反例是`n=6, k=4`：floor 66 vs round 67，N2 的分母误用反例证明“分母是 |R| 不是 |C|”不是文字游戏。`|U|=5` 的 1024 个 `(C,R)` 对同时比较真实实现、Z3 编码与需求文字三方一致，0 mismatch。自检把 `int_div` 改成乘法后 T1/T2/T3/T5/T7 变 `sat` 并报出真实反例，恢复后全绿。
 
@@ -283,7 +283,7 @@
 | killed / survived | 283 / 19 | `mutation/mutation-result.json` |
 | suspicious | 2 | `mutation/mutation-result.json` |
 | 计分分母 | 302 | `mutation/mutation-result.json` |
-| 并行度 | 7 | `mutation/mutation-result.json` |
+| 并行度 | 3 | `mutation/mutation-result.json` |
 | mutation score | 93.71% | `mutation/mutation-result.json` |
 | 保守下界 | 93.09% | `mutation/mutation-result.json` |
 | backend/app 未被改动 | yes | `mutation/mutation-result.json` |
@@ -300,7 +300,7 @@
 
 **亮点**：由于 mutmut 3.7 在原生 Windows 上结构性不可用（依赖 `os.fork` 与 `resource.setrlimit`），P7 按任务允许的降级方案实现了一个**自研 AST 变异引擎**（L13 slide 17 的思想），覆盖比较翻转、`//`→`/`、`and↔or`、常量 ±1、`raise`→`pass`、`return X`→`return None` 六类算子；每个变异体固定 30s 超时，只在 `$ADVANCED_OUT/mutation/work/` 的副本里注入，前后对 `backend/app` 做 SHA-256 快照。三列对比为 **60.93% → 60.93% → 93.71%**：P1 属性测试把 `tests/unit` 从 176 例增加到 185 例，但**单独新增 killed = 0**；全部 99 个新增 kills 来自补强测试。报告没有掩盖这个事实，而是把中间列单独计分，说明属性测试的价值在规格性质而非这套 6 类算子的杀伤力。
 
-**局限**：变异分数是**同口径前后对比**，不是 mutmut 全量算子集的横向分数；19 个幸存者中有 10 个属于“仅真实 SQL 可观测”（`LIMIT`/`JOIN ON`），应由集成/差分覆盖；2 个 suspicious 是导入期错误，保守地不计入分母；变异范围只覆盖 5 个文件。本次证据运行记录 `jobs=7`；如果并发过高导致每个变异体 30s 固定超时出现假 timeout，Python 3.13 及以上可以用 `PYTHON_CPU_COUNT`；通用做法是直接运行 `python tests/advanced/mutation/entry.py --jobs N` 后重跑；变异体集合、判定逻辑与最终 killed/survived 分类不变。
+**局限**：变异分数是**同口径前后对比**，不是 mutmut 全量算子集的横向分数；19 个幸存者中有 10 个属于“仅真实 SQL 可观测”（`LIMIT`/`JOIN ON`），应由集成/差分覆盖；2 个 suspicious 是导入期错误，保守地不计入分母；变异范围只覆盖 5 个文件。本次证据运行记录 `jobs=3`；如果并发过高导致每个变异体 30s 固定超时出现假 timeout，Python 3.13 及以上可以用 `PYTHON_CPU_COUNT`；通用做法是直接运行 `python tests/advanced/mutation/entry.py --jobs N` 后重跑；变异体集合、判定逻辑与最终 killed/survived 分类不变。
 
 **详细文档**：[MUTATION.md](MUTATION.md)、[tests/unit/test_mutation_hardening.py](../../tests/unit/test_mutation_hardening.py)。
 
@@ -440,17 +440,17 @@
 
 | 套件 | 目标 | 用例 | 语句覆盖 | 分支覆盖 | 耗时 |
 | --- | --- | --- | --- | --- | --- |
-| `unit` | `tests/unit` | 230 | 92.63% | 94.44% | 12.911s |
-| `integration` | `backend/tests` | 241 | 90.24% | 76.77% | 94.631s |
-| `stateful` | `tests/advanced/stateful` | 1 | 74.74% | 41.41% | 43.29s |
-| `differential` | `tests/advanced/differential` | 4 | 62.58% | 21.72% | 26.27s |
-| `intramorphic` | `tests/advanced/intramorphic` | 14 | 78.37% | 46.46% | 12.47s |
+| `unit` | `tests/unit` | 230 | 93.16% | 94.44% | 13.827s |
+| `integration` | `backend/tests` | 241 | 90.94% | 76.77% | 63.562s |
+| `stateful` | `tests/advanced/stateful` | 1 | 76.55% | 41.41% | 19.36s |
+| `differential` | `tests/advanced/differential` | 4 | 65.28% | 21.72% | 11.93s |
+| `intramorphic` | `tests/advanced/intramorphic` | 14 | 79.93% | 46.46% | 7.36s |
 
 | 指标 | 值 | 产物 |
 | --- | --- | --- |
-| 合并语句覆盖 | 98.76% | `coverage/coverage-summary.json` |
+| 合并语句覆盖 | 98.85% | `coverage/coverage-summary.json` |
 | 合并分支覆盖 | 96.97% | `coverage/coverage-summary.json` |
-| 语句 covered/total | 1,032/1,045 | `coverage/coverage-summary.json` |
+| 语句 covered/total | 1,113/1,126 | `coverage/coverage-summary.json` |
 | 分支 covered/total | 192/198 | `coverage/coverage-summary.json` |
 | 单元分支门槛（向下取 5 的倍数） | 90% | `coverage/coverage-summary.json` |
 
@@ -478,19 +478,19 @@
 - **BMC/归纳之外的并发由数据库保证**：P5 的顺序转移系统无法表达两个事务的交错；FP-SCHED-3 的原子性由行锁 + 唯一约束保证，P9 的 I2 与专项套件覆盖这一层。
 - **变异分数是同口径前后对比**：93.71% 来自自研 6 类 AST 算子，不能与 mutmut 全量算子集横向比较；P1 属性测试单独新增 killed = 0，报告已如实写出。
 - **`pip-audit` 只扫运行时锁文件**：`tests/advanced/requirements.txt` 的测试依赖不在范围内；npm audit 用 `--omit=dev`，devDependencies 不在范围内。
-- **PostgreSQL 版本差异**：本报告如果由本地开发证据生成，使用的是 Windows 便携版 PostgreSQL 18.6；任务/CI 的正式镜像是 `postgres:15`。两者在唯一约束、行锁、`DROP ... WITH (FORCE)` 语义上一致，但版本差异仍应记录；正式 CI 证据由 `advanced-slow` 在 `postgres:15` 上重跑。
+- **PostgreSQL 版本差异**：本报告如果由本地开发证据生成，使用的是 Windows 便携版 PostgreSQL 15.20；任务/CI 的正式镜像是 `postgres:15`。两者在唯一约束、行锁、`DROP ... WITH (FORCE)` 语义上一致，但版本差异仍应记录；正式 CI 证据由 `advanced-slow` 在 `postgres:15` 上重跑。
 - **P10 的 5 个手写变异体是小样本**：任务 §7 的“P10 全量对比”与“属性测试单独杀伤力”是可选加分项，本次未完成；5/5 vs 3/5 只应读作抽样结论。P7 的 304 个全量变异体是必测套件的证据，不直接等同于 P10 生成测试的分数。
 - **P8 的 schema drift 未修**：793 次失败是 FastAPI 未声明 4xx，属于生产 API 文档工作，不在测试任务范围内；报告保留而不静默过滤。
 - **`run.py` 无模式超时**：CI 由 `advanced` 的 30 分钟与 `advanced-slow` 的 90 分钟 `timeout-minutes` 兜底；本地运行需要自己控制时长。
 
 ## 6. 页脚
 
-- 源码版本：`f28b27974352cd121d0a3f64ac7f859f098301f1`（分支 `test/P11`）
-- 运行完成时间：2026-11-26T06:27:00.359497+00:00
-- 报告生成时间：2026-11-26T08:49:15+00:00
-- Python：3.14.4 (tags/v3.14.4:23116f9, Apr  7 2026, 14:10:54) [MSC v.1944 64 bit (AMD64)]
-- PostgreSQL 版本：PostgreSQL 18.6
-- 证据来源：本地开发证据目录 `D:\Study\Y4 - CSC4801\_evidence\P11\final-all-3`（`run.py all`；PostgreSQL 18.6）。正式 CI 证据（`postgres:15`）由 `advanced-slow` job 生成（artifact 名 `advanced-slow-results`）；下载 artifact 后运行 `python tests/advanced/report.py <artifact> --unit-junit <unit.xml> --ci-run <run-id>` 即可把本页脚替换为 CI run 号与 artifact 名。
-- 重新生成：`python tests/advanced/report.py D:\Study\Y4 - CSC4801\_evidence\P11\final-all-3 --unit-junit <unit.xml>`
+- 源码版本：`c7c8a3e4680ac988387705046909252e6b78599a`（分支 `test/P11`）
+- 运行完成时间：2026-11-26T09:28:38.590392+00:00
+- 报告生成时间：2026-11-26T09:33:52+00:00
+- Python：3.12.16 (main, Oct 26 2026, 02:48:44) [GCC 15.2.0]
+- PostgreSQL 版本：PostgreSQL 15.20
+- CI 证据：GitHub Actions run `45789235155`，artifact `advanced-slow-results`。
+- 重新生成：`python tests/advanced/report.py D:\Study\Y4 - CSC4801\_evidence\P11\ci-artifact-45789235155 --unit-junit <unit.xml>`
 - 产物命名约定：`run.py` 会覆盖 `<out>/<mode>/result.json`，因此业务报告使用各自的 durable 文件名（`mutation-result.json`、`report.json`、`ltl_results.json`、`booking_bmc.json`、`coverage-summary.json` 等）。
 
