@@ -211,3 +211,57 @@ jobs:
       - name: Container logs on failure
         if: failure()
         run: docker logs csc4801
+
+  # Advanced techniques live outside the image and outside the mandatory unit
+  # command.  They get their own disposable PostgreSQL service and their own
+  # pinned dependency file.  P11 flips continue-on-error to false once stable.
+  advanced:
+    name: Advanced tests (fast)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      ADVANCED_PG_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/postgres
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.lock
+            tests/advanced/requirements.txt
+
+      - name: Install Python dependencies
+        run: >-
+          python -m pip install
+          -r requirements.txt
+          -r tests/advanced/requirements.txt
+
+      - name: Run fast advanced modes
+        run: python tests/advanced/run.py fast --out "$RUNNER_TEMP/advanced"
+
+      - name: Upload advanced artefacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: advanced-results
+          path: ${{ runner.temp }}/advanced
+          if-no-files-found: ignore

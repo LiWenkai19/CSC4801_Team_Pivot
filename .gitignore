@@ -65,7 +65,14 @@ env/
 .ruff_cache/
 .mypy_cache/
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
+# Hypothesis 例子数据库
+.hypothesis/
+# mutmut 变异产物
+mutants/
+.mutmut-cache
 
 # ===== 数据库本地文件 =====
 # 你用 PostgreSQL,一般不产生本地 db 文件;但如果偶尔用 SQLite 调试

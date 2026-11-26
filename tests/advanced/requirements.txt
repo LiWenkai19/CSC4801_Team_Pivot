@@ -1,0 +1,9 @@
+# 高级套件专用，不进入 Docker 镜像；必测依赖在 requirements.lock
+# mutmut 3.8.x 要求 click>=8.4.2，与 requirements.lock 的 click==8.1.8 冲突；
+# 因此固定最后一个兼容版本 3.7.0。
+hypothesis==6.170.17
+z3-solver==5.4.1.0
+mutmut==3.7.0
+schemathesis==4.34.2
+pytest-cov==7.1.0
+coverage==7.17.5
