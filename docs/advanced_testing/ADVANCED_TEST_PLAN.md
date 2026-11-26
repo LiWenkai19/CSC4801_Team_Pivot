@@ -71,8 +71,8 @@ tests/advanced/
 | `requirements.lock`、`tests/unit/test_matching_properties.py` | P1 |
 | `.github/workflows/ci.yml`（advanced job 首版） | P0；最终收口 P11 |
 | `.github/workflows/security.yml` | P12 |
-| `README.md`、`INSTALL.md`、`DOCKER.md`、`docs/testing/ADVANCED_REPORT.md` | P11 |
-| 业务缺陷记录 | 各任务写 `docs/testing/findings/P<n>.md`，P11 汇总 |
+| `README.md`、`INSTALL.md`、`DOCKER.md`、`docs/advanced_testing/ADVANCED_REPORT.md` | P11 |
+| 业务缺陷记录 | 各任务写 `docs/advanced_testing/findings/P<n>.md`，P11 汇总 |
 
 **命令**（与 specialized 风格一致）：
 
@@ -100,13 +100,13 @@ python tests/advanced/run.py all      # 全部模式
 每个任务的提示词里都要原样带上这一段。
 
 1. **只读生产代码**。允许新增文件只限任务里列出的路径。发现业务 bug：写进
-   `docs/testing/findings/P<n>.md`，不要改代码，不要为了让测试变绿而改断言。
+   `docs/advanced_testing/findings/P<n>.md`，不要改代码，不要为了让测试变绿而改断言。
 2. **确定性**：固定 `PYTHONHASHSEED=4801`；Hypothesis 用 `derandomize=True` 或固定
    seed；设置 `deadline=None`；每个模式的 `max_examples` 有上限（见各任务）。
 3. **边界**：只连本机临时 PG（随机端口、`initdb` 新建）；只对本机进程发请求；
    不访问外网；不读 `backend/.env` 的真实值；不打印 Cookie/CSRF。
 4. **产物**：日志、harness 生成的临时文件放 `--out`（仓库外）；只有汇总数字和结论
-   可以写进 `docs/testing/`。
+   可以写进 `docs/advanced_testing/`。
 5. **完成定义（DoD）**：任务自己的模式跑通 + `python tests/run_tests.py` 仍全绿 +
    汇报里给出命令、退出码、关键数字、产物路径、阻塞点。
 6. **提交**：一个任务一个 commit；不改无关文件；不 `git push`。
@@ -130,7 +130,7 @@ python tests/advanced/run.py all      # 全部模式
 ### P0 基线固化与运行器骨架　（约 2h，无依赖）
 
 - **文件**：新增 `tests/advanced/{README.md,requirements.txt,run.py,conftest.py}`、
-  `docs/testing/ADVANCED_BASELINE.md`；`.gitignore` 追加 `.hypothesis/`、`.mutmut-cache/`、
+  `docs/advanced_testing/ADVANCED_BASELINE.md`；`.gitignore` 追加 `.hypothesis/`、`.mutmut-cache/`、
   `coverage.xml`、`htmlcov/`。
 - **步骤**
   1. 记录 `git rev-parse HEAD`、Python/Node/PostgreSQL 版本、
@@ -203,7 +203,7 @@ python tests/advanced/run.py all      # 全部模式
 
 ### P4 Z3：匹配公式的形式化证明　（约 4h）
 
-- **文件**：`tests/advanced/formal/test_matching_theory.py`、`docs/testing/FORMAL_MATCHING.md`。
+- **文件**：`tests/advanced/formal/test_matching_theory.py`、`docs/advanced_testing/FORMAL_MATCHING.md`。
 - **证明**（每个性质用 `z3.Solver`，期望 `unsat`）：
   1. `0 <= 100k//n <= 100`（`n>=1, 0<=k<=n`）；
   2. `k=n => 100`，`k=0 => 0`；
@@ -235,7 +235,7 @@ python tests/advanced/run.py all      # 全部模式
 
 ### P7 变异测试（mutmut）　（约 6h）
 
-- **文件**：`tests/advanced/mutation/run_mutmut.py`、`docs/testing/MUTATION.md`。
+- **文件**：`tests/advanced/mutation/run_mutmut.py`、`docs/advanced_testing/MUTATION.md`。
 - **范围**：`employer/matching.py`、`users/service.py`（`normalize_skills` 与鉴权）、
   `interview/service.py`、`candidate/service.py`（`book`/`_eligible_application`）、
   `employer/service.py`（`delete_job`、状态变更）。
@@ -274,7 +274,7 @@ python tests/advanced/run.py all      # 全部模式
 
 - **目标**：把「AI 生成测试」做成可复现实验，而不是口头声称。
 - **文件**：`tests/advanced/experiments/llm_blind/`（生成的测试、prompt 原文、结果表）、
-  `docs/testing/LLM_TEST_EXPERIMENT.md`。
+  `docs/advanced_testing/LLM_TEST_EXPERIMENT.md`。
 - **目标函数**：`match_score`、预约资格判定（服务层，替身会话）、HTML 转义组件。
 - **流程**：
   1. 只读 `SPEC.md` / `REQUIREMENTS.md` 写契约（输入、输出、异常、边界）；
@@ -287,7 +287,7 @@ python tests/advanced/run.py all      # 全部模式
 ### P11 覆盖率、汇总面板与文档　（约 4h）
 
 - **文件**：`tests/advanced/coverage/run_coverage.py`、`tests/advanced/report.py`、
-  `docs/testing/ADVANCED_REPORT.md`、`README.md`、`INSTALL.md`、`DOCKER.md`（各加一小节）。
+  `docs/advanced_testing/ADVANCED_REPORT.md`、`README.md`、`INSTALL.md`、`DOCKER.md`（各加一小节）。
 - **覆盖率**：pytest-cov 分支覆盖，分别跑「必测单元套件」与「集成套件」，
   报告 `backend/app` 的数字；**先测量，再决定门槛**，不拍脑袋设 90%。
 - **面板**：每条技术的命令、结果数字、耗时、种子、commit SHA、已知限制，
@@ -345,8 +345,8 @@ python tests/advanced/run.py all      # 全部模式
 - [ ] `python tests/run_tests.py` 全绿，且含 P1 的属性测试
 - [ ] `python tests/run_tests.py --integration` 全绿
 - [ ] Docker job 四个阶段全绿（build / healthy / seed / unit + smoke）
-- [ ] `docs/testing/ADVANCED_REPORT.md` 数字与重跑一致
-- [ ] `docs/testing/FORMAL_MATCHING.md`、`MUTATION.md`、`LLM_TEST_EXPERIMENT.md` 完成
+- [ ] `docs/advanced_testing/ADVANCED_REPORT.md` 数字与重跑一致
+- [ ] `docs/advanced_testing/FORMAL_MATCHING.md`、`MUTATION.md`、`LLM_TEST_EXPERIMENT.md` 完成
 - [ ] README 映射表更新，过时数字改正
 - [ ] CI 的 advanced job 稳定后转为必过
 - [ ] 业务缺陷清单（若有）单独列出，未自行修复
