@@ -22,8 +22,42 @@ ERROR_STATUS: dict[type[ValueError], int] = {
 BUSINESS_ERRORS = tuple(ERROR_STATUS)
 
 
+# A business-rule failure returns {"detail": "<message>"}, while a request-body
+# validation failure returns FastAPI's default HTTPValidationError array. Both
+# are 422, so the OpenAPI response has to document both shapes.
+SLOT_CREATE_422 = {
+    "description": (
+        "Request validation failed (detail is an error array) or the slot "
+        "violated a business rule (detail is a message string)."
+    ),
+    "content": {
+        "application/json": {
+            "schema": {
+                "anyOf": [
+                    {"$ref": "#/components/schemas/HTTPValidationError"},
+                    {
+                        "type": "object",
+                        "required": ["detail"],
+                        "properties": {
+                            "detail": {
+                                "type": "string",
+                                "description": "Business rule message, for example "
+                                "'Slot must start in the future'.",
+                            }
+                        },
+                    },
+                ]
+            }
+        }
+    },
+}
+
+
 @interview_router.post(
-    "", response_model=SlotPublic, status_code=status.HTTP_201_CREATED
+    "",
+    response_model=SlotPublic,
+    status_code=status.HTTP_201_CREATED,
+    responses={422: SLOT_CREATE_422},
 )
 def create_slot(
     payload: SlotCreate,

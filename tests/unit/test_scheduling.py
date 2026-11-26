@@ -269,3 +269,26 @@ def test_fp_sched_1_route_error_contract(db, actors, monkeypatch, error, status)
     with pytest.raises(HTTPException) as caught:
         router.create_slot(SlotCreate(starts_at="2030-05-02T01:00:00Z"), db, actors[1])
     assert caught.value.status_code == status
+
+
+def test_fp_sched_1_openapi_422_documents_business_and_validation_shapes():
+    """The slot route answers 422 with a string detail and with a validation array."""
+    from app.main import app
+
+    schema = app.openapi()
+    operation = schema["paths"]["/employer/interview-slots"]["post"]
+    content = operation["responses"]["422"]["content"]["application/json"]["schema"]
+    branches = content.get("anyOf", [content])
+
+    def resolve(branch: dict) -> dict:
+        reference = branch.get("$ref")
+        if not reference:
+            return branch
+        return schema["components"]["schemas"][reference.rsplit("/", 1)[-1]]
+
+    kinds = {
+        resolve(branch).get("properties", {}).get("detail", {}).get("type")
+        for branch in branches
+    }
+    assert "string" in kinds, "business-rule 422 detail string is not documented"
+    assert "array" in kinds, "request-validation 422 detail array is not documented"
