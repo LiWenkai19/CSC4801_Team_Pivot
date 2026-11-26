@@ -475,12 +475,24 @@ def test_commit_integrity_error_rolls_back_and_reports_slot_already_booked():
     application = _make_application()
     slot = _make_slot()
     job = _make_job()
-    session = make_session(application=application, slot=slot, job=job)
-    session.commit.side_effect = IntegrityError(
-        "INSERT INTO booking (application_id, slot_id) VALUES (:a, :s)",
-        {"a": A1, "s": S1},
-        Exception("duplicate key value violates unique constraint"),
+    # Post-freeze repair: a real database exposes the concurrent winner after
+    # the failed commit.  The generated version injected IntegrityError without
+    # that row, so the service correctly re-raised the unclassified error.
+    late = []
+    session = make_session(
+        application=application, slot=slot, job=job, late_slot_bookings=late
     )
+    winner = _row(Booking, application_id=A2, slot_id=S1)
+
+    def lose_the_race():
+        late.append(winner)
+        raise IntegrityError(
+            "INSERT INTO booking (application_id, slot_id) VALUES (:a, :s)",
+            {"a": A1, "s": S1},
+            Exception("duplicate key value violates unique constraint"),
+        )
+
+    session.commit.side_effect = lose_the_race
 
     with pytest.raises(ConflictError) as excinfo:
         book(session, _make_user(), A1, S1)

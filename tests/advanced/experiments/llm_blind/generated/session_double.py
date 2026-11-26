@@ -61,6 +61,7 @@ def make_session(
     application_booking=None,
     slot_booking=None,
     bookings=(),
+    late_slot_bookings=None,
 ):
     """Return a ``MagicMock(spec=Session)`` wired to the supplied objects.
 
@@ -69,6 +70,12 @@ def make_session(
     an already-persisted booking row for that application or slot. Added
     ``Booking`` objects receive an ``id`` and ``created_at`` so a returned
     ``BookingPublic`` can be validated.
+
+    ``late_slot_bookings`` is an optional mutable list used to model the
+    concurrent winner becoming visible only after the first commit fails: the
+    test's commit side effect appends the winner before raising
+    ``IntegrityError``. Any slot-booking query then sees it, which is what a real
+    database exposes after the rollback.
     """
 
     session = MagicMock(spec=Session)
@@ -91,8 +98,11 @@ def make_session(
             rows = list(bookings)
             if "application_id" in text and application_booking is not None:
                 rows = [application_booking]
-            elif "slot_id" in text and slot_booking is not None:
-                rows = [slot_booking]
+            elif "slot_id" in text:
+                if slot_booking is not None:
+                    rows = [slot_booking]
+                elif late_slot_bookings:
+                    rows = list(late_slot_bookings)
             return _result(rows)
         for model in (Application, InterviewSlot, Job):
             table = getattr(model, "__tablename__", None)
