@@ -191,11 +191,11 @@ python tests/advanced/run.py intramorphic \
 python tests/run_tests.py
 ```
 
-本次运行结果（两次重复验收）：
+本次运行结果（多次重复验收）：
 
 - `python tests/advanced/run.py intramorphic`：exit 0，**14 passed**，
-  pytest 约 8.3–8.4 s，模式总耗时约 11.0–11.2 s；
-- `python tests/run_tests.py`：exit 0，**251 passed**，9.32 s；
+  pytest 约 8–9 s，模式总耗时约 11–12 s；
+- `python tests/run_tests.py`：exit 0，**251 passed**，约 9–10 s；
 - `git diff main -- backend/`：空。
 
 产物（仓库外）：

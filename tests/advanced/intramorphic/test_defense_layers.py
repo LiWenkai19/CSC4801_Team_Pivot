@@ -196,6 +196,13 @@ def test_i1_selfcheck_missing_database_constraint_is_detected(
     detected = False
     rows_before_restore = None
     try:
+        # The task suggested swallowing IntegrityError in Session.commit.  In
+        # PostgreSQL the unique index is enforced during INSERT/FLUSH, so a
+        # Python-level swallow leaves only one row and a failed refresh; it
+        # cannot create the two-row state needed to prove the oracle.  Removing
+        # the physical constraint in this throwaway database is the faithful
+        # equivalent of "the database has no unique constraint", and the
+        # constraint is restored in ``finally`` below.
         v.drop_booking_slot_unique_constraint(engine)
         dropped = True
         response = client.post(
