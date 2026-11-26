@@ -59,11 +59,10 @@ jobs:
 
   # pip-audit resolves requirements.lock in an isolated environment, then
   # checks every resolved package against the PyPI advisory database.
-  # As of 2026-11-26 the pinned lock has 15 advisory records (12 unique) in
-  # seven packages.  They are documented, not ignored: see
-  # docs/advanced_testing/SECURITY_SCANS.md.  This job is expected to stay red
-  # until a human decides how to upgrade the lock; do not add blanket
-  # --ignore-vuln flags to make it green.
+  # P12b removed the unused starter packages and upgraded the remaining
+  # advisory ranges; the one accepted advisory (pytest's local /tmp issue) is
+  # handled explicitly on the audit command below.  See
+  # docs/advanced_testing/SECURITY_SCANS.md.
   pip-audit:
     name: Python dependency audit
     runs-on: ubuntu-latest
@@ -85,7 +84,12 @@ jobs:
           "pip-audit==${PIP_AUDIT_VERSION}"
 
       - name: Audit locked Python dependencies
-        run: pip-audit -r requirements.lock --strict
+        # Accepted risk: PYSEC-2026-1845 only affects the pytest test runner.
+        # The issue is UNIX /tmp local-permission handling; the CI runner is
+        # ephemeral, and the production image does not run pytest.
+        run: >-
+          pip-audit -r requirements.lock --strict
+          --ignore-vuln PYSEC-2026-1845
 
   # Production frontend dependencies only.  npm ci is run with --no-audit so
   # the explicit audit command below is the single gate and reports once.
