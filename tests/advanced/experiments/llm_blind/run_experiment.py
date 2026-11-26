@@ -32,7 +32,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[4]
+ROOT = HERE.parents[3]
 GENERATED = HERE / "generated"
 DEFAULT_RESULTS = HERE / "results.json"
 

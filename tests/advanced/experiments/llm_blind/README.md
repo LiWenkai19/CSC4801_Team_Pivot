@@ -68,6 +68,24 @@ python tests/advanced/experiments/llm_blind/mutation/run_mutants.py \
   --out "$TMPDIR/p10-mutants"
 ```
 
+## Results (this branch)
+- Frozen generation commit: `c0859d0` (tests generated before the implementation
+  was reviewed or run).
+- Post-freeze setup repairs (expected values unchanged): `467a6f2` (F1
+  parametrize ids; F2 synthetic `User.role`) and `e76641f` (F2 IntegrityError
+  harness exposes the concurrent winner).
+- Final run: F1 93 passed + 1 documented out-of-contract skip (94 collected),
+  F2 19/19, F3 11/11; **123 passed, 1 skipped, 0 failed**.
+- Five hand-written mutants: generated tests kill **5/5**, handwritten tests kill
+  **3/5**; the survivors expose a confounded normalization case and a missing
+  “job does not exist” partition in the handwritten suite.
+- No production defect was found, so there is no `docs/testing/findings/P10.md`.
+- Full evidence and the L14 slide-30 analysis:
+  [`docs/testing/LLM_TEST_EXPERIMENT.md`](../../../../docs/testing/LLM_TEST_EXPERIMENT.md).
+
+The generated tests are experiments, not part of the required unit suite; rerun
+`python tests/run_tests.py` separately.
+
 ## Scope and limitations
 
 - Generated tests are experiments, not part of the required unit suite

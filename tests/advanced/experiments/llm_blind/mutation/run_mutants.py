@@ -1,4 +1,4 @@
-"""Run the five hand-written mutants against generated and handwritten tests.
+r"""Run the five hand-written mutants against generated and handwritten tests.
 
 The mutants are injected at import time with attribute replacement (see
 ``mutants.py``); no file under ``backend/app/`` is modified.  Each (mutant, suite)
@@ -42,6 +42,12 @@ SUITES = {
         "generated": "tests/advanced/experiments/llm_blind/generated/test_F2.py",
         "handwritten": "tests/unit/test_scheduling.py",
     },
+}
+
+BASELINE_SUITES = {
+    f"{function}/{suite}": test_file
+    for function, targets in SUITES.items()
+    for suite, test_file in targets.items()
 }
 
 
@@ -90,12 +96,62 @@ def main(argv=None):
         ).stdout.strip(),
         "started_at": datetime.now(timezone.utc).isoformat(),
         "mutants": {},
+        "baseline": {},
         "totals": {},
         "error": None,
     }
 
+    def run_suite(mutant_id, suite_name, test_file, *, label):
+        junit = out / f"{label}-{suite_name}.xml"
+        log = out / f"{label}-{suite_name}.log"
+        command = [
+            args.python,
+            str(HERE / "apply_and_run.py"),
+            "--mutant",
+            mutant_id,
+            "--test",
+            test_file,
+            "--junit",
+            str(junit),
+        ]
+        completed = subprocess.run(
+            command,
+            cwd=str(ROOT),
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+        log.write_text(completed.stdout or "", encoding="utf-8")
+        if not junit.is_file():
+            raise RuntimeError(f"{label}/{suite_name}: no JUnit XML; see {log}")
+        cases = parse_junit(junit)
+        failed = [case["name"] for case in cases if case["failed"]]
+        return {
+            "test_file": test_file,
+            "exit_code": completed.returncode,
+            "cases": len(cases),
+            "failed": len(failed),
+            "failed_tests": failed,
+            "killed": bool(failed),
+            "junit": str(junit),
+            "log": str(log),
+        }
+
     infrastructure_error = None
     try:
+        for label, test_file in BASELINE_SUITES.items():
+            function, suite_name = label.split("/", 1)
+            result = run_suite("BASELINE", suite_name, test_file, label=f"baseline-{function}")
+            results["baseline"][label] = result
+            if result["failed"]:
+                raise RuntimeError(
+                    f"baseline {label} is not green: {result['failed']} failing test(s)"
+                )
+
         for mutant_id in args.only:
             info = MUTANTS[mutant_id]
             suite_targets = SUITES[info["function"]]
@@ -105,46 +161,9 @@ def main(argv=None):
                 "suites": {},
             }
             for suite_name, test_file in suite_targets.items():
-                junit = out / f"{mutant_id}-{suite_name}.xml"
-                log = out / f"{mutant_id}-{suite_name}.log"
-                command = [
-                    args.python,
-                    str(HERE / "apply_and_run.py"),
-                    "--mutant",
-                    mutant_id,
-                    "--test",
-                    test_file,
-                    "--junit",
-                    str(junit),
-                ]
-                completed = subprocess.run(
-                    command,
-                    cwd=str(ROOT),
-                    env=env,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    encoding="utf-8",
-                    errors="replace",
-                    check=False,
+                entry["suites"][suite_name] = run_suite(
+                    mutant_id, suite_name, test_file, label=mutant_id
                 )
-                log.write_text(completed.stdout or "", encoding="utf-8")
-                if not junit.is_file():
-                    raise RuntimeError(
-                        f"{mutant_id}/{suite_name}: no JUnit XML; see {log}"
-                    )
-                cases = parse_junit(junit)
-                failed = [case["name"] for case in cases if case["failed"]]
-                entry["suites"][suite_name] = {
-                    "test_file": test_file,
-                    "exit_code": completed.returncode,
-                    "cases": len(cases),
-                    "failed": len(failed),
-                    "failed_tests": failed,
-                    "killed": bool(failed),
-                    "junit": str(junit),
-                    "log": str(log),
-                }
             results["mutants"][mutant_id] = entry
     except Exception as exc:
         infrastructure_error = f"{type(exc).__name__}: {exc}"

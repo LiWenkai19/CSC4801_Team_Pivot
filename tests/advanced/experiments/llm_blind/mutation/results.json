@@ -1,0 +1,252 @@
+{
+  "baseline": {
+    "F1/generated": {
+      "cases": 94,
+      "exit_code": 0,
+      "failed": 0,
+      "failed_tests": [],
+      "junit": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\baseline-F1-generated.xml",
+      "killed": false,
+      "log": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\baseline-F1-generated.log",
+      "test_file": "tests/advanced/experiments/llm_blind/generated/test_F1.py"
+    },
+    "F1/handwritten": {
+      "cases": 8,
+      "exit_code": 0,
+      "failed": 0,
+      "failed_tests": [],
+      "junit": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\baseline-F1-handwritten.xml",
+      "killed": false,
+      "log": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\baseline-F1-handwritten.log",
+      "test_file": "tests/unit/test_matching.py"
+    },
+    "F2/generated": {
+      "cases": 19,
+      "exit_code": 0,
+      "failed": 0,
+      "failed_tests": [],
+      "junit": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\baseline-F2-generated.xml",
+      "killed": false,
+      "log": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\baseline-F2-generated.log",
+      "test_file": "tests/advanced/experiments/llm_blind/generated/test_F2.py"
+    },
+    "F2/handwritten": {
+      "cases": 32,
+      "exit_code": 0,
+      "failed": 0,
+      "failed_tests": [],
+      "junit": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\baseline-F2-handwritten.xml",
+      "killed": false,
+      "log": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\baseline-F2-handwritten.log",
+      "test_file": "tests/unit/test_scheduling.py"
+    }
+  },
+  "branch": "test/P10",
+  "error": null,
+  "experiment": "P10 llm_blind mutation kill matrix",
+  "finished_at": "2026-11-26T02:07:58.186626+00:00",
+  "mutants": {
+    "F1_M1_floor_round": {
+      "description": "floor division becomes round(): arithmetic mutation",
+      "function": "F1",
+      "suites": {
+        "generated": {
+          "cases": 94,
+          "exit_code": 1,
+          "failed": 27,
+          "failed_tests": [
+            "test_floor_rounding[n3-k2-66]",
+            "test_floor_rounding[n6-k1-16]",
+            "test_floor_rounding[n7-k6-85]",
+            "test_floor_rounding[n8-k3-37]",
+            "test_floor_rounding[n9-k8-88]",
+            "test_floor_rounding[n11-k10-90]",
+            "test_floor_rounding[n12-k5-41]",
+            "test_floor_rounding[n12-k11-91]",
+            "test_floor_rounding[n200-k199-99]",
+            "test_floor_rounding_sweep[3-2-66]",
+            "test_floor_rounding_sweep[6-1-16]",
+            "test_floor_rounding_sweep[7-6-85]",
+            "test_floor_rounding_sweep[8-3-37]",
+            "test_floor_rounding_sweep[9-8-88]",
+            "test_floor_rounding_sweep[11-10-90]",
+            "test_floor_rounding_sweep[12-5-41]",
+            "test_floor_rounding_sweep[16-15-93]",
+            "test_floor_rounding_sweep[40-39-97]",
+            "test_floor_rounding_sweep[200-199-99]",
+            "test_normalisation_whitespace_case_duplicates[dup-partial]",
+            "test_normalisation_whitespace_case_duplicates[combined-noise-partial]",
+            "test_normalisation_equivalence_same_score",
+            "test_input_order_invariance",
+            "test_duplicate_invariance",
+            "test_unicode_mixed_with_ascii_partial",
+            "test_return_type_is_exactly_int",
+            "test_repeated_calls_are_deterministic"
+          ],
+          "junit": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F1_M1_floor_round-generated.xml",
+          "killed": true,
+          "log": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F1_M1_floor_round-generated.log",
+          "test_file": "tests/advanced/experiments/llm_blind/generated/test_F1.py"
+        },
+        "handwritten": {
+          "cases": 8,
+          "exit_code": 1,
+          "failed": 1,
+          "failed_tests": [
+            "test_fp_match_1_examples_normalization_and_floor[skills4-required4-66]"
+          ],
+          "junit": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F1_M1_floor_round-handwritten.xml",
+          "killed": true,
+          "log": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F1_M1_floor_round-handwritten.log",
+          "test_file": "tests/unit/test_matching.py"
+        }
+      }
+    },
+    "F1_M2_empty_required_zero": {
+      "description": "empty required skills score 100 -> 0: constant mutation",
+      "function": "F1",
+      "suites": {
+        "generated": {
+          "cases": 94,
+          "exit_code": 1,
+          "failed": 6,
+          "failed_tests": [
+            "test_fp_match_1_required_examples[empty-required-100]",
+            "test_empty_list_boundaries[empty-and-empty-100]",
+            "test_empty_list_boundaries[empty-required-nonempty-candidate-100]",
+            "test_empty_list_boundaries[empty-required-3-skills-100]",
+            "test_empty_list_boundaries[both-whitespace-only-100]",
+            "test_empty_list_boundaries[whitespace-only-required-100]"
+          ],
+          "junit": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F1_M2_empty_required_zero-generated.xml",
+          "killed": true,
+          "log": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F1_M2_empty_required_zero-generated.log",
+          "test_file": "tests/advanced/experiments/llm_blind/generated/test_F1.py"
+        },
+        "handwritten": {
+          "cases": 8,
+          "exit_code": 1,
+          "failed": 1,
+          "failed_tests": [
+            "test_fp_match_1_examples_normalization_and_floor[skills3-required3-100]"
+          ],
+          "junit": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F1_M2_empty_required_zero-handwritten.xml",
+          "killed": true,
+          "log": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F1_M2_empty_required_zero-handwritten.log",
+          "test_file": "tests/unit/test_matching.py"
+        }
+      }
+    },
+    "F1_M3_drop_trim": {
+      "description": "normalize_skills drops .strip(): boundary/normalisation check removed",
+      "function": "F1",
+      "suites": {
+        "generated": {
+          "cases": 94,
+          "exit_code": 1,
+          "failed": 13,
+          "failed_tests": [
+            "test_fp_match_1_normalisation_example",
+            "test_empty_list_boundaries[whitespace-only-required-100]",
+            "test_normalisation_whitespace_case_duplicates[strip-spaces]",
+            "test_normalisation_whitespace_case_duplicates[strip-tab-newline]",
+            "test_normalisation_whitespace_case_duplicates[strip-and-partial]",
+            "test_normalisation_whitespace_case_duplicates[dup-required]",
+            "test_normalisation_whitespace_case_duplicates[whitespace-entries]",
+            "test_normalisation_whitespace_case_duplicates[combined-noise]",
+            "test_normalisation_whitespace_case_duplicates[combined-noise-partial]",
+            "test_normalisation_equivalence_same_score",
+            "test_internal_whitespace_is_preserved",
+            "test_inputs_are_not_mutated",
+            "test_repeated_calls_are_deterministic"
+          ],
+          "junit": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F1_M3_drop_trim-generated.xml",
+          "killed": true,
+          "log": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F1_M3_drop_trim-generated.log",
+          "test_file": "tests/advanced/experiments/llm_blind/generated/test_F1.py"
+        },
+        "handwritten": {
+          "cases": 8,
+          "exit_code": 0,
+          "failed": 0,
+          "failed_tests": [],
+          "junit": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F1_M3_drop_trim-handwritten.xml",
+          "killed": false,
+          "log": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F1_M3_drop_trim-handwritten.log",
+          "test_file": "tests/unit/test_matching.py"
+        }
+      }
+    },
+    "F2_M4_skip_duration_check": {
+      "description": "the exactly-30-minutes check in book() is disabled",
+      "function": "F2",
+      "suites": {
+        "generated": {
+          "cases": 19,
+          "exit_code": 1,
+          "failed": 2,
+          "failed_tests": [
+            "test_slot_duration_other_than_thirty_minutes_is_conflict[29-minutes]",
+            "test_slot_duration_other_than_thirty_minutes_is_conflict[31-minutes]"
+          ],
+          "junit": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F2_M4_skip_duration_check-generated.xml",
+          "killed": true,
+          "log": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F2_M4_skip_duration_check-generated.log",
+          "test_file": "tests/advanced/experiments/llm_blind/generated/test_F2.py"
+        },
+        "handwritten": {
+          "cases": 32,
+          "exit_code": 1,
+          "failed": 1,
+          "failed_tests": [
+            "test_fp_sched_2_ineligible_booking[duration-ConflictError]"
+          ],
+          "junit": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F2_M4_skip_duration_check-handwritten.xml",
+          "killed": true,
+          "log": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F2_M4_skip_duration_check-handwritten.log",
+          "test_file": "tests/unit/test_scheduling.py"
+        }
+      }
+    },
+    "F2_M5_skip_missing_job_check": {
+      "description": "missing job is replaced by a synthetic job instead of NotFoundError",
+      "function": "F2",
+      "suites": {
+        "generated": {
+          "cases": 19,
+          "exit_code": 1,
+          "failed": 1,
+          "failed_tests": [
+            "test_missing_job_is_not_found_with_message"
+          ],
+          "junit": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F2_M5_skip_missing_job_check-generated.xml",
+          "killed": true,
+          "log": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F2_M5_skip_missing_job_check-generated.log",
+          "test_file": "tests/advanced/experiments/llm_blind/generated/test_F2.py"
+        },
+        "handwritten": {
+          "cases": 32,
+          "exit_code": 0,
+          "failed": 0,
+          "failed_tests": [],
+          "junit": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F2_M5_skip_missing_job_check-handwritten.xml",
+          "killed": false,
+          "log": "C:\\Users\\mdrakr\\AppData\\Local\\Temp\\p10-mutants-fixed-20261126-100720\\F2_M5_skip_missing_job_check-handwritten.log",
+          "test_file": "tests/unit/test_scheduling.py"
+        }
+      }
+    }
+  },
+  "sha": "e76641feaecb3d17a8a46912e596916409d59cf6",
+  "started_at": "2026-11-26T02:07:20.309681+00:00",
+  "totals": {
+    "generated": {
+      "killed": 5,
+      "tested": 5
+    },
+    "handwritten": {
+      "killed": 3,
+      "tested": 5
+    }
+  }
+}
