@@ -197,6 +197,12 @@ and supervisor. All Python dependencies come from the locked
 `requirements.txt`/`requirements.lock`; the frontend uses `npm ci` against
 `package-lock.json`.
 
+Python dependencies are installed only from `requirements.lock`, which includes
+Hypothesis, so the documented unit-test command runs inside the container. The
+optional advanced tools (Z3, Schemathesis, coverage, mutmut) are pinned
+separately in `tests/advanced/requirements.txt` and are deliberately not
+installed in the image; run those modes in a development environment or in CI.
+
 ## Docker Startup
 
 ```sh

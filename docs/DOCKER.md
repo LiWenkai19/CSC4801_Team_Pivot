@@ -32,17 +32,6 @@ docker exec team-example <unit-test-command>
 to persist or reset local data. Graders must be able to follow that document
 without guessing a command, image, or secret.
 
-## Test dependencies in the image
-
-The image installs Python dependencies only from `requirements.lock`, which
-includes Hypothesis, so the documented unit-test command
-(`python tests/run_tests.py`) runs inside the container. The advanced suite's
-additional tools (Z3, Schemathesis, coverage/pytest-cov, mutmut) are pinned
-separately in `tests/advanced/requirements.txt` and deliberately are not
-installed in the image; run the advanced modes in a development environment or
-in CI (see [INSTALL.md](../INSTALL.md) and
-[ADVANCED_REPORT.md](advanced_testing/ADVANCED_REPORT.md)).
-
 ## Auditing another team
 
 Auditors build from the **latest commit on the target team's `main` branch**.

@@ -21,6 +21,23 @@ Build and start the single-container environment using the Docker guide, then lo
 
 The local setup covers configuration, database creation, migrations, seeding, startup, and tests.
 
+### Demo accounts
+
+`backend/scripts/seed_demo.py` creates the accounts below. They are **local/demo
+credentials only** — never use them in a deployed environment.
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Employer 1 | `demo-employer1@example.com` | `demo-local-only` |
+| Employer 2 | `demo-employer2@example.com` | `demo-local-only` |
+| Candidate Alice | `demo-alice@example.com` | `demo-local-only` |
+| Candidate Bob | `demo-bob@example.com` | `demo-local-only` |
+| Candidate Carol | `demo-carol@example.com` | `demo-local-only` |
+
+Alice and Bob both have an `Interviewing` application for the same job and can
+compete for the single shared 30-minute slot, which demonstrates the booking
+conflict path.
+
 ## Running Unit Tests
 
 After Python dependency installation and `npm ci` in `frontend`, run from the
@@ -73,9 +90,10 @@ python tests/specialized/run.py render
 ```
 
 Install the separate test dependencies and PostgreSQL server tools as documented
-there. Known business failures remain red: these commands do not fix application
-code or force a successful status. The performance mode preserves its explicit
-360-second budget; Docker remains excluded.
+there. These suites are supplementary: the graded command remains
+`python tests/run_tests.py`, and CI does not run the specialized browser suites.
+They never modify application code or force a successful status. The performance
+mode preserves its explicit 360-second budget; Docker remains excluded.
 
 ## Advanced Testing and Verification
 
@@ -187,46 +205,23 @@ Additional requirement-to-test mapping:
 | FP-CAN-1 / FP-EMP-1 / FP-EMP-2 / FP-EMP-3 editor drafts | `frontend/tests/specialized/editor_update_checks.mjs`: all four editors, both languages, three engines; failed reads, unchanged version, discard cancellation/confirmation, unadded skill query, independent cards and real double tabs |
 | Migration consistency / FP-TEST-1 | `test_extended_migration_preserves_old_company_application_and_defaults`: isolated 7b → 8c upgrade, preserved rows, new SQL defaults, positive/non-null constraints and downgrade/re-upgrade; schema contracts in `tests/unit/test_versions.py` |
 
-This extension passed **157 unit tests**, **229 API/database cases** and **36 new
-browser scenarios**. Full browser results are 197/205 passing with 8 known
-failures; functional replay remains 375/393 passing with 18 known failures. SSR36
-and performance4 passed. See the linked report for failed causes and delivery limits.
+## Known Limitations
 
-The initial extension evidence is based on `b21d9d9` plus the patch. Before
-publication it was integrated with main `4ba0c25`, preserving the team Docker and
-English-default changes. Subsequent unit/render/browser verification and the
-refresh-icon change are recorded in the extension report; historical execution
-snapshots retain their original hashes and dates.
-
-## Earlier Unit Test Verification
-
-On November 25, 2026, the documented unit-test suite passed **157 tests** on `c39d36b` with updated test fixtures for applicant account emails and the interview slot listing. The fixtures verify applicant ordering and email mapping, and booked and unbooked slot responses. [Unit test command](INSTALL.md#running-unit-tests)
-
-## Earlier Verification Status and Known Limitations
-
-Validation baseline: `5143f1e944cac5b9e19e484320e2684b883b5ab4` plus the
-user-authorized local version-protection patch (2026-11-23). No new commit is
-claimed. Historical reports retain their original versions and results.
-
-- Complete unit command: **137 passed**, no failures/errors/skips. This includes
-  115 business/component-bridge cases and 22 existing schema cases. The bridge
-  executes 3 Node component assertions; those are not added again to the pytest
-  count. Original 17 `pass` templates have been replaced by substantive tests.
-- Existing API/database regression on a fresh isolated PostgreSQL instance:
-  **195 passed**, no failures/errors/skips. This is not 195 pure unit tests.
-- The original privacy test passes after teammate commit `5143f1e`; this patch
-  preserves owner-only resume access.
-- REG-CAND-01 and REG-JOB-01 are repaired with parent-row locking and mandatory
-  version checks. Stale pages receive 409 and retain their drafts. The three-engine,
-  two-language browser suite passes all **12 double-tab scenarios**.
-- Complete specialized functional replay: **375 passed, 18 failed**. The six
-  previously failing skill-replacement cases pass; the remaining failures are
-  known date, text-storage and registration issues, not hidden with skip/xfail.
-- Follow-up remaining regression: **169 browser scenarios, 161 passed/8 known
-  failures** (including the 12 version-conflict scenarios above); **36 SSR** and
-  **4 performance** checks passed. Original mutation samples detected 7/7
-  non-equivalent changes; non-Docker delivery retained 13 passes/8 known failures.
-- The baseline recorded text-storage failures, the demo seed slot duration, and migration default drift. Later changes reject NUL characters in candidate profile edits and set an upper bound on interview slot dates. [Current API specification](SPEC.md#api-routes-or-server-actions)
+- Scores are computed per request in Python from normalised skill sets; there is
+  no cached or denormalised score column, so the design targets the course-scale
+  catalogue rather than very large job volumes.
+- Optional AI explanations (FP-MATCH-2) are not implemented, so no paid
+  credentials, external service or network access is required at any point.
+- The optional advanced suite in `tests/advanced/` is supplementary evidence and
+  is not part of the graded unit command; its tools (Z3, Schemathesis, coverage,
+  mutmut) are deliberately absent from the Docker image.
+- CI's dependency scan accepts one advisory, `PYSEC-2026-1845` (pytest 8.4.2),
+  after an unreachability analysis recorded in the security scan notes.
+- The historical suites under `tests/specialized/` are retained for reference and
+  are not run by CI; their recorded browser and functional results predate later
+  fixes.
+- The formal proofs in the advanced report target abstract models and the
+  specification formula, not the Python implementation itself.
 
 ## Document Index
 
