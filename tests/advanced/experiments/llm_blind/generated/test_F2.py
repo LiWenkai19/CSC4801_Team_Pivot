@@ -103,7 +103,7 @@ from app.employer.model import (
     InterviewSlot,
     Job,
 )
-from app.users.model import User
+from app.users.model import Role, User
 
 from session_double import make_session
 
@@ -165,7 +165,9 @@ def _row(model, **fields):
 
 
 def _make_user(user_id=U1):
-    return _row(User, id=user_id)
+    # Post-freeze repair: the synthesized account must carry the candidate role
+    # that the service checks; the generated file had omitted this field.
+    return _row(User, id=user_id, role=Role.Candidate)
 
 
 def _make_application(

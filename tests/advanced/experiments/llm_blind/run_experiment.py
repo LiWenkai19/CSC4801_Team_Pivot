@@ -1,4 +1,4 @@
-"""Run the P10 blind-generated experiment and collect machine-readable results.
+r"""Run the P10 blind-generated experiment and collect machine-readable results.
 
 The generated test files are frozen in a commit *before* this runner is used.
 The runner only executes them and records outcomes; it contains no expected

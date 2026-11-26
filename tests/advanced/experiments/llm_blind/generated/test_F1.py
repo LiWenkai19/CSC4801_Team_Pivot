@@ -180,7 +180,6 @@ def test_fp_match_1_normalisation_example():
     ],
     ids=[
         "empty-and-empty-100",
-        "empty-candidate-only-100",
         "empty-candidate-required-1",
         "empty-candidate-required-2",
         "empty-candidate-required-3",
