@@ -27,6 +27,17 @@
   8 个手写变异体、Barrier 并发测试、Playwright 浏览器测试）。**只读**。
 - `tests/advanced/`：高级套件，由 P0 搭骨架，用法见其 `README.md`。
 
+## 环境（前两轮验证过的做法）
+
+- Python：用主 checkout 的 `.venv`（已装 `requirements.txt` + `tests/advanced/requirements.txt`）。
+- 前端依赖：worktree 不带 `node_modules`，开工先 `npm --prefix frontend ci`，否则必测套件里的渲染测试会失败。
+- PostgreSQL：`PG_BIN` 优先指向 **PostgreSQL 15** 的服务器工具目录（与 CI/Docker 一致）；只有 18.x 时可以用，但在汇报里写明版本。
+- `run.py` 会用自己的回执覆盖 `<out>/<mode>/result.json`；`entry.py` 模式请把业务结果写到别的文件名（如 `<mode>-result.json`）。
+- 大量注册账号很慢（Argon2）：可参考 `tests/advanced/differential/` 里的 `fast_registration` 写法，
+  **复制到自己的目录**使用并注释说明，不要改共享 `conftest.py`。
+- 当前必测套件：`python tests/run_tests.py` 应为 **251 passed**（以 main 实测为准）。
+- `main` 受保护，只能通过 PR 合并；你只需提交到自己的分支，不要 push。
+
 ## 硬性规则
 
 1. **不修改生产代码**：`backend/app/`、`frontend/src/`、`backend/alembic/`、`backend/scripts/`

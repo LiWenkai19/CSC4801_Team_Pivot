@@ -71,7 +71,8 @@ tests/advanced/
 | `requirements.lock`、`tests/unit/test_matching_properties.py` | P1 |
 | `.github/workflows/ci.yml`（advanced job 首版） | P0；最终收口 P11 |
 | `.github/workflows/security.yml` | P12 |
-| `README.md`、`INSTALL.md`、`DOCKER.md`、`docs/advanced_testing/ADVANCED_REPORT.md` | P11 |
+| `README.md`、`INSTALL.md`、`DOCKER.md` | P13 |
+| `docs/advanced_testing/ADVANCED_REPORT.md` | P11 |
 | 业务缺陷记录 | 各任务写 `docs/advanced_testing/findings/P<n>.md`，P11 汇总 |
 
 **命令**（与 specialized 风格一致）：
