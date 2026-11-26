@@ -21,7 +21,12 @@ P1 只改 `requirements.lock` 和 `tests/unit/`，理论上可与 P0 并行；�
 ```sh
 git switch main && git pull
 git worktree add ../wt-P2 -b test/P2 main
+npm --prefix ../wt-P2/frontend ci --no-audit --no-fund   # 必测套件的渲染测试需要；worktree 不带 node_modules
 ```
+
+Python 环境共用主 checkout 的 `.venv`（已装 `requirements.txt` + `tests/advanced/requirements.txt`）；
+`requirements.lock` 变化合并后，在主 checkout 重新 `pip install -r requirements.txt` 一次即可。
+不要用目录链接（junction/symlink）共享 `node_modules`，各 worktree 各装一份。
 
 然后在 `../wt-P2` 打开一个新会话，**先粘贴 `_PREAMBLE.md` 全文，再粘贴 `P2.md` 全文**。
 
@@ -36,11 +41,11 @@ git worktree add ../wt-P2 -b test/P2 main
 
 ## 为什么不会互相冲突
 
-- 每个任务只新增 `tests/advanced/<自己的目录>/` 和 `docs/testing/` 下自己的文件。
+- 每个任务只新增 `tests/advanced/<自己的目录>/` 和 `docs/advanced_testing/` 下自己的文件。
 - 所有共享文件（`run.py`、`conftest.py`、`requirements.txt`、`.gitignore`、首版 CI）
   只由 P0 修改；README/INSTALL/DOCKER 只由 P11 修改。
 - `run.py` 自动发现模式目录，新模式不需要改它或改 CI。
-- 业务缺陷各写 `docs/testing/findings/P<n>.md`，不共享一个文件。
+- 业务缺陷各写 `docs/advanced_testing/findings/P<n>.md`，不共享一个文件。
 
 ## 并行运行时的资源隔离
 

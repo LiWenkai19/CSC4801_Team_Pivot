@@ -6,14 +6,14 @@
 `tests/specialized/` 相互独立：
 
 - **不进入 Docker 镜像**；高级依赖固定在 `tests/advanced/requirements.txt`；
-- **不修改生产代码**；发现业务缺陷只写 `docs/testing/findings/P<n>.md`；
+- **不修改生产代码**；发现业务缺陷只写 `docs/advanced_testing/findings/P<n>.md`；
 - **产物只写仓库外**；`--out` 指向 checkout 内部会被直接拒绝；
 - 只连**本机临时 PostgreSQL**，只向本机进程发请求，不访问外网。
 
 P0 只提供骨架与 `smoke` 模式，不写具体高级测试。后续任务只需新增自己的模式目录，
 **不要修改本目录的共享文件**（`run.py`、`conftest.py`、`requirements.txt`、
 `support/{pg,traces}.py`，以及 `.gitignore` 和 CI 的 advanced job 归属见
-`docs/testing/ADVANCED_TEST_PLAN.md` §1）。
+`docs/advanced_testing/ADVANCED_TEST_PLAN.md` §1）。
 
 ## 1. 安装
 

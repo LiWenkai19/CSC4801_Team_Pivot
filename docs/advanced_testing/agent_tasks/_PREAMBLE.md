@@ -15,7 +15,7 @@
   `backend/app/users/service.py::normalize_skills`。
 - 预约：`backend/app/candidate/service.py::book`（行锁 + 唯一约束）；时段：
   `backend/app/interview/service.py`（30 分钟、未来、不重叠）。
-- 需求原文：`docs/REQUIREMENTS.md`；规格：`SPEC.md`；总方案：`docs/testing/ADVANCED_TEST_PLAN.md`。
+- 需求原文：`docs/REQUIREMENTS.md`；规格：`SPEC.md`；总方案：`docs/advanced_testing/ADVANCED_TEST_PLAN.md`。
 
 ## 现有测试（只读，不要修改，不要重复实现）
 
@@ -30,7 +30,7 @@
 ## 硬性规则
 
 1. **不修改生产代码**：`backend/app/`、`frontend/src/`、`backend/alembic/`、`backend/scripts/`
-   一律只读。发现业务 bug：写到 `docs/testing/findings/P<n>.md`（格式见下），**不要修**，
+   一律只读。发现业务 bug：写到 `docs/advanced_testing/findings/P<n>.md`（格式见下），**不要修**，
    **不要为了变绿去改断言或加 skip/xfail**。
 2. **只改任务文件里"允许修改"列出的路径**。需要改别的文件：停下，在汇报里说明原因。
 3. **确定性**：`PYTHONHASHSEED=4801`；Hypothesis 用 `derandomize=True` 或固定 seed，
@@ -50,7 +50,7 @@
    **不要 `git push`**，不要改 `main`。
 10. 子代理同样受以上规则约束；把本前言连同任务要求一起传给子代理。
 
-## 业务缺陷记录格式（`docs/testing/findings/P<n>.md`）
+## 业务缺陷记录格式（`docs/advanced_testing/findings/P<n>.md`）
 
 ```markdown
 ## <一句话标题>
@@ -71,6 +71,6 @@
 结果：<每条命令的退出码与关键数字（用例数、通过数、得分、证明数、耗时）>
 自检：<故意引入错误后测试是否变红>
 证据：<--out 产物路径>
-业务缺陷：<无 | docs/testing/findings/P<n>.md 条目数>
+业务缺陷：<无 | docs/advanced_testing/findings/P<n>.md 条目数>
 阻塞/偏离：<无 | 具体问题、已尝试方案、需要人类决定的事>
 ```

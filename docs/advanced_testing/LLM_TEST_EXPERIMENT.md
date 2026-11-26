@@ -22,7 +22,7 @@
 - 五个手写变异体：生成测试杀掉 **5/5**，手写测试杀掉 **3/5**。手写测试幸存的两个
   变异体分别暴露了：归一化用例把带空格和不带空格的技能混在同一列表（因此观察不到
   `strip()` 被删除），以及缺少“职位不存在”路径。
-- **没有发现业务缺陷**，因此没有 `docs/testing/findings/P10.md`。实验中真正暴露的
+- **没有发现业务缺陷**，因此没有 `docs/advanced_testing/findings/P10.md`。实验中真正暴露的
   问题是“LLM 生成测试本身的 setup/API 错误”和“手写测试的断言盲区”，不是生产 bug。
 
 ---
@@ -607,4 +607,4 @@ fragments, and the ambiguities you recorded. Do not paste the whole file back.
 | 手写对照 | `tests/unit/test_matching.py`、`tests/unit/test_scheduling.py`、`tests/unit/test_rendering.py` |
 | 手写渲染用例 | `frontend/tests/rendering.unit.mjs` |
 
-没有 `docs/testing/findings/P10.md`：本实验未发现需要交给人类修复的业务缺陷。
+没有 `docs/advanced_testing/findings/P10.md`：本实验未发现需要交给人类修复的业务缺陷。

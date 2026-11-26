@@ -88,3 +88,6 @@ mutants/
 # macOS
 .DS_Store
 Thumbs.db              # Windows
+
+# 高级测试文档
+!/docs/advanced_testing/

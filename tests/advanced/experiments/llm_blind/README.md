@@ -15,7 +15,7 @@ a `tests/advanced/run.py` mode and is **not** part of CI.
    read existing tests, or to execute the target.
 3. The generated files were committed **before** the experiment owner ran them or
    reviewed the implementations. `git log --follow` on the generated files and
-   `docs/testing/LLM_TEST_EXPERIMENT.md` record the commit order.
+   `docs/advanced_testing/LLM_TEST_EXPERIMENT.md` record the commit order.
 4. The generated files were then run unchanged; every failure was attributed to
    an implementation defect, a contract ambiguity, or a generation error.
 5. Assertion strength was measured with five hand-written mutants injected through
@@ -79,9 +79,9 @@ python tests/advanced/experiments/llm_blind/mutation/run_mutants.py \
 - Five hand-written mutants: generated tests kill **5/5**, handwritten tests kill
   **3/5**; the survivors expose a confounded normalization case and a missing
   “job does not exist” partition in the handwritten suite.
-- No production defect was found, so there is no `docs/testing/findings/P10.md`.
+- No production defect was found, so there is no `docs/advanced_testing/findings/P10.md`.
 - Full evidence and the L14 slide-30 analysis:
-  [`docs/testing/LLM_TEST_EXPERIMENT.md`](../../../../docs/testing/LLM_TEST_EXPERIMENT.md).
+  [`docs/advanced_testing/LLM_TEST_EXPERIMENT.md`](../../../../docs/advanced_testing/LLM_TEST_EXPERIMENT.md).
 
 The generated tests are experiments, not part of the required unit suite; rerun
 `python tests/run_tests.py` separately.
@@ -93,7 +93,7 @@ The generated tests are experiments, not part of the required unit suite; rerun
 - F1 is a pure function; F2 is the `book` service with a session double (no real
   PostgreSQL); F3 is the real React component rendered with
   `renderToStaticMarkup` (escaping evidence, not a browser/XSS proof).
-- The report `docs/testing/LLM_TEST_EXPERIMENT.md` compares the generated tests
+- The report `docs/advanced_testing/LLM_TEST_EXPERIMENT.md` compares the generated tests
   with the handwritten tests in `tests/unit/test_matching.py`,
   `tests/unit/test_scheduling.py` and `tests/unit/test_rendering.py` on partitions,
   case count, unique findings and mutant kills.
