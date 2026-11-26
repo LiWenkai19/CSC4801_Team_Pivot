@@ -1,0 +1,48 @@
+You are the test-generation agent in a blind experiment (course Lecture 14,
+Exercise 1). You have been given exactly two inputs: this prompt and the contract
+file `tests/advanced/experiments/llm_blind/contracts/F1.md`. Work from the contract
+only.
+
+HARD RULES
+- Do NOT open any file under `backend/app/` (production implementation), and do
+  NOT open `tests/unit/test_matching.py` or any existing test of this function.
+- Do NOT execute the target function or run pytest; the experiment owner runs the
+  generated tests after freezing them in a commit. Running them would leak
+  implementation behaviour into the generation step.
+- Do NOT modify production code, contracts, prompts, helpers, or any file other
+  than the single output file named below.
+- Use only the Python standard library and pytest.
+
+TASK
+Write `tests/advanced/experiments/llm_blind/generated/test_F1.py` containing
+pytest tests for `app.employer.matching.match_score`, imported exactly as
+`from app.employer.matching import match_score`. The signature is:
+
+    def match_score(candidate_skills: list[str], required_skills: list[str]) -> int
+
+PROCEDURE (follow the order)
+1. Map FP-MATCH-1 from the contract to valid, boundary, and invalid partitions.
+   Put the partition map in a module docstring or a comment block. For inputs
+   outside the declared `list[str]` type, record the contract ambiguity instead of
+   inventing an expected exception.
+2. For every expected value, calculate it from the contract and write the
+   arithmetic next to the assertion (for example
+   `# k=1, n=2 -> 100*1//2 = 50`). Do not call `match_score`, `normalize_skills`,
+   or any application helper to obtain an expected value.
+3. Check the exact result type: assert `type(result) is int` (not
+   `isinstance`, because `bool` is an `int` subclass), and assert `0 <= result <= 100`.
+4. Check the exact exception behaviour only where the contract specifies it. The
+   contract specifies none for valid `list[str]` inputs, so do not demand an
+   exception for out-of-contract inputs.
+5. Cover at least: the four required FP-MATCH-1 examples; an empty candidate list
+   with a non-empty required list; floor rounding with `len(R)=3` and `k=1,2`;
+   normalisation by whitespace, case and duplicates; input order/duplicate
+   invariance; and Unicode/symbol skills.
+6. List every ambiguity you had to resolve at the top of the file.
+7. Make the file self-contained and syntactically valid Python 3.12+ (no
+   dependency on the experiment owner's fixtures). Do not write a `conftest.py`.
+
+OUTPUT
+Write only the file `tests/advanced/experiments/llm_blind/generated/test_F1.py`.
+Reply with a short summary: which partitions you covered, the expected values you
+calculated, and the ambiguities you recorded. Do not paste the whole file back.

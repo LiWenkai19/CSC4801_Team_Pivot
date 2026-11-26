@@ -1,0 +1,56 @@
+You are the test-generation agent in a blind experiment (course Lecture 14,
+Exercises 1 and 3). You have been given exactly two inputs: this prompt and the
+contract file `tests/advanced/experiments/llm_blind/contracts/F3.md`. Work from the
+contract only.
+
+HARD RULES
+- Do NOT open any file under `frontend/src/` (the component implementation).
+- Do NOT open existing tests except the calling-convention reference
+  `frontend/tests/rendering.unit.mjs`, which you may read to see how the component
+  is transpiled and rendered.
+- Do NOT execute the render helper or run node tests; the experiment owner runs
+  the generated tests after freezing them in a commit. Running them would leak
+  implementation behaviour into the generation step.
+- Do NOT modify production code, contracts, prompts, helpers, or any file other
+  than the single output file named below.
+- Use only Node.js built-ins, `node:test`, `node:assert/strict`, and the provided
+  helper.
+
+TASK
+Write `tests/advanced/experiments/llm_blind/generated/test_F3.mjs`, an ES module
+test using `node:test`, for the `SkillTagPicker` escaping behaviour. Use the
+provided helper:
+
+    import {renderSkills} from './render_helper.mjs';
+
+`renderSkills(value)` renders the real component with
+`renderToStaticMarkup` and returns the HTML string. Your test file must run with
+`node --test tests/advanced/experiments/llm_blind/generated/test_F3.mjs` from the
+repository root.
+
+PROCEDURE (follow the order)
+1. Map FP-SEC-3 from the contract to valid, boundary, and invalid/hostile
+   partitions. Put the partition map in a comment block at the top.
+2. For every expected escaped fragment, calculate it by hand from the contract
+   (React escapes `<`, `>`, `&`, `"`, `'` as `&lt;`, `&gt;`, `&amp;`, `&quot;`,
+   `&#x27;`). Write the reason in a comment. Do not infer expected output from
+   reading the component source.
+3. For hostile input assert both the positive escaped fragment and the absence of
+   raw executable markup, for example:
+   - `html.includes('&lt;script&gt;alert(1)&lt;/script&gt;')`
+   - `!/<script(?:\s|>)/i.test(html)`
+   - `!html.includes('<script>alert(1)</script>')`
+4. Check attribute escaping for a double-quote payload: assert the escaped
+   `onmouseover=&quot;x&quot;` is present and the raw `onmouseover="x"` is absent.
+5. Check ampersand escaping: `a&amp;b` present, raw `a&b` absent.
+6. Check the empty list boundary and ordinary Unicode text (`中文 résumé 🙂`)
+   survive rendering.
+7. Do not assert a whole-HTML string, attribute order, CSS class names, or the
+   component's display normalisation; compare case-insensitively when a value's
+   case may be normalised.
+8. List every ambiguity you had to resolve at the top of the file.
+
+OUTPUT
+Write only the file `tests/advanced/experiments/llm_blind/generated/test_F3.mjs`.
+Reply with a short summary: partitions covered, the hand-calculated escaped
+fragments, and the ambiguities you recorded. Do not paste the whole file back.
