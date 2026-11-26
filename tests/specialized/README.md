@@ -18,8 +18,10 @@ python tests/specialized/run.py browser --browser-script editor_update_checks
 
 These are the historical exploratory/regression tests, now runnable from this
 checkout. They supplement the course unit command `python tests/run_tests.py`.
-They intentionally keep assertions that currently expose business bugs. A nonzero
-exit is not automatically a harness problem; read the phase XML/JSON and report.
+They retain historical assertions, including four AUTH-01 status-code assertions
+that the team explicitly does not classify as a bug. A nonzero exit must be
+interpreted with the recorded contract and team disposition below; it is neither
+a hidden pass nor automatically a new product defect.
 
 ## Install test dependencies
 
@@ -75,12 +77,12 @@ truncates all test tables and requires the managed-run marker.
 
 | Command suffix | Scope |
 |---|---|
-| `functional` | 393 executions: slots95, booking121, matching86, auth42, targeted26, remaining23 |
+| `functional` | 411 executions: slots97, booking121, matching102, auth42, targeted26, remaining23 |
 | `slots`, `booking`, `matching`, `auth`, `targeted`, `remaining` | One of the six functional groups |
 | `performance` | 10/100/1000-row correctness/query observations and the original **360-second** bounded loop |
-| `browser` | All seven real-browser/probe entrypoints; three engines where the module specifies them |
+| `browser` | All ten real-browser/probe entrypoints; three engines where the module specifies them |
 | `browser --browser-script frontend_changed_pages` | One browser module (see CLI help for all names) |
-| `render` | Six focused and 30 broader actual-TSX SSR checks; no PG/server/browser process required |
+| `render` | Six focused and 33 broader actual-TSX SSR checks; no PG/server/browser process required |
 | `mutation` | Eight baseline predicates and seven non-equivalent plus one equivalent test-only mutations |
 | `delivery` | 21 installation/configuration, seed, schema/default and migration checks |
 | `all` | All above groups; includes the six-minute loop and all browser/mutation work |
@@ -109,7 +111,7 @@ not a new whole-system coverage claim. No exclusions hide known failures.
   `summary.json` records phase statuses, source integrity and PG cleanup.
 - Browser scripts use only a test proxy to the isolated backend, real Cookie/CSRF
   sessions and synthetic accounts. The expiry helper changes only that fresh DB.
-  Probe scripts deliberately expose the original tracked Bearer helper mismatch.
+  Probe scripts verify the current Cookie/CSRF helpers; both role probes passed.
 - Mutation tooling copies only backend/app into the external artifact directory,
   alters one copy at a time and restores it. Production files are never edited.
 - SSR compiles the actual TSX to external artifacts. The broader script supplies
@@ -123,11 +125,39 @@ Historical port-baseline evidence: functional369 pass/24 fail, browser149 pass/8
 SSR36 pass, delivery13 pass/8 fail. These original counts and the then-failing
 privacy-contract test belong to the port baseline.
 
-Current edit-version follow-up: browser169 (161 passed/8 known failures), SSR36
-passed, performance4 passed including the complete 360-second budget, original
-non-equivalent mutation samples7/7 detected, non-Docker delivery13 passed/8 known
-failures. The browser total includes the 12 version-conflict scenarios and counts
-each accepted scenario once.
+Historical edit-version snapshot (before the latest fixes): browser169
+(161 passed/8 failures), SSR36, performance4 including the complete 360-second
+budget, original non-equivalent mutations7/7 detected, and delivery13 passed/8
+failures. Its original SHA is not recorded in this paragraph; these figures are
+retained as historical context and are not current acceptance results.
+
+Latest complete audit baseline: `fa8317cbf3119433ff3ff0673a69bd3cf411db46`,
+2026-11-26. Functional411 = 407 passed + 4 original AUTH-01 assertion failures;
+browser308/308 passed across all ten scripts; SSR39/39; delivery21/21. The browser
+count includes version-conflicts12, four-editor checks36, company introduction84,
+auth37, focused auth23, helper probes2, cross-browser78, follow-up9, frontend
+smoke6 and page checks21. Duplicate standalone reruns and screenshots are not
+added to that total. Later documentation-only repairs preserve the same
+functional contract; fresh retest receipts are recorded in the repair report.
+
+**AUTH-01 — not a bug by team decision.** The team confirmed this on 2026-11-24
+and again on 2026-11-25; the user reconfirmed it on 2026-11-26. The database
+correctly admits one account when concurrent requests use the same email; the
+loser may return 500, as documented in [SPEC](../../SPEC.md#accounts-and-profile-setup).
+The four old assertions expect 400/409 and remain ordinary failures. They are
+not pending fixes, skipped tests or xfails, and must not be described as repaired.
+The post-audit changes do not modify registration business logic.
+
+Post-audit retest on 2026-11-26 (`fix/final-audit-20261126`, baseline above plus
+the local OpenAPI/documentation patch): functional411 remains407 passed/4
+accepted AUTH-01 assertion failures; all ten browser/probe scripts308/308,
+SSR39/39 and delivery21/21 passed again. Docker build/start/seed, the complete
+unit suite253/253 and PostgreSQL integration241/241 passed. Advanced fast ran
+all six modes (292 cases); P8 generated864 requests with real_defect=0,
+schema_drift=0 and test_config=0, including all four oracle self-checks.
+Raw receipts remain outside Git in the review workspace's
+`tmp/final-audit-20261126/repair/`. These are local patch measurements, not
+claims that the patch has been pushed to GitHub main.
 SSR uses the real LanguageProvider and required props, browser selectors follow
 the current accessible names, and catalogue inventory must be nonempty. None of
 these adaptations suppresses product exceptions or changes rendering expressions.

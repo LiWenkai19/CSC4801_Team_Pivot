@@ -1210,9 +1210,10 @@ def render(data: dict, args: argparse.Namespace) -> tuple[str, list[str]]:
     add("")
     add("**局限**：操作级、非状态序列（多步工作流由 P2/P9 覆盖）；读 20/写 10 是"
         "有界采样，零参数 GET 可能提前耗尽；随机 UUID 只覆盖拒绝路径；"
-        "ASGI 直连不验证端口/代理/TLS；**793 个 schema drift 不是 793 个业务 bug**，"
-        "而是 FastAPI 未声明 FP-AUTH-3 要求的 401/403/404 与 SPEC 的 400/409，"
-        "报告按检查/状态分别计数，没有用过滤器静默吞掉。")
+        "ASGI 直连不验证端口/代理/TLS；"
+        f"本次 schema_drift={number(apifuzz_attribution.get('schema_drift'))}。"
+        "状态码文档漂移与业务错误分别计数，不用过滤器吞掉；"
+        "历史793次漂移发生于补齐4xx声明之前，不能代替本次测量。")
     add("")
     add("**详细文档**：[APIFUZZ.md](APIFUZZ.md)、"
         "[findings/P8.md](findings/P8.md)。")
@@ -1422,8 +1423,9 @@ def render(data: dict, args: argparse.Namespace) -> tuple[str, list[str]]:
         "test_fp_sched_1_openapi_422_documents_business_and_validation_shapes`。")
     add("5. **重跑**：P11 正式证据运行中 `apifuzz` 的 `real_defect` 为 "
         f"{number(apifuzz_attribution.get('real_defect'))}（修复前为 9）；"
-        f"剩余 `schema_drift` {number(apifuzz_attribution.get('schema_drift'))} 是 "
-        "FastAPI 未声明 401/403/404/400/409，不是本次缺陷。")
+        f"本次 `schema_drift` 为 {number(apifuzz_attribution.get('schema_drift'))}。"
+        "原P11的793次漂移来自未声明4xx；后续补声明的复测见APIFUZZ.md。"
+        "响应体422缺陷与状态码文档漂移分别记录。")
     add("")
     add("缺陷汇总与去重见 [findings/SUMMARY.md](findings/SUMMARY.md)。"
         "P2/P7/P9/P10 的自检没有发现业务缺陷；P9 的 I5“单层防护”按文档记录为事实，"
@@ -1450,8 +1452,10 @@ def render(data: dict, args: argparse.Namespace) -> tuple[str, list[str]]:
     add("- **P10 的 5 个手写变异体是小样本**：任务 §7 的“P10 全量对比”与“属性测试"
         "单独杀伤力”是可选加分项，本次未完成；5/5 vs 3/5 只应读作抽样结论。"
         "P7 的 304 个全量变异体是必测套件的证据，不直接等同于 P10 生成测试的分数。")
-    add("- **P8 的 schema drift 未修**：793 次失败是 FastAPI 未声明 4xx，"
-        "属于生产 API 文档工作，不在测试任务范围内；报告保留而不静默过滤。")
+    add("- **P8 的 schema drift**：本次为 "
+        f"{number(apifuzz_attribution.get('schema_drift'))}，以本次 JSON 为准。"
+        "历史793次未声明4xx已通过补充响应模型处理，历史报告仍保留原数字；"
+        "零漂移只覆盖本次有界生成请求。")
     add("- **`run.py` 无模式超时**：CI 由 `advanced` 的 30 分钟与 `advanced-slow` 的"
         " 90 分钟 `timeout-minutes` 兜底；本地运行需要自己控制时长。")
     add("")

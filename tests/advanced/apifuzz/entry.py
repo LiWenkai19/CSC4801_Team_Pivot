@@ -746,7 +746,7 @@ def _selfcheck(
     accounts: dict[str, Account],
     store: FailureStore,
 ) -> dict:
-    """Inject three controlled regressions and prove the oracles go red."""
+    """Inject four controlled regressions and prove the oracles go red."""
 
     from hypothesis import HealthCheck, given, settings
     from requests import Request, Response
@@ -960,21 +960,31 @@ def _selfcheck(
         }
         ok = False
 
-    # 4. The status-code drift oracle must see the undocumented 403.
+    # 4. A valid, documented 403 is the control; inject an undeclared status
+    # into the test response to prove this oracle still detects schema drift.
     drift_detected = False
     try:
         case = build_case(employer_jobs, candidate)
         response = case.call()
+        assert response.status_code == 403
+        case.validate_response(response, checks=[status_code_conformance])
+        original_status = response.status_code
         try:
-            case.validate_response(response, checks=[status_code_conformance])
-        except FailureGroup as group:
-            drift_detected = any(
-                isinstance(failure, UndefinedStatusCode)
-                for failure in group.exceptions
-            )
+            response.status_code = 418
+            try:
+                case.validate_response(response, checks=[status_code_conformance])
+            except FailureGroup as group:
+                drift_detected = any(
+                    isinstance(failure, UndefinedStatusCode)
+                    for failure in group.exceptions
+                )
+        finally:
+            response.status_code = original_status
         results["status_code_conformance"] = {
-            "injected": "candidate receives 403 from an employer-only route",
-            "status": response.status_code,
+            "injected": "test-only response status changed to undeclared 418",
+            "control_status": original_status,
+            "status": 418,
+            "restored_status": response.status_code,
             "detected": drift_detected,
         }
         ok = ok and drift_detected

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlmodel import Session
+from app.users.schema import error_responses
 from app.core.config import settings
 from app.db.session import get_db
 from app.users.schema import (
@@ -55,7 +56,7 @@ def _clear_auth_cookies(response: Response) -> None:
     response.delete_cookie(settings.CSRF_COOKIE_NAME, path="/")
 
 
-@user_router.post("/register", response_model=AuthResponse)
+@user_router.post("/register", response_model=AuthResponse, responses=error_responses(400))
 def register_user(
     user: UserCreate, response: Response, session: Session = Depends(get_db)
 ) -> AuthResponse:
@@ -69,7 +70,7 @@ def register_user(
     _set_auth_cookies(response, token, row, remember_me=False)
     return AuthResponse(user=get_current_user_public(session, new_user))
         
-@user_router.post("/login", response_model=AuthResponse)
+@user_router.post("/login", response_model=AuthResponse, responses=error_responses(400, 401))
 def login(
     self_user: UserLogin, response: Response, session: Session = Depends(get_db)
 ) -> AuthResponse:
@@ -87,7 +88,7 @@ def login(
     return AuthResponse(user=get_current_user_public(session, user))
 
 
-@user_router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@user_router.post("/logout", status_code=status.HTTP_204_NO_CONTENT, responses=error_responses(401, 403))
 def logout(
     response: Response,
     session: Session = Depends(get_db),
@@ -98,7 +99,7 @@ def logout(
     _clear_auth_cookies(response)
 
 
-@user_router.get("/me", response_model=UserPublic)
+@user_router.get("/me", response_model=UserPublic, responses=error_responses(401))
 def read_me(
     curr_user: User = Depends(get_current_user),
     session: Session = Depends(get_db),
@@ -111,6 +112,7 @@ def read_me(
     "/employer/profile",
     response_model=EmployerProfilePublic,
     status_code=status.HTTP_201_CREATED,
+    responses=error_responses(401, 403, 409),
 )
 def submit_employer_profile(
     profile: EmployerProfileCreate,
@@ -134,6 +136,7 @@ def submit_employer_profile(
     "/candidate/profile",
     response_model=CandidateProfilePublic,
     status_code=status.HTTP_201_CREATED,
+    responses=error_responses(401, 403, 409),
 )
 def submit_candidate_profile(
     profile: CandidateProfileCreate,

@@ -4,6 +4,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
+from app.users.schema import error_responses
 
 from app.db.session import get_db
 from app.employer import service
@@ -55,7 +56,7 @@ def execute(action, *args):
         raise _to_http(error) from error
 
 
-@employer_router.get("/company", response_model=CompanyPublic)
+@employer_router.get("/company", response_model=CompanyPublic, responses=error_responses(401, 403, 404))
 def get_company(
     session: Session = Depends(get_db),
     user: User = Depends(require_employer),
@@ -64,7 +65,7 @@ def get_company(
     return execute(service.get_my_company, session, user)
 
 
-@employer_router.patch("/company", response_model=CompanyPublic)
+@employer_router.patch("/company", response_model=CompanyPublic, responses=error_responses(401, 403, 404, 409))
 def update_company(
     payload: CompanyUpdate,
     session: Session = Depends(get_db),
@@ -75,7 +76,8 @@ def update_company(
 
 
 @employer_router.post(
-    "/jobs", response_model=JobPublic, status_code=status.HTTP_201_CREATED
+    "/jobs", response_model=JobPublic, status_code=status.HTTP_201_CREATED,
+    responses=error_responses(401, 403, 409),
 )
 def create_job(
     payload: JobCreate,
@@ -86,7 +88,7 @@ def create_job(
     return execute(service.create_job, session, user, payload)
 
 
-@employer_router.get("/jobs", response_model=list[JobPublic])
+@employer_router.get("/jobs", response_model=list[JobPublic], responses=error_responses(401, 403))
 def list_jobs(
     session: Session = Depends(get_db),
     user: User = Depends(require_employer),
@@ -95,7 +97,7 @@ def list_jobs(
     return execute(service.list_my_jobs, session, user)
 
 
-@employer_router.get("/jobs/{job_id}", response_model=JobPublic)
+@employer_router.get("/jobs/{job_id}", response_model=JobPublic, responses=error_responses(401, 403, 404))
 def get_job(
     job_id: uuid.UUID,
     session: Session = Depends(get_db),
@@ -105,7 +107,7 @@ def get_job(
     return execute(service.get_my_job, session, user, job_id)
 
 
-@employer_router.patch("/jobs/{job_id}", response_model=JobPublic)
+@employer_router.patch("/jobs/{job_id}", response_model=JobPublic, responses=error_responses(401, 403, 404, 409))
 def update_job(
     job_id: uuid.UUID,
     payload: JobUpdate,
@@ -116,7 +118,7 @@ def update_job(
     return execute(service.update_job, session, user, job_id, payload)
 
 
-@employer_router.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+@employer_router.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT, responses=error_responses(401, 403, 404, 409))
 def delete_job(
     job_id: uuid.UUID,
     session: Session = Depends(get_db),
@@ -127,7 +129,8 @@ def delete_job(
 
 
 @employer_router.get(
-    "/jobs/{job_id}/applications", response_model=list[ApplicantPublic]
+    "/jobs/{job_id}/applications", response_model=list[ApplicantPublic],
+    responses=error_responses(401, 403, 404),
 )
 def list_job_applicants(
     job_id: uuid.UUID,
@@ -141,6 +144,7 @@ def list_job_applicants(
 @employer_router.patch(
     "/applications/{application_id}/status",
     response_model=ApplicationStatusPublic,
+    responses=error_responses(401, 403, 404, 409),
 )
 def change_application_status(
     application_id: uuid.UUID,

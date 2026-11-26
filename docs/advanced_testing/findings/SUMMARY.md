@@ -1,5 +1,7 @@
 # 高级测试业务缺陷汇总（P11）
 
+> 下文为 P11 历史证据；后续补齐 OpenAPI 4xx 声明的复测见 [APIFUZZ.md](../APIFUZZ.md#post-audit-documentation-retest)。保留的793条历史漂移记录不表示仍未修复。AUTH-01 按团队决定不作为 bug，不属于待修条目。
+
 本文件汇总 `docs/advanced_testing/findings/P*.md` 中的业务/契约缺陷，按**根因去重**。
 测试与验证任务（P0–P12）没有修改生产代码；修复由实现负责人在独立分支完成，
 本文件只记录状态与验证证据。

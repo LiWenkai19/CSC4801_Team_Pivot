@@ -15,8 +15,8 @@ Check `docker version` and `docker buildx version` before following the Docker
 instructions. For local development, check `python --version`, `node --version`,
 `npm --version` and `psql --version` instead.
 
-The backend uses FastAPI, SQLModel, and PostgreSQL. Flask dependencies from the
-starter remain in the lock file; Flask is not a required application framework.
+The backend uses FastAPI, SQLModel, and PostgreSQL. Unused Flask starter
+dependencies have been removed from the lock file; Flask is not required.
 
 ## Dependency Installation
 
@@ -292,8 +292,9 @@ npm --prefix frontend ci
 python tests/run_tests.py
 ```
 
-The current suite was re-run on 2026-11-26 with Python 3.14.4 and Node 24.15.0;
-CI uses Python 3.12 and Node 22. Use a Node version satisfying the frontend
+The current suite was re-run on 2026-11-26 with Python 3.12.4 and Node 24.16.0,
+and inside Docker with Python 3.12 and Node 22; CI also uses Python 3.12 and Node
+22. Use a Node version satisfying the frontend
 lockfile/toolchain (Vite declares `^20.19.0 || >=22.12.0`). If Node is not on
 PATH, set `NODE_BINARY` to its executable. No new frontend test dependency or
 package-lock change is required.
@@ -317,7 +318,7 @@ To inspect the three component results alone:
 node --test frontend/tests/rendering.unit.mjs
 ```
 
-The complete unit command passes **252 tests** (exit 0) on 2026-11-26,
+The complete unit command passes **253 tests** (exit 0) on 2026-11-26,
 including strict versions, stale-write rejection and no-op semantics. The old
 employer-privacy test already passes after teammate commit `5143f1e`. No
 skip/xfail/filter is used.
@@ -348,8 +349,8 @@ python tests/run_tests.py --integration
 
 These are synthetic local example settings, not real credentials; configure local
 authentication for the disposable database separately. On 2026-11-26 this
-complete suite passed **241 cases** on an isolated PostgreSQL 17.6 temporary
-cluster (Docker and CI use PostgreSQL 15; account tests use their own in-memory
+complete suite passed **241 cases** inside Docker on an isolated PostgreSQL 15
+instance (CI also uses PostgreSQL 15; account tests use their own in-memory
 SQLite). Failure also returns nonzero. The runner requires both explicit URLs
 and never starts/stops an existing database service.
 

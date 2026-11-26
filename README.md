@@ -54,11 +54,12 @@ through a pytest bridge. It needs no running database, browser or paid credentia
 filter to hide known failures. Any failed assertion or component subprocess gives
 a nonzero exit status.
 
-The complete suite was re-run from this branch on 2026-11-26: **252 unit cases
+The complete suite was re-run from this branch on 2026-11-26: **253 unit cases
 passed** (exit 0), including the P1 property tests and the P7 mutation-hardening
-tests. The disposable-PostgreSQL integration command passed **241 cases**
-(exit 0) on a local PostgreSQL 17.6 temporary cluster; Docker and CI run the same
-suite on PostgreSQL 15.
+tests. This patch passed the unit suite on Windows with Python 3.12.4 and Node
+24.16.0, and inside Docker with Python 3.12 and Node 22. The disposable-PostgreSQL
+integration command passed **241 cases** (exit 0) inside Docker on PostgreSQL 15,
+the same PostgreSQL version used by CI.
 
 The new business tests invoke production functions with session/result doubles;
 unit fixtures reject any real database connection. They prove rule/serialization/
@@ -134,8 +135,12 @@ python tests/advanced/run.py fast
 python tests/advanced/run.py all --out <new empty directory outside the checkout>
 ```
 
-The complete results, per-technique limitations and the P8 defect/fix loop are
-in [ADVANCED_REPORT.md](docs/advanced_testing/ADVANCED_REPORT.md); exact sizes,
+The measured advanced numbers above belong to the historical CI evidence at
+`c7c8a3e4680ac988387705046909252e6b78599a`; they are not new coverage or mutation
+claims for subsequent edits. The post-audit OpenAPI declaration retest is in
+[APIFUZZ.md](docs/advanced_testing/APIFUZZ.md#post-audit-documentation-retest).
+The historical complete results, per-technique limitations and P8 defect/fix loop
+are in [ADVANCED_REPORT.md](docs/advanced_testing/ADVANCED_REPORT.md); exact sizes,
 seeds and evidence paths are in the per-technique documents beside it.
 
 ## Requirement–Test Mapping
@@ -156,7 +161,7 @@ as proof of compliance.
 | FP-ARCH-1 | `backend/app/main.py`, `backend/app/users/model.py`, `backend/app/employer/model.py`, `frontend/src/App.tsx`, `Dockerfile`, `deploy/` | — (architecture is exercised end-to-end) | — | Full-stack browser and PostgreSQL evidence and the single-container Docker build/start check; CI runs the documented commands inside the image. |
 | FP-AUTH-1 | `backend/app/users/service.py`; `backend/app/users/schema.py` | `tests/unit/test_auth.py`:<br>`test_fp_auth_1_registration_and_session_lifecycle`<br>`test_fp_auth_1_duplicate_identifier_is_rejected`<br>`test_fp_auth_1_invalid_registration`<br>`test_fp_auth_1_login_checks_actual_password` | `tests/unit/test_mutation_hardening.py`:<br>`test_pauth1_profile_completed_tracks_the_role_specific_profile`<br>`test_pauth1_session_lifetime_has_two_documented_forms` | — |
 | FP-AUTH-2 | `backend/app/users/security.py`; `backend/app/users/schema.py` | `tests/unit/test_auth.py`:<br>`test_fp_auth_2_salted_hash_and_password_verification`<br>`test_fp_auth_2_response_has_no_authentication_secrets`<br>`test_fp_auth_2_validation_errors_do_not_echo_password` | — | — |
-| FP-AUTH-3 | `backend/app/users/service.py`; candidate/employer routers and services | `tests/unit/test_auth.py`:<br>`test_fp_auth_3_unauthenticated_is_401`<br>`test_fp_auth_3_valid_session_and_role_guards`<br>`test_fp_auth_3_expired_session_is_revoked`<br>`test_fp_auth_3_csrf_contract`<br>`tests/unit/test_workflows.py`:<br>`test_fp_auth_3_missing_object_becomes_404` | `tests/unit/test_mutation_hardening.py`:<br>`test_pauth3_session_lookup_uses_the_sha256_digest`<br>`test_pauth3_revoke_all_sessions_touches_one_account`<br>`test_pauth3_candidate_services_reject_the_employer_role` | — |
+| FP-AUTH-3 | `backend/app/users/service.py`; candidate/employer routers and services | `tests/unit/test_auth.py`:<br>`test_fp_auth_3_unauthenticated_is_401`<br>`test_fp_auth_3_valid_session_and_role_guards`<br>`test_fp_auth_3_expired_session_is_revoked`<br>`test_fp_auth_3_csrf_contract`<br>`test_fp_auth_3_openapi_documents_actual_error_shapes`<br>`tests/unit/test_workflows.py`:<br>`test_fp_auth_3_missing_object_becomes_404` | `tests/unit/test_mutation_hardening.py`:<br>`test_pauth3_session_lookup_uses_the_sha256_digest`<br>`test_pauth3_revoke_all_sessions_touches_one_account`<br>`test_pauth3_candidate_services_reject_the_employer_role` | — |
 | FP-CAN-1 | `backend/app/candidate/service.py`; `backend/app/candidate/schema.py` | `tests/unit/test_workflows.py`:<br>`test_fp_can_1_profile_read_and_partial_replace`<br>`test_fp_can_1_skill_replace_normalizes_input`<br>`test_fp_can_1_invalid_profile_update`<br>`test_fp_can_1_course_resume_privacy_includes_related_employer`<br>`tests/unit/test_versions.py`:<br>`test_stale_version_rejects_before_any_edit` | `tests/unit/test_mutation_hardening.py`:<br>`test_pcan1_candidate_profile_creation_persists_normalized_skills`<br>`test_pcan1_candidate_profile_conflicts_are_translated`<br>`test_pcan1_candidate_profile_creation_requires_the_candidate_role`<br>`test_pcan1_owner_reads_own_private_profile`<br>`test_pcan1_profile_update_locks_the_owner_row` | `backend/tests/candidate/test_versions.py::test_version_stale_edit_is_rejected_without_side_effects` (both resource types); four-editor browser workflow in `frontend/tests/specialized/editor_update_checks.mjs`. |
 | FP-CAN-2 | `backend/app/candidate/service.py`; `frontend/src/pages/candidate/JobsPage.tsx` | `tests/unit/test_matching.py`:<br>`test_fp_can_2_recommendations_preserve_fields_and_rank_all_jobs`<br>`test_fp_can_2_empty_jobs_and_missing_profile` | `tests/unit/test_mutation_hardening.py`:<br>`test_pcan2_get_job_reads_only_the_requested_active_job`<br>`test_pcan2_recommendations_scope_applied_flag_and_skills_to_the_caller` | — |
 | FP-CAN-3 | `backend/app/candidate/service.py`; shared Application/Booking models | `tests/unit/test_workflows.py`:<br>`test_fp_can_3_pending_duplicate_and_application_owner`<br>`test_fp_can_3_owned_application_read_and_list_are_scoped`<br>`test_fp_can_3_booking_is_visible_in_both_role_serializers`<br>`test_fp_sec_1_other_candidate_cannot_read_application` | `tests/unit/test_mutation_hardening.py`:<br>`test_pcan3_applying_to_a_missing_or_deleted_job_is_not_found`<br>`test_pcan3_missing_and_foreign_applications_are_not_visible`<br>`test_pcan3_application_list_is_scoped_to_the_caller`<br>`test_pcan3_apply_locks_the_active_job_and_returns_the_public_view`<br>`test_pcan3_duplicate_apply_from_the_unique_constraint_is_a_conflict`<br>`test_pcan3_non_duplicate_integrity_error_surfaces_unchanged` | P9 I3 shows the duplicate-apply rule is also backstopped by the database unique constraint, not only the application precheck (`docs/advanced_testing/INTRAMORPHIC.md`). |
@@ -176,7 +181,7 @@ as proof of compliance.
 | FP-DOC-1 | `INSTALL.md`, `tests/run_tests.py`, `Dockerfile` | — (documentation requirement) | — | The guide documents Docker build, startup, migrations, seeding, and test commands, plus the local development setup and optional advanced suite. |
 | FP-DOC-2 | `README.md` | — (documentation requirement) | — | This table covers all 25 requirement IDs with named functional tests and separated supplementary evidence; it records evidence and known limitations, not universal requirement fulfillment. |
 | FP-DOC-3 | `backend/scripts/seed_demo.py` | — (data requirement) | — | From `backend`, run `python scripts/seed_demo.py` to reset the configured demo database. The seed creates one shared 30-minute slot; Alice and Bob both have `Interviewing` applications for the same job and can compete for that slot. |
-| FP-TEST-1 | `tests/unit/`; existing `backend/tests/users/test_schema.py`; `tests/run_tests.py`; `frontend/tests/rendering.unit.mjs` | One non-interactive command, `python tests/run_tests.py`, includes backend business/schema and actual component tests and returns nonzero for any failure (252 passed on 2026-11-26). Version-schema, stale-write, no-op and server-assigned creation contracts are in `tests/unit/test_versions.py`. | The whole mutation-hardening column above is part of this command. | Real-PG migration/concurrency tests under `backend/tests/candidate/`; the optional advanced suite in `tests/advanced/` is separate and not required. |
+| FP-TEST-1 | `tests/unit/`; existing `backend/tests/users/test_schema.py`; `tests/run_tests.py`; `frontend/tests/rendering.unit.mjs` | One non-interactive command, `python tests/run_tests.py`, includes backend business/schema and actual component tests and returns nonzero for any failure (253 passed on 2026-11-26). Version-schema, stale-write, no-op and server-assigned creation contracts are in `tests/unit/test_versions.py`. | The whole mutation-hardening column above is part of this command. | Real-PG migration/concurrency tests under `backend/tests/candidate/`; the optional advanced suite in `tests/advanced/` is separate and not required. |
 | FP-SUB-1 | `Dockerfile`, GitHub main commit submission | — (delivery requirement) | — | Use the Docker guide for delivery verification. The permanent public commit on `main` and reproducible Docker build and startup are the final submission checks; CI rebuilds, seeds and runs the unit suite in the image. |
 
 ## Current Editor Protection Extension (2026-11-23)
@@ -207,6 +212,12 @@ Additional requirement-to-test mapping:
 
 ## Known Limitations
 
+- AUTH-01 is **not a bug by team decision**, reconfirmed on 2026-11-26.
+  Concurrent registration with one email preserves database uniqueness; one
+  request may return 500. Four historical specialized status-code assertions
+  remain ordinary failures; they are not pending fixes and have not been
+  skipped, weakened or described as repaired. [Contract and team disposition](tests/specialized/README.md#results-and-interpretation).
+
 - Scores are computed per request in Python from normalised skill sets; there is
   no cached or denormalised score column, so the design targets the course-scale
   catalogue rather than very large job volumes.
@@ -222,6 +233,16 @@ Additional requirement-to-test mapping:
   fixes.
 - The formal proofs in the advanced report target abstract models and the
   specification formula, not the Python implementation itself.
+
+## Cross-team audit labels
+
+The ten labels in [.github/labels.yml](.github/labels.yml) were imported and
+read back from GitHub on 2026-11-26. `audit:*` distinguishes reports and repairs,
+`type:*` classifies security/functional/performance findings, and `status:*`
+tracks triage, confirmation, rejection, duplication and verified repair. A new
+report uses `audit:report`, `status:needs-triage` and exactly one `type:*`.
+Creating a label does not mark any issue as confirmed or fixed.
+See the [course procedure](docs/PEER_REVIEW.md#report-types).
 
 ## Document Index
 

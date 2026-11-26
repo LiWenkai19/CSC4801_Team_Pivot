@@ -4,6 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
+from app.users.schema import error_responses
 
 from app.db.session import get_db
 from app.interview import service
@@ -57,7 +58,7 @@ SLOT_CREATE_422 = {
     "",
     response_model=SlotPublic,
     status_code=status.HTTP_201_CREATED,
-    responses={422: SLOT_CREATE_422},
+    responses={**error_responses(401, 403, 404, 409), **{422: SLOT_CREATE_422}},
 )
 def create_slot(
     payload: SlotCreate,
@@ -71,7 +72,7 @@ def create_slot(
         raise HTTPException(ERROR_STATUS[type(error)], str(error)) from error
 
 
-@interview_router.get("", response_model=list[ManagedSlotPublic])
+@interview_router.get("", response_model=list[ManagedSlotPublic], responses=error_responses(401, 403))
 def list_slots(
     session: Session = Depends(get_db),
     employer: User = Depends(require_employer),
@@ -80,7 +81,7 @@ def list_slots(
     return service.list_slots(session, employer)
 
 
-@interview_router.delete("/{slot_id}", status_code=status.HTTP_204_NO_CONTENT)
+@interview_router.delete("/{slot_id}", status_code=status.HTTP_204_NO_CONTENT, responses=error_responses(401, 403, 404, 409))
 def delete_slot(
     slot_id: UUID,
     session: Session = Depends(get_db),

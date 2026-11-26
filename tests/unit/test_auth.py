@@ -175,3 +175,38 @@ def test_fp_sec_2_email_is_a_bound_value(db):
     query = db.exec.call_args.args[0].compile(dialect=postgresql.dialect())
     assert ordinary_text in query.params.values()
     assert ordinary_text not in str(query)
+
+
+def test_fp_auth_3_openapi_documents_actual_error_shapes():
+    """错误响应声明覆盖已有的拒绝合同，且与真实未认证响应一致。"""
+    from app.main import app
+    from fastapi.testclient import TestClient
+
+    schema = app.openapi()
+    account_codes = {
+        ("/users/register", "post"): (400,),
+        ("/users/login", "post"): (400, 401),
+        ("/users/logout", "post"): (401, 403),
+        ("/users/me", "get"): (401,),
+        ("/users/candidate/profile", "post"): (401, 403, 409),
+        ("/users/employer/profile", "post"): (401, 403, 409),
+    }
+    for path, operations in schema["paths"].items():
+        for method, operation in operations.items():
+            if method not in {"get", "post", "patch", "delete"}:
+                continue
+            codes = account_codes.get((path, method), (401, 403))
+            if path.startswith(("/candidate", "/employer")) and (
+                "{" in path or path.endswith(("/profile", "/company"))
+            ):
+                codes = (*codes, 404)
+            for code in codes:
+                definition = operation["responses"][str(code)]["content"]["application/json"]["schema"]
+                if "$ref" in definition:
+                    definition = schema["components"]["schemas"][definition["$ref"].rsplit("/", 1)[-1]]
+                assert "detail" in definition["required"]
+                assert definition["properties"]["detail"]["type"] == "string"
+    with TestClient(app) as client:
+        actual = client.get("/candidate/jobs")
+    assert actual.status_code == 401
+    assert actual.json() == {"detail": "Not authenticated"}

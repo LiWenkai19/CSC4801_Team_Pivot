@@ -4,6 +4,16 @@ Teams will build **a full-stack recruiting platform** with AI coding agents and 
 
 The framework, language, database, hosting model, and optional enhancements are your team's choice. The required matching baseline and other observable behavior are fixed in [`REQUIREMENTS.md`](REQUIREMENTS.md); requirements are mandatory unless explicitly marked optional.
 
+## Course document provenance
+
+The course requirements, Docker guide and peer-review procedure were checked
+against the instructor-provided `final_project(4)` distribution on 2026-11-26.
+`REQUIREMENTS.md` preserves that distribution's wording; repository CI policy is
+defined separately in [ci.yml](../.github/workflows/ci.yml). Template links below
+point to the enabled files in this repository. This is a local-package source
+record, not a claim that a newer online course revision has been verified.
+For this application's runnable commands use [INSTALL.md](../INSTALL.md).
+
 ## Read these documents
 
 | Document | Purpose |
@@ -11,8 +21,8 @@ The framework, language, database, hosting model, and optional enhancements are 
 | [`REQUIREMENTS.md`](REQUIREMENTS.md) | Normative product requirements and acceptance criteria |
 | [`PEER_REVIEW.md`](PEER_REVIEW.md) | Required cross-team audit procedure, valid-finding standard, and safety rules |
 | [`DOCKER.md`](DOCKER.md) | How to build and run the environment from the repository's `Dockerfile` |
-| [`templates/github/ISSUE_TEMPLATE/audit_bug_report.yml`](templates/github/ISSUE_TEMPLATE/audit_bug_report.yml) | GitHub Issue Form for audit findings; every team enables it |
-| [`templates/github/labels.yml`](templates/github/labels.yml) | Audit labels every team imports into its repository |
+| [`templates/github/ISSUE_TEMPLATE/audit_bug_report.yml`](../.github/ISSUE_TEMPLATE/audit_bug_report.yml) | GitHub Issue Form for audit findings; every team enables it |
+| [`templates/github/labels.yml`](../.github/labels.yml) | Audit labels every team imports into its repository |
 
 
 ## Grading

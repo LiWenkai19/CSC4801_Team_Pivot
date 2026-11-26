@@ -1,6 +1,6 @@
 # P8：基于 OpenAPI 的 API 属性模糊测试（Schemathesis）
 
-状态：已实现并通过验收运行。入口：
+状态：已实现并通过验收运行。下文原始数字属于历史 P8 验收；最新声明修复与复测见文末 [Post-audit documentation retest](#post-audit-documentation-retest)。入口：
 
 ```sh
 python tests/advanced/run.py apifuzz
@@ -237,3 +237,27 @@ python tests/advanced/run.py apifuzz --max-examples 5 --out <仓库外空目录>
 
 `run.py` 的 `SLOW` 标记使 `apifuzz` 不进入 `python tests/advanced/run.py fast`；
 显式点名或 `all` 仍会运行。
+
+## Post-audit documentation retest
+
+2026-11-26，在 `fix/final-audit-20261126` 修复分支（基线 `fa8317cbf3119433ff3ff0673a69bd3cf411db46` 加工作区补丁）补齐28个业务操作的实际4xx响应声明，统一为 `ErrorResponse`。原时段创建422的数组/字符串两种结构保留。业务函数、注册逻辑、成功响应和权限判断均不改变。
+
+完整运行 `python tests/advanced/run.py apifuzz`，仍采用原读20/写10预算和三轮独立状态矩阵：
+
+| 项目 | 历史证据 | 本轮复测 |
+| --- | ---: | ---: |
+| 业务操作 | 28 | 28 |
+| 生成请求 | 864 | 864 |
+| `real_defect` | 0 | 0 |
+| `schema_drift` | 793 | **0** |
+| `test_config` | 0 | **0** |
+| selfcheck | 通过 | **4项全部通过** |
+| outcome / exit | findings / 0 | **clean / 0** |
+
+状态码自检原先依赖生产OpenAPI没有声明真实403。该缺口修好后，自检改为：先确认真实403符合schema，再只将测试响应对象临时改成未声明418，要求 `UndefinedStatusCode` 被检出，最后恢复403。其他三项受控回归仍保留。没有修改生成输入预算、预期状态矩阵、归因规则或屏蔽失败。
+
+本轮必测253项通过；新增的 `test_fp_auth_3_openapi_documents_actual_error_shapes` 检查错误声明与真实未认证响应。历史251/252计数属于各自旧版本。
+
+AUTH-01 仍按团队决定为 `not_a_bug_by_team_decision`，不修改注册实现。单worker的P8不建立同邮箱并发交错；原专项中4条状态码断言仍如实失败，不能因P8为clean就写成“注册并发问题已修复”。
+
+本地原始证据：`tmp/final-audit-20261126/repair/apifuzz-verified/`（仓库之外）。修复分支未发布时，以上结论适用于工作区补丁，不冒充GitHub main的新测量。
