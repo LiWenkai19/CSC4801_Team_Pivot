@@ -9,6 +9,10 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Weekly full advanced run (Monday 04:17 UTC). The fast modes still run on
+    # every push/PR; the SLOW mutation/apifuzz/coverage modes run here.
+    - cron: "17 4 * * 1"
 
 permissions:
   contents: read
@@ -214,12 +218,13 @@ jobs:
 
   # Advanced techniques live outside the image and outside the mandatory unit
   # command.  They get their own disposable PostgreSQL service and their own
-  # pinned dependency file.  P11 flips continue-on-error to false once stable.
+  # pinned dependency file.  Once the techniques were stable, P11 made this a
+  # required job and added the unit branch-coverage gate here (not in the unit
+  # job, because coverage is only installed from tests/advanced/requirements.txt).
   advanced:
     name: Advanced tests (fast)
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    continue-on-error: true
     services:
       postgres:
         image: postgres:15
@@ -249,11 +254,42 @@ jobs:
             requirements.lock
             tests/advanced/requirements.txt
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
       - name: Install Python dependencies
         run: >-
           python -m pip install
           -r requirements.txt
           -r tests/advanced/requirements.txt
+
+      - name: Install frontend dependencies
+        run: npm --prefix frontend ci --no-audit --no-fund
+
+      # Gate: the measured unit-suite branch coverage (94.44% locally) rounded
+      # down to a multiple of five.  pytest-cov is available here but is not in
+      # requirements.lock, so this command must not move into the unit job or
+      # the Docker image.
+      - name: Unit branch-coverage gate
+        env:
+          APP_NAME: Business unit tests
+          DATABASE_URL: postgresql+psycopg://unit:unit@127.0.0.1:1/unit_not_a_database
+          COOKIE_SECURE: "false"
+          PYTHONPATH: backend
+          PYTHONUTF8: "1"
+          PYTHONDONTWRITEBYTECODE: "1"
+          PYTHONHASHSEED: "4801"
+          COVERAGE_FILE: ${{ runner.temp }}/unit-coverage
+        run: >-
+          python -m pytest tests/unit --rootdir=.
+          -q -p no:cacheprovider
+          --cov=backend/app --cov-branch
+          --cov-report=term-missing
+          --cov-fail-under=90
 
       - name: Run fast advanced modes
         run: python tests/advanced/run.py fast --out "$RUNNER_TEMP/advanced"
@@ -264,4 +300,69 @@ jobs:
         with:
           name: advanced-results
           path: ${{ runner.temp }}/advanced
+          if-no-files-found: ignore
+
+  # Full run: mutation, apifuzz and coverage are SLOW, so they are not part of
+  # `fast`.  This job runs weekly and on manual dispatch, on the same
+  # PostgreSQL 15 service as the pull-request job, and keeps the complete
+  # artefact tree (including coverage.xml/coverage-summary.json).
+  advanced-slow:
+    name: Advanced tests (all, scheduled/manual)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      ADVANCED_PG_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/postgres
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.lock
+            tests/advanced/requirements.txt
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Python dependencies
+        run: >-
+          python -m pip install
+          -r requirements.txt
+          -r tests/advanced/requirements.txt
+
+      - name: Install frontend dependencies
+        run: npm --prefix frontend ci --no-audit --no-fund
+
+      - name: Run all advanced modes
+        run: python tests/advanced/run.py all --out "$RUNNER_TEMP/advanced-slow"
+
+      - name: Upload full advanced artefacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: advanced-slow-results
+          path: ${{ runner.temp }}/advanced-slow
           if-no-files-found: ignore

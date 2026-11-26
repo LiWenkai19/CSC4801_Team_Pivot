@@ -10,7 +10,7 @@
 - **产物只写仓库外**；`--out` 指向 checkout 内部会被直接拒绝；
 - 只连**本机临时 PostgreSQL**，只向本机进程发请求，不访问外网。
 
-P0 只提供骨架与 `smoke` 模式，不写具体高级测试。后续任务只需新增自己的模式目录，
+P0 提供骨架与 `smoke` 模式；P1–P12 已在该骨架上实现全部高级技术。后续任务只需新增自己的模式目录，
 **不要修改本目录的共享文件**（`run.py`、`conftest.py`、`requirements.txt`、
 `support/{pg,traces}.py`，以及 `.gitignore` 和 CI 的 advanced job 归属见
 `docs/advanced_testing/ADVANCED_TEST_PLAN.md` §1）。
@@ -299,19 +299,26 @@ LTL 检查的相关真命题（至少覆盖该模式性质里出现的原子）�
   **不要改生产代码**。把自检结果写进任务汇报；没有自检的 oracle 不算 oracle。
 - **独立 oracle**：期望值必须来自需求、手算或独立实现，不得调用被测函数生成期望值。
 
-## 10. 当前模式与后续任务
+## 10. 当前模式（全部已实现）
 
-| 模式 | 状态 | 归属 | 说明 |
-| --- | --- | --- | --- |
-| `smoke` | 已实现 | P0 | 迁移后 `user` 表存在；真实注册的候选人 `GET /users/me` 返回 200。 |
-| `stateful` | 待实现 | P2 | Hypothesis 状态机，预约生命周期不变量。 |
-| `ltl` | 待实现 | P3 | LTL 轨迹检查器 + 自检。 |
-| `formal` | 待实现 | P4/P5 | Z3 匹配公式证明；纯 Python，无 `NEEDS_DB`。 |
-| `differential` | 待实现 | P6 | Python 打分 vs SQL 打分。 |
-| `mutation` | 待实现 | P7 | mutmut，`entry.py` + `SLOW`。 |
-| `apifuzz` | 待实现 | P8 | Schemathesis，`entry.py` + `SLOW`。 |
-| `intramorphic` | 待实现 | P9 | 蜕变/内蜕变。 |
-| `coverage` | 待实现 | P11 | 覆盖率，`entry.py`。 |
+| 模式 | 状态 | 归属 | SLOW | NEEDS_DB | 运行器 | 说明 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `smoke` | 已实现 | P0 | 否 | 是 | pytest | 迁移后 `user` 表存在；真实注册的候选人 `GET /users/me` 返回 200。 |
+| `stateful` | 已实现 | P2 | 否 | 是 | pytest | Hypothesis 状态机，预约生命周期 5 条不变量；写出 P3 轨迹。 |
+| `ltl` | 已实现 | P3 | 否 | 是 | pytest | 有限轨迹 LTL 检查器 + 232 个自检；relax/restrict 演示。 |
+| `formal` | 已实现 | P4/P5 | 否 | 否 | pytest | Z3 匹配规格证明（T1–T7/N1–N2）、预约 BMC（k=6）与 k-归纳；纯 Python。 |
+| `differential` | 已实现 | P6 | 否 | 是 | pytest | 600 对 Python 打分 vs SQL 打分；600 对候选人/雇主视图。 |
+| `mutation` | 已实现 | P7 | 是 | 否 | entry | 自研 AST 变异引擎，304 个变异体；需要 `frontend/node_modules` 以保持单元套件与本机一致。 |
+| `apifuzz` | 已实现 | P8 | 是 | 是 | entry | Schemathesis 进程内 ASGI，864 请求、0 个 5xx。 |
+| `intramorphic` | 已实现 | P9 | 否 | 是 | pytest | 5 条蜕变工作流 + 5 条防护层内蜕变 + 2 个自检。 |
+| `coverage` | 已实现 | P11 | 是 | 是 | entry | 分组测量 `backend/app` 分支覆盖（unit/integration/stateful/differential/intramorphic），写 `coverage-summary.json` 与 `coverage.xml`；unit 组需要 `frontend/node_modules`。 |
+
+`python tests/advanced/run.py fast` 运行所有非 `SLOW` 模式（`smoke`、`stateful`、`ltl`、
+`formal`、`differential`、`intramorphic`），供 CI 的 `advanced` job 在每次 push/PR 使用。
+`python tests/advanced/run.py all` 再加上 `mutation`、`apifuzz`、`coverage`，供每周
+`advanced-slow` job 与正式证据运行使用。`mutation`/`coverage` 需要 Node 依赖，因为
+被测的 `tests/unit/test_rendering.py` 会调用真实 React 组件；CI 的两个 advanced job
+都会先执行 `npm --prefix frontend ci`。
 
 ## 11. 故障排查
 
