@@ -55,6 +55,7 @@ WORKDIR /app
 # Python dependencies first: this layer is cached until the lock file changes.
 COPY requirements.txt requirements.lock ./
 RUN python -m pip install --no-cache-dir -r requirements.txt
+COPY README.md INSTALL.md ./
 
 # Application sources, tests (needed by the documented test command) and the
 # built frontend. node_modules is copied from the build stage because the

@@ -3,7 +3,7 @@ import uuid
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import CheckConstraint, Column, DateTime, Integer, text
+from sqlalchemy import CheckConstraint, Column, DateTime, Index, Integer, text
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -26,7 +26,12 @@ class User(SQLModel, table=True):
     __tablename__ = "user"  # type: ignore
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    email: str = Field(nullable=False, unique=True, index=True)
+    __table_args__ = (
+        Index("ix_user_email", text("lower(email)"), unique=True),
+        Index("ix_user_email_lookup", "email"),
+    )
+
+    email: str = Field(nullable=False)
     hashed_password: str = Field(nullable=False)
     role: Role = Field(
         sa_column=Column(

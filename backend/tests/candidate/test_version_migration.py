@@ -11,6 +11,63 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import create_engine
 
 
+@pytest.mark.parametrize("duplicates", [False, True])
+def test_email_migration_preserves_accounts_and_refuses_ambiguous_duplicates(engine, duplicates):
+    from app.core.config import settings
+
+    name = "csc4801_email_migration_" + uuid.uuid4().hex[:12]
+    admin = create_engine(engine.url.set(database="postgres"), isolation_level="AUTOCOMMIT")
+    migrated = create_engine(engine.url.set(database=name))
+    previous = settings.DATABASE_URL
+    config = Config(str(Path(__file__).resolve().parents[2] / "alembic.ini"))
+    owner = uuid.uuid4()
+    try:
+        with admin.connect() as connection:
+            connection.execute(text(f'CREATE DATABASE "{name}"'))
+        settings.DATABASE_URL = migrated.url.render_as_string(hide_password=False)
+        command.upgrade(config, "9d6e1a4b2c30")
+        with migrated.begin() as connection:
+            connection.execute(text(
+                'INSERT INTO "user" (id,email,hashed_password,role,created_at) VALUES (:id,:email,:hash,\'candidate\',now())'
+            ), {"id": owner, "email": "Audit.Case@Example.com", "hash": "keep-this-hash"})
+            connection.execute(text(
+                "INSERT INTO candidate_profile (user_id,display_name,resume_text) VALUES (:id,'Owner','Keep résumé')"
+            ), {"id": owner})
+            if duplicates:
+                connection.execute(text(
+                    'INSERT INTO "user" (id,email,hashed_password,role,created_at) VALUES (:id,:email,:hash,\'employer\',now())'
+                ), {"id": uuid.uuid4(), "email": "audit.case@example.com", "hash": "keep-other-hash"})
+        with migrated.connect() as connection:
+            before = connection.execute(text('SELECT id,email,hashed_password,role FROM "user" ORDER BY email')).all()
+        if duplicates:
+            with pytest.raises(RuntimeError, match="duplicate email accounts exist"):
+                command.upgrade(config, "head")
+            with migrated.connect() as connection:
+                assert connection.execute(text('SELECT id,email,hashed_password,role FROM "user" ORDER BY email')).all() == before
+                assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == "9d6e1a4b2c30"
+        else:
+            command.upgrade(config, "head")
+            command.upgrade(config, "head")
+            with migrated.connect() as connection:
+                assert connection.execute(text('SELECT id,email,hashed_password,role FROM "user"')).one() == (
+                    owner, "audit.case@example.com", "keep-this-hash", "candidate"
+                )
+                assert connection.execute(text("SELECT user_id,resume_text,version FROM candidate_profile")).one() == (owner, "Keep résumé", 1)
+            with pytest.raises(IntegrityError):
+                with migrated.begin() as connection:
+                    connection.execute(text(
+                        'INSERT INTO "user" (id,email,hashed_password,role,created_at) VALUES (:id,:email,:hash,\'candidate\',now())'
+                    ), {"id": uuid.uuid4(), "email": "AUDIT.CASE@EXAMPLE.COM", "hash": "other"})
+            command.downgrade(config, "9d6e1a4b2c30")
+            command.upgrade(config, "head")
+    finally:
+        settings.DATABASE_URL = previous
+        migrated.dispose()
+        with admin.connect() as connection:
+            connection.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
+        admin.dispose()
+
+
 @pytest.mark.parametrize("legacy", [False, True])
 def test_version_migration_preserves_data_and_matches_model_defaults(engine, legacy):
     from app.core.config import settings

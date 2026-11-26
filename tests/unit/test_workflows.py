@@ -52,6 +52,65 @@ def test_other_controls_and_literal_nul_escape_remain_valid_text():
 
 
 @pytest.mark.parametrize("schema,payload,field", [
+    (CandidateProfileCreate, {"display_name": "Name"}, "resume_text"),
+    (CandidateProfileCreate, {"display_name": "Name"}, "skills"),
+    (EmployerProfileCreate, {"company_name": "Company"}, "company_description"),
+    (ProfileUpdate, {"version": 1}, "resume_text"),
+    (ProfileUpdate, {"version": 1}, "skills"),
+    (CompanyUpdate, {"version": 1}, "company_description"),
+    (JobCreate, {"title": "Job", "description": "Description"}, "description"),
+    (JobCreate, {"title": "Job", "description": "Description"}, "required_skills"),
+    (JobUpdate, {"version": 1}, "description"),
+    (JobUpdate, {"version": 1}, "required_skills"),
+])
+@pytest.mark.parametrize("invalid", ["a\ud800b", "a\udfffb", "\ud800\ud800"])
+def test_unencodable_surrogates_are_rejected_at_persisted_field(schema, payload, field, invalid):
+    supplied = ["python", invalid] if field in {"skills", "required_skills"} else invalid
+    data = dict(payload, **{field: supplied})
+    with pytest.raises(ValidationError) as caught:
+        schema.model_validate(data)
+    expected = (field, 1) if isinstance(supplied, list) else (field,)
+    assert caught.value.errors()[0]["loc"] == expected
+    assert data[field] == supplied
+
+
+def test_demo_credentials_in_readme_match_seed_source():
+    import ast
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    source = ast.parse((root / "backend/scripts/seed_demo.py").read_text(encoding="utf-8"))
+    password = next(
+        ast.literal_eval(node.value) for node in source.body
+        if isinstance(node, ast.Assign)
+        and any(isinstance(target, ast.Name) and target.id == "DEMO_PASSWORD" for target in node.targets)
+    )
+    emails = {
+        node.value for node in ast.walk(source)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+        and node.value.startswith("demo-") and node.value.endswith("@example.com")
+    }
+    readme = (root / "README.md").read_text(encoding="utf-8")
+    assert len(emails) == 5
+    for email in emails:
+        assert any(email in line and password in line for line in readme.splitlines())
+    assert "LOCAL/DEMO ONLY" in readme
+
+
+@pytest.mark.parametrize("text", ["\U0001f642", "literal \\ud800", "\ud7ff\ue000\U0010ffff"])
+def test_valid_unicode_near_surrogates_roundtrips_unchanged(text):
+    import json
+
+    decoded = json.loads(json.dumps(text, ensure_ascii=True))
+    created = CandidateProfileCreate(display_name="Owner", resume_text=decoded, skills=[decoded])
+    updated = ProfileUpdate(version=1, resume_text=decoded, skills=[decoded])
+    company = CompanyUpdate(version=1, company_description=decoded)
+    posting = JobCreate(title="Role", description=decoded, required_skills=[decoded])
+    assert created.resume_text == updated.resume_text == company.company_description == posting.description == text
+    assert created.skills == updated.skills == posting.required_skills == [text]
+
+
+@pytest.mark.parametrize("schema,payload,field", [
     (CandidateProfileCreate, {"display_name": "Name"}, "display_name"),
     (CandidateProfileCreate, {"display_name": "Name"}, "resume_text"),
     (CandidateProfileCreate, {"display_name": "Name"}, "skills"),

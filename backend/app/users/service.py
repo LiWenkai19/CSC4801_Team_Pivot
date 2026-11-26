@@ -20,6 +20,7 @@ from app.users.schema import (
     EmployerProfilePublic,
     UserCreate,
     UserPublic,
+    normalize_email,
 )
 from app.users.security import (
     hash_password,
@@ -34,17 +35,18 @@ from app.db.session import get_db
 
 
 def get_user_by_email(session: Session, email: str) -> User | None:
-    statement = select(User).where(User.email == email)
+    statement = select(User).where(User.email == normalize_email(email))
     return session.exec(statement).first()
 
 
 def create_user(session: Session, user: UserCreate) -> User:
-    existing_user = get_user_by_email(session, user.email)
+    email = normalize_email(user.email)
+    existing_user = get_user_by_email(session, email)
     if existing_user:
         raise ValueError("User already exists")
 
     hashed_password = hash_password(user.password)
-    new_user = User(email=user.email, hashed_password=hashed_password, role=user.role)
+    new_user = User(email=email, hashed_password=hashed_password, role=user.role)
     session.add(new_user)
     session.commit()
     session.refresh(new_user)

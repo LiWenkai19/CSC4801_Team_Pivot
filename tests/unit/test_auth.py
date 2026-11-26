@@ -12,9 +12,27 @@ from starlette.requests import Request
 from app.main import app
 from app.users import security, service
 from app.users.model import Role, UserSession
-from app.users.schema import AuthResponse, UserCreate, UserPublic
+from app.users.schema import AuthResponse, UserCreate, UserLogin, UserPublic
 
 NOW = datetime(2030, 5, 1, tzinfo=timezone.utc)
+
+
+@pytest.mark.parametrize("schema", [UserCreate, UserLogin])
+@pytest.mark.parametrize("email", ["Audit.Case@Example.com", "  AUDIT.CASE@example.com  "])
+def test_account_credentials_use_one_canonical_email(schema, email):
+    payload = {"email": email, "password": "local-only"}
+    if schema is UserCreate:
+        payload["role"] = Role.Candidate
+    assert schema(**payload).email == "audit.case@example.com"
+
+
+def test_service_email_lookup_normalizes_before_binding(db):
+    from sqlalchemy.dialects import postgresql
+
+    service.get_user_by_email(db, "  Audit.Case@Example.com  ")
+    query = db.exec.call_args.args[0].compile(dialect=postgresql.dialect())
+    assert "audit.case@example.com" in query.params.values()
+    assert '"user".email = ' in str(query)
 
 
 @pytest.mark.parametrize("role", list(Role))

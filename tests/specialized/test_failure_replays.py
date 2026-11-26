@@ -215,6 +215,7 @@ def test_capture_nul_driver_exception_without_changing_application(
     assert snapshot() == before
 
 
+@pytest.mark.parametrize("invalid", ["prefix\x00suffix", "a\ud800b", "a\udfffb"])
 @pytest.mark.parametrize("target,field", [
     ("candidate-create", "display_name"), ("candidate-create", "resume_text"),
     ("candidate-create", "skills"), ("employer-create", "company_name"),
@@ -226,7 +227,7 @@ def test_capture_nul_driver_exception_without_changing_application(
     ("job-update", "description"), ("job-update", "required_skills"),
 ])
 def test_nul_rejection_is_atomic_and_same_version_accepts_normal_text(
-    client, account, job, snapshot, evidence, target, field
+    client, account, job, snapshot, evidence, target, field, invalid
 ):
     """覆盖创建路径、混合字段更新和列表元素；拒绝后原版本仍可正常保存。"""
     role = "candidate" if target.startswith("candidate") else "employer"
@@ -252,12 +253,19 @@ def test_nul_rejection_is_atomic_and_same_version_accepts_normal_text(
             payload["version"] = posting["version"]
     bad = dict(payload)
     is_list = field in {"skills", "required_skills"}
-    bad[field] = ["python", "prefix\x00suffix", "sql"] if is_list else "prefix\x00suffix"
+    bad[field] = ["python", invalid, "sql"] if is_list else invalid
     before = snapshot()
-    rejected = client.request(method, path, headers=owner["headers"], json=bad)
+    import json
+
+    rejected = client.request(
+        method, path,
+        headers={**owner["headers"], "Content-Type": "application/json"},
+        content=json.dumps(bad, ensure_ascii=True),
+    )
     assert rejected.status_code == 422, rejected.text
     assert rejected.json()["detail"][0]["loc"] == ["body", field] + ([1] if is_list else [])
-    assert "NUL" in rejected.json()["detail"][0]["msg"]
+    if "\x00" in invalid:
+        assert "NUL" in rejected.json()["detail"][0]["msg"]
     assert snapshot() == before
     ordinary = "Résumé 中文 🙂\nLiteral \\u0000 \x01"
     corrected = dict(payload, **{field: ["python", ordinary, "sql"] if is_list else ordinary})
@@ -277,3 +285,41 @@ def test_nul_rejection_is_atomic_and_same_version_accepts_normal_text(
     assert readback.json()["version"] == saved.json()["version"]
     evidence("nul-atomic-retry", {"target": target, "field": field, "rejected_status": 422,
                                    "retry_status": saved.status_code, "saved_version": saved.json()["version"]})
+
+
+@pytest.mark.parametrize("role", ["candidate", "employer"])
+def test_email_case_variants_share_one_account_and_password(client, engine, snapshot, role):
+    from sqlalchemy.exc import IntegrityError
+    from sqlmodel import Session
+    from app.users.model import Role, User
+
+    password = "local-email-case-only"
+    registered = client.post("/users/register", json={
+        "email": "Audit.Case@Example.com", "password": password, "role": role,
+    })
+    assert registered.status_code == 200
+    owner = registered.json()["user"]
+    assert owner["email"] == "audit.case@example.com"
+    before = snapshot()
+    duplicate = client.post("/users/register", json={
+        "email": "audit.case@example.com", "password": password,
+        "role": "employer" if role == "candidate" else "candidate",
+    })
+    assert duplicate.status_code == 400
+    assert duplicate.json() == {"detail": "User already exists"}
+    assert snapshot() == before
+    assert "set-cookie" not in duplicate.headers
+    for email in ["Audit.Case@Example.com", "audit.case@example.com", "  AUDIT.CASE@EXAMPLE.COM  "]:
+        logged_in = client.post("/users/login", json={"email": email, "password": password})
+        assert logged_in.status_code == 200
+        assert logged_in.json()["user"]["id"] == owner["id"]
+        assert logged_in.json()["user"]["email"] == owner["email"]
+    before = snapshot()
+    wrong = client.post("/users/login", json={"email": "AUDIT.CASE@example.com", "password": "wrong"})
+    assert wrong.status_code == 401
+    assert snapshot() == before
+    with pytest.raises(IntegrityError):
+        with Session(engine) as session:
+            session.add(User(email="AUDIT.CASE@EXAMPLE.COM", hashed_password="unused", role=Role.Candidate))
+            session.commit()
+    assert snapshot() == before

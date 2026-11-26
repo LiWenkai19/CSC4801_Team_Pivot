@@ -8,9 +8,13 @@ from app.users.model import Role
 
 
 def _reject_nul(value: str) -> str:
-    """在写库前拒绝 PostgreSQL 文本列无法保存的 NUL 字符。"""
+    """在写库前拒绝 NUL 和无法编码为 UTF-8 的孤立代理字符。"""
     if "\x00" in value:
         raise ValueError("Text cannot contain NUL characters")
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError as error:
+        raise ValueError("Text cannot contain surrogate characters") from error
     return value
 
 
@@ -23,12 +27,20 @@ NonBlankName = Annotated[
 ResourceVersion = Annotated[StrictInt, Field(gt=0)]
 
 
+def normalize_email(value: str) -> str:
+    """账户标识统一去首尾空白并转为小写。"""
+    return value.strip().lower()
+
+
+AccountEmail = Annotated[EmailStr, AfterValidator(normalize_email)]
+
+
 class UserCreate(SQLModel):
     """注册仅提交账户凭据和角色，资料在注册后单独填写。"""
 
     model_config = {"extra": "forbid"}
 
-    email: EmailStr
+    email: AccountEmail
     password: str = Field(min_length=1)
     role: Role
 
@@ -36,7 +48,7 @@ class UserCreate(SQLModel):
 class UserLogin(SQLModel):
     """登录已有账户；remember_me 决定会话有效期与 Cookie 是否持久化。"""
 
-    email: EmailStr
+    email: AccountEmail
     password: str = Field(min_length=1)
     remember_me: bool = False
 

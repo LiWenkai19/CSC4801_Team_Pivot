@@ -9,7 +9,7 @@ from sqlmodel import SQLModel
 
 from app.employer.model import ApplicationStatus
 from app.employer.schema import BookingPublic as EmployerBookingPublic, JobPublic
-from app.users.schema import NonBlankName, ResourceVersion
+from app.users.schema import DatabaseText, NonBlankName, ResourceVersion
 
 
 def _as_utc(value: datetime) -> datetime:
@@ -20,14 +20,7 @@ def _as_utc(value: datetime) -> datetime:
 UTCDateTime = Annotated[datetime, AfterValidator(_as_utc)]
 
 
-def _reject_nul(value: str) -> str:
-    """拒绝 PostgreSQL 文本列无法保存的 NUL 字符。"""
-    if "\x00" in value:
-        raise ValueError("Text cannot contain NUL characters")
-    return value
-
-
-ProfileText = Annotated[str, AfterValidator(_reject_nul)]
+ProfileText = DatabaseText
 
 
 class BookingPublic(EmployerBookingPublic):
@@ -47,7 +40,7 @@ class ProfileUpdate(RequestSchema):
     """省略保留，文本和技能可以清空，显式 null 不合法。"""
 
     version: ResourceVersion
-    display_name: Annotated[NonBlankName, AfterValidator(_reject_nul)] | None = None
+    display_name: NonBlankName | None = None
     resume_text: ProfileText | None = None
     skills: list[ProfileText] | None = None
 

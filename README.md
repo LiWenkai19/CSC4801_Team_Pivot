@@ -21,6 +21,22 @@ Build and start the single-container environment using the Docker guide, then lo
 
 The local setup covers configuration, database creation, migrations, seeding, startup, and tests.
 
+## Demo Accounts
+
+**LOCAL/DEMO ONLY.** After running `python scripts/seed_demo.py` from `backend`,
+use these seeded non-production accounts. The reset command replaces demo data;
+run it only against a disposable local/demo database.
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Employer 1 | `demo-employer1@example.com` | `demo-local-only` |
+| Employer 2 | `demo-employer2@example.com` | `demo-local-only` |
+| Candidate Alice | `demo-alice@example.com` | `demo-local-only` |
+| Candidate Bob | `demo-bob@example.com` | `demo-local-only` |
+| Candidate Carol | `demo-carol@example.com` | `demo-local-only` |
+
+See [demo data and reset instructions](INSTALL.md#demo-data-and-reset-command).
+
 ## Running Unit Tests
 
 After Python dependency installation and `npm ci` in `frontend`, run from the
