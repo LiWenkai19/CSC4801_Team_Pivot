@@ -1,0 +1,36 @@
+# P12 secret-scan allowlist.
+#
+# The default gitleaks rules are kept (`useDefault = true`); this file only
+# suppresses the two classes of false positives triaged in
+# docs/advanced_testing/SECURITY_SCANS.md.  Each entry requires BOTH the
+# exact file path and the exact matched value (`condition = "AND"`), so a
+# real secret in the same file, or the same value in another file, is still
+# reported.  Do not add broad path or regex allowlists here.
+
+title = "CSC4801 final project secret-scan allowlist"
+
+[extend]
+useDefault = true
+
+# The four version-verification manifests map source paths to SHA-256 file
+# digests.  gitleaks' generic-api-key rule sees keys such as
+# "frontend/src/api/candidate_api.ts" plus a 64-character hex value and calls
+# it an API key.  Allow only those exact manifests and only a full SHA-256
+# digest; the manifests no longer exist at HEAD but are present in history.
+[[allowlists]]
+description = "Version-verification manifests: generic-api-key matches are SHA-256 file digests."
+paths = ['''^docs/(?:CANDIDATE_BASELINE\.json|testing/(?:editor-version-verification|version-verification|version-retest-verification)\.json)$''']
+regexes = ['''^[0-9a-f]{64}$''']
+condition = "AND"
+
+# Tests and browser-verification scripts set a synthetic SECRET_KEY so the
+# app can start without backend/.env.  The value is intentionally public and
+# is not used to sign anything outside the throwaway test process.  The
+# paths below restrict the allowance to test fixtures, and the regex is the
+# exact synthetic value; a production secret in the same directory is still
+# reported.
+[[allowlists]]
+description = "Test fixtures: synthetic in-process SECRET_KEY values."
+paths = ['''^(?:backend/(?:tests|employer_tests|candidate_tests)/.+\.py|frontend/tests/(?:candidate|employer)\.browser\.mjs)$''']
+regexes = ['''^isolated(?:-ui)?-test-key-with-at-least-32-characters$''']
+condition = "AND"
