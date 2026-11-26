@@ -1157,9 +1157,11 @@ def render(data: dict, args: argparse.Namespace) -> tuple[str, list[str]]:
         "19 个幸存者中有 10 个属于“仅真实 SQL 可观测”（`LIMIT`/`JOIN ON`），应由集成/差分"
         "覆盖；2 个 suspicious 是导入期错误，保守地不计入分母；"
         "变异范围只覆盖 5 个文件。本次证据运行记录 "
-        f"`jobs={number(get(mutation, 'config', 'jobs'))}`；在并发过高导致"
-        "每个变异体 30s 固定超时出现假 timeout 的环境里，可用 `PYTHON_CPU_COUNT` "
-        "限制并行度后重跑，变异体集合、判定逻辑与最终 killed/survived 分类不变。")
+        f"`jobs={number(get(mutation, 'config', 'jobs'))}`；如果并发过高导致"
+        "每个变异体 30s 固定超时出现假 timeout，Python 3.13 及以上可以用 "
+        "`PYTHON_CPU_COUNT`；通用做法是直接运行 "
+        "`python tests/advanced/mutation/entry.py --jobs N` 后重跑；"
+        "变异体集合、判定逻辑与最终 killed/survived 分类不变。")
     add("")
     add("**详细文档**：[MUTATION.md](MUTATION.md)、"
         "[tests/unit/test_mutation_hardening.py](../../tests/unit/test_mutation_hardening.py)。")

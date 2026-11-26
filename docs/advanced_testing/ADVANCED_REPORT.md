@@ -4,7 +4,7 @@
 
 - 源码版本：`f28b27974352cd121d0a3f64ac7f859f098301f1`（分支 `test/P11`）
 - 运行完成时间：2026-11-26T06:27:00.359497+00:00
-- 生成时间：2026-11-26T06:33:42+00:00
+- 生成时间：2026-11-26T08:49:15+00:00
 - 产物目录：`D:\Study\Y4 - CSC4801\_evidence\P11\final-all-3`
 - 确定性：`PYTHONHASHSEED=4801`，Hypothesis `derandomize=True`，`random.Random(4801)`；所有规模有上限。
 
@@ -300,7 +300,7 @@
 
 **亮点**：由于 mutmut 3.7 在原生 Windows 上结构性不可用（依赖 `os.fork` 与 `resource.setrlimit`），P7 按任务允许的降级方案实现了一个**自研 AST 变异引擎**（L13 slide 17 的思想），覆盖比较翻转、`//`→`/`、`and↔or`、常量 ±1、`raise`→`pass`、`return X`→`return None` 六类算子；每个变异体固定 30s 超时，只在 `$ADVANCED_OUT/mutation/work/` 的副本里注入，前后对 `backend/app` 做 SHA-256 快照。三列对比为 **60.93% → 60.93% → 93.71%**：P1 属性测试把 `tests/unit` 从 176 例增加到 185 例，但**单独新增 killed = 0**；全部 99 个新增 kills 来自补强测试。报告没有掩盖这个事实，而是把中间列单独计分，说明属性测试的价值在规格性质而非这套 6 类算子的杀伤力。
 
-**局限**：变异分数是**同口径前后对比**，不是 mutmut 全量算子集的横向分数；19 个幸存者中有 10 个属于“仅真实 SQL 可观测”（`LIMIT`/`JOIN ON`），应由集成/差分覆盖；2 个 suspicious 是导入期错误，保守地不计入分母；变异范围只覆盖 5 个文件。本次证据运行记录 `jobs=7`；在并发过高导致每个变异体 30s 固定超时出现假 timeout 的环境里，可用 `PYTHON_CPU_COUNT` 限制并行度后重跑，变异体集合、判定逻辑与最终 killed/survived 分类不变。
+**局限**：变异分数是**同口径前后对比**，不是 mutmut 全量算子集的横向分数；19 个幸存者中有 10 个属于“仅真实 SQL 可观测”（`LIMIT`/`JOIN ON`），应由集成/差分覆盖；2 个 suspicious 是导入期错误，保守地不计入分母；变异范围只覆盖 5 个文件。本次证据运行记录 `jobs=7`；如果并发过高导致每个变异体 30s 固定超时出现假 timeout，Python 3.13 及以上可以用 `PYTHON_CPU_COUNT`；通用做法是直接运行 `python tests/advanced/mutation/entry.py --jobs N` 后重跑；变异体集合、判定逻辑与最终 killed/survived 分类不变。
 
 **详细文档**：[MUTATION.md](MUTATION.md)、[tests/unit/test_mutation_hardening.py](../../tests/unit/test_mutation_hardening.py)。
 
@@ -487,7 +487,7 @@
 
 - 源码版本：`f28b27974352cd121d0a3f64ac7f859f098301f1`（分支 `test/P11`）
 - 运行完成时间：2026-11-26T06:27:00.359497+00:00
-- 报告生成时间：2026-11-26T06:33:42+00:00
+- 报告生成时间：2026-11-26T08:49:15+00:00
 - Python：3.14.4 (tags/v3.14.4:23116f9, Apr  7 2026, 14:10:54) [MSC v.1944 64 bit (AMD64)]
 - PostgreSQL 版本：PostgreSQL 18.6
 - 证据来源：本地开发证据目录 `D:\Study\Y4 - CSC4801\_evidence\P11\final-all-3`（`run.py all`；PostgreSQL 18.6）。正式 CI 证据（`postgres:15`）由 `advanced-slow` job 生成（artifact 名 `advanced-slow-results`）；下载 artifact 后运行 `python tests/advanced/report.py <artifact> --unit-junit <unit.xml> --ci-run <run-id>` 即可把本页脚替换为 CI run 号与 artifact 名。
