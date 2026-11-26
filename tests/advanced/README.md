@@ -5,7 +5,7 @@
 `tests/unit/`、真实 PG 集成测试 `backend/tests/`、历史专项套件
 `tests/specialized/` 相互独立：
 
-- **不进入 Docker 镜像**；高级依赖固定在 `tests/advanced/requirements.txt`；
+- **源码随 `COPY tests/` 进入 Docker 镜像，高级依赖不安装**；高级模式需在开发/CI 环境另装 `tests/advanced/requirements.txt`；
 - **不修改生产代码**；发现业务缺陷只写 `docs/advanced_testing/findings/P<n>.md`；
 - **产物只写仓库外**；`--out` 指向 checkout 内部会被直接拒绝；
 - 只连**本机临时 PostgreSQL**，只向本机进程发请求，不访问外网。

@@ -106,7 +106,7 @@ class Application(SQLModel, table=True):
 
 
 class InterviewSlot(SQLModel, table=True):
-    """面试时段；本轮只作为职位删除依赖与预约展示，不提供管理接口。"""
+    """雇主的面试时段；管理接口与候选人预约共用，预约后关联到职位。"""
 
     __tablename__ = "interview_slot"  # type: ignore
     __table_args__ = (

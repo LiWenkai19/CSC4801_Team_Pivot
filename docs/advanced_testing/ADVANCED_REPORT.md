@@ -1,5 +1,7 @@
 # 高级测试与验证报告（P0–P12）
 
+> 历史证据快照：本页数字属于下列源码 SHA 与 CI run。后续 OpenAPI 4xx 声明已补齐，当前复测见 [APIFUZZ.md](APIFUZZ.md#post-audit-documentation-retest)。本页历史793次 schema drift 不再代表修复分支的当前状态；不要把旧测量值改写成新的测量。
+
 > 本文件由 [`tests/advanced/report.py`](../../tests/advanced/report.py) 从本次运行的 JSON / JUnit 产物自动生成。**不要手工修改数字**；改测试或改实现后重新运行生成命令即可。
 
 - 源码版本：`c7c8a3e4680ac988387705046909252e6b78599a`（分支 `test/P11`）

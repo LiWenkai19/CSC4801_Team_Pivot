@@ -100,8 +100,7 @@ def read_profile(
 ) -> CandidateProfilePublic:
     """候选人资料仅本人可读；简历私有，任何雇主都不得直接访问。
 
-    雇主要查看投递者的简历，只能走与申请绑定的入口（待实现），
-    不能通过直接请求候选人资料获得。
+    按课程 FP-CAN-1，简历始终仅本人可读；与雇主有投递关系也不授予权限。
     """
     if user.role == Role.Candidate:
         if user.id != candidate_id:

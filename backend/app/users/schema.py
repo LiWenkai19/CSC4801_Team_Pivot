@@ -23,6 +23,17 @@ NonBlankName = Annotated[
 ResourceVersion = Annotated[StrictInt, Field(gt=0)]
 
 
+class ErrorResponse(SQLModel):
+    """认证、权限及业务拒绝共用的响应体；不包含请求原文。"""
+
+    detail: str
+
+
+def error_responses(*status_codes: int) -> dict[int, dict[str, Any]]:
+    """给已有错误状态声明同一响应结构，不改变运行时处理。"""
+    return {code: {"model": ErrorResponse} for code in status_codes}
+
+
 class UserCreate(SQLModel):
     """注册仅提交账户凭据和角色，资料在注册后单独填写。"""
 

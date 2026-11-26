@@ -45,7 +45,7 @@ A valid finding **MUST** satisfy every condition below:
 - **Independent:** it is not a duplicate symptom of an already reported root cause. Search open and closed issues before filing.
 - **Safe:** it was found within the boundary in Section 0.
 
-File every finding through the GitHub Issue Form at [`templates/github/ISSUE_TEMPLATE/audit_bug_report.yml`](templates/github/ISSUE_TEMPLATE/audit_bug_report.yml); every team **MUST** enable it in their repository. Missing a required field or reproduction makes the report invalid. One issue **SHOULD** describe one root cause; split only unrelated findings.
+File every finding through the GitHub Issue Form at [`templates/github/ISSUE_TEMPLATE/audit_bug_report.yml`](../.github/ISSUE_TEMPLATE/audit_bug_report.yml); every team **MUST** enable it in their repository. Missing a required field or reproduction makes the report invalid. One issue **SHOULD** describe one root cause; split only unrelated findings.
 
 ### Report types
 
@@ -59,7 +59,7 @@ Every report **MUST** use `audit:report` and `status:needs-triage`, plus exactly
 
 Choose the type that best represents the root cause. `type:security` takes precedence when more than one type could apply.
 
-Every team imports all audit labels (`audit:*`, `type:*`, and `status:*`) into their repository from [`templates/github/labels.yml`](templates/github/labels.yml) so that every repository uses the same label set.
+Every team imports all audit labels (`audit:*`, `type:*`, and `status:*`) into their repository from [`templates/github/labels.yml`](../.github/labels.yml) so that every repository uses the same label set.
 
 ## 3. Reproduction quality
 

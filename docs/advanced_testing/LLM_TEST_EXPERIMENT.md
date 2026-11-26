@@ -5,9 +5,9 @@
 
 | ID | 目标 | 类型 | 契约 | 生成测试 |
 |---|---|---|---|---|
-| F1 | `app.employer.matching.match_score` | 纯函数 | [`contracts/F1.md`](../tests/advanced/experiments/llm_blind/contracts/F1.md) | [`generated/test_F1.py`](../tests/advanced/experiments/llm_blind/generated/test_F1.py) |
-| F2 | `app.candidate.service.book` | 服务层（会话替身） | [`contracts/F2.md`](../tests/advanced/experiments/llm_blind/contracts/F2.md) | [`generated/test_F2.py`](../tests/advanced/experiments/llm_blind/generated/test_F2.py) |
-| F3 | `SkillTagPicker` 的 HTML 转义 | React 组件 | [`contracts/F3.md`](../tests/advanced/experiments/llm_blind/contracts/F3.md) | [`generated/test_F3.mjs`](../tests/advanced/experiments/llm_blind/generated/test_F3.mjs) |
+| F1 | `app.employer.matching.match_score` | 纯函数 | [`contracts/F1.md`](../../tests/advanced/experiments/llm_blind/contracts/F1.md) | [`generated/test_F1.py`](../../tests/advanced/experiments/llm_blind/generated/test_F1.py) |
+| F2 | `app.candidate.service.book` | 服务层（会话替身） | [`contracts/F2.md`](../../tests/advanced/experiments/llm_blind/contracts/F2.md) | [`generated/test_F2.py`](../../tests/advanced/experiments/llm_blind/generated/test_F2.py) |
+| F3 | `SkillTagPicker` 的 HTML 转义 | React 组件 | [`contracts/F3.md`](../../tests/advanced/experiments/llm_blind/contracts/F3.md) | [`generated/test_F3.mjs`](../../tests/advanced/experiments/llm_blind/generated/test_F3.mjs) |
 
 **结论先行。**
 
@@ -597,13 +597,13 @@ fragments, and the ambiguities you recorded. Do not paste the whole file back.
 
 | 内容 | 路径 |
 |---|---|
-| 协议与运行说明 | [`README.md`](../tests/advanced/experiments/llm_blind/README.md) |
-| 契约 | [`contracts/`](../tests/advanced/experiments/llm_blind/contracts) |
-| prompt | [`prompts/`](../tests/advanced/experiments/llm_blind/prompts) |
-| 生成测试 | [`generated/`](../tests/advanced/experiments/llm_blind/generated) |
-| 运行器 | [`run_experiment.py`](../tests/advanced/experiments/llm_blind/run_experiment.py) |
-| 结果 | [`results.json`](../tests/advanced/experiments/llm_blind/results.json) |
-| 变异体 | [`mutation/`](../tests/advanced/experiments/llm_blind/mutation) |
+| 协议与运行说明 | [`README.md`](../../tests/advanced/experiments/llm_blind/README.md) |
+| 契约 | [`contracts/`](../../tests/advanced/experiments/llm_blind/contracts) |
+| prompt | [`prompts/`](../../tests/advanced/experiments/llm_blind/prompts) |
+| 生成测试 | [`generated/`](../../tests/advanced/experiments/llm_blind/generated) |
+| 运行器 | [`run_experiment.py`](../../tests/advanced/experiments/llm_blind/run_experiment.py) |
+| 结果 | [`results.json`](../../tests/advanced/experiments/llm_blind/results.json) |
+| 变异体 | [`mutation/`](../../tests/advanced/experiments/llm_blind/mutation) |
 | 手写对照 | `tests/unit/test_matching.py`、`tests/unit/test_scheduling.py`、`tests/unit/test_rendering.py` |
 | 手写渲染用例 | `frontend/tests/rendering.unit.mjs` |
 

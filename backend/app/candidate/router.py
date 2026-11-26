@@ -4,6 +4,7 @@ import uuid
 
 from fastapi import APIRouter, Body, Depends, HTTPException, status
 from sqlmodel import Session
+from app.users.schema import error_responses
 
 from app.candidate import service
 from app.candidate.schema import (
@@ -46,7 +47,7 @@ def execute(action, *args):
         raise
 
 
-@candidate_router.get("/profile", response_model=CandidateProfilePublic)
+@candidate_router.get("/profile", response_model=CandidateProfilePublic, responses=error_responses(401, 403, 404))
 def get_profile(
     session: Session = Depends(get_db), user: User = Depends(require_candidate)
 ):
@@ -54,7 +55,7 @@ def get_profile(
     return execute(service.get_my_profile, session, user)
 
 
-@candidate_router.patch("/profile", response_model=CandidateProfilePublic)
+@candidate_router.patch("/profile", response_model=CandidateProfilePublic, responses=error_responses(401, 403, 404, 409))
 def update_profile(
     payload: ProfileUpdate,
     session: Session = Depends(get_db),
@@ -64,17 +65,17 @@ def update_profile(
     return execute(service.update_my_profile, session, user, payload)
 
 
-@candidate_router.get("/profiles/{candidate_id}", response_model=CandidateProfilePublic)
+@candidate_router.get("/profiles/{candidate_id}", response_model=CandidateProfilePublic, responses=error_responses(401, 403, 404))
 def read_profile(
     candidate_id: uuid.UUID,
     session: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """本人或有投递关系的雇主读取资料。"""
+    """仅候选人本人可读资料；其他候选人及所有雇主均被拒绝。"""
     return execute(service.read_profile, session, user, candidate_id)
 
 
-@candidate_router.get("/jobs", response_model=list[RecommendedJob])
+@candidate_router.get("/jobs", response_model=list[RecommendedJob], responses=error_responses(401, 403, 404))
 def list_jobs(
     session: Session = Depends(get_db), user: User = Depends(require_candidate)
 ):
@@ -82,7 +83,7 @@ def list_jobs(
     return execute(service.list_jobs, session, user)
 
 
-@candidate_router.get("/jobs/{job_id}", response_model=RecommendedJob)
+@candidate_router.get("/jobs/{job_id}", response_model=RecommendedJob, responses=error_responses(401, 403, 404))
 def get_job(
     job_id: uuid.UUID,
     session: Session = Depends(get_db),
@@ -96,6 +97,7 @@ def get_job(
     "/jobs/{job_id}/applications",
     response_model=ApplicationPublic,
     status_code=status.HTTP_201_CREATED,
+    responses=error_responses(401, 403, 404, 409),
 )
 def apply(
     job_id: uuid.UUID,
@@ -107,7 +109,7 @@ def apply(
     return execute(service.apply, session, user, job_id)
 
 
-@candidate_router.get("/applications", response_model=list[ApplicationPublic])
+@candidate_router.get("/applications", response_model=list[ApplicationPublic], responses=error_responses(401, 403))
 def list_applications(
     session: Session = Depends(get_db), user: User = Depends(require_candidate)
 ):
@@ -116,7 +118,8 @@ def list_applications(
 
 
 @candidate_router.get(
-    "/applications/{application_id}", response_model=ApplicationPublic
+    "/applications/{application_id}", response_model=ApplicationPublic,
+    responses=error_responses(401, 403, 404),
 )
 def get_application(
     application_id: uuid.UUID,
@@ -128,7 +131,8 @@ def get_application(
 
 
 @candidate_router.get(
-    "/applications/{application_id}/slots", response_model=list[SlotPublic]
+    "/applications/{application_id}/slots", response_model=list[SlotPublic],
+    responses=error_responses(401, 403, 404, 409),
 )
 def available_slots(
     application_id: uuid.UUID,
@@ -143,6 +147,7 @@ def available_slots(
     "/applications/{application_id}/booking",
     response_model=BookingPublic,
     status_code=status.HTTP_201_CREATED,
+    responses=error_responses(401, 403, 404, 409),
 )
 def book(
     application_id: uuid.UUID,

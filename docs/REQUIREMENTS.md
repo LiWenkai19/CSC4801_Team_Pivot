@@ -229,7 +229,7 @@ Before the deadline, the team **SHOULD** verify the build on a clean machine:
 
 #### Submission-format check and second submission
 
-The first submission passes the format check only if the permanent commit URL is present and resolves to an accessible graded commit on a public repository, required CI checks pass, the repository's `Dockerfile` builds from that commit, and the documented start/seed/test flow works without downloading any undocumented container image.
+The first submission passes the format check only if the permanent commit URL is present and resolves to an accessible graded commit on a public repository, the repository's `Dockerfile` builds from that commit, and the documented start/seed/test flow works without downloading any undocumented container image.
 
 - If the first submission passes this check, there is no submission-format deduction.
 - If the first submission fails this check, the team will make one corrective second submission by the instructor's published deadline. If the second submission passes, **5 points are deducted from the 50-point preliminary total before ranking**. The reduced preliminary total is used to determine the team's rank.
